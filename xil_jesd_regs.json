@@ -1,0 +1,393 @@
+{
+    "registers": [
+        {
+            "name": "ILA Config Data 0",
+            "addr": "0x800",
+            "addr_increment": "0x40",
+            "fields": [
+                {
+                    "name": "jesdv",
+                    "bit_low": 8,
+                    "bit_high": 10
+                },
+                {
+                    "name": "subclass",
+                    "bit_low": 0,
+                    "bit_high" : 2
+                }
+            ]
+        },
+        {
+            "name": "ILA Config Data 1",
+            "addr": "0x804",
+            "addr_increment": "0x40",
+            "fields": [
+                {
+                    "name": "octets_per_frame",
+                    "bit_low": 0,
+                    "bit_high": 7,
+                    "translation": "lambda x: x+1"
+                }
+            ]
+        },
+        {
+            "name": "ILA Config Data 2",
+            "addr": "0x808",
+            "addr_increment": "0x40",
+            "fields": [
+                {
+                    "name": "frames_per_multiframe",
+                    "bit_low": 0,
+                    "bit_high": 4,
+                    "translation": "lambda x: x+1"
+                }
+            ]
+        },
+        {
+            "name": "ILA Config Data 3",
+            "addr": "0x80C",
+            "addr_increment": "0x40",
+            "fields": [
+                {
+                    "name": "lanes_per_link",
+                    "bit_low": 24,
+                    "bit_high": 28,
+                    "translation": "lambda x: x+1"
+                },
+                {
+                    "name": "lane_id",
+                    "bit_low": 16,
+                    "bit_high": 20
+                },
+                {
+                    "name": "bank_id",
+                    "bit_low": 8,
+                    "bit_high": 11
+                },
+                {
+                    "name": "device_id",
+                    "bit_low": 0,
+                    "bit_high": 7
+                }
+            ]
+        },
+        {
+            "name": "ILA Config Data 4",
+            "addr": "0x810",
+            "addr_increment": "0x40",
+            "fields": [
+                {
+                    "name": "control_bits_per_sample",
+                    "bit_low": 24,
+                    "bit_high": 25,
+                    "translation": "lambda x: x+1"
+                },
+                {
+                    "name": "bits_per_sample",
+                    "bit_low": 16,
+                    "bit_high": 20,
+                    "translation": "lambda x: x+1"
+                },
+                {
+                    "name": "convertor_resolution",
+                    "bit_low": 8,
+                    "bit_high": 12,
+                    "translation": "lambda x: x+1"
+                },
+                {
+                    "name": "convertors_per_device",
+                    "bit_low": 0,
+                    "bit_high": 7,
+                    "translation": "lambda x: x+1"
+                }
+            ]
+        },
+        {
+            "name": "ILA Config Data 5",
+            "addr": "0x814",
+            "addr_increment": "0x40",
+            "fields": [
+                {
+                    "name": "control_words_per_frame",
+                    "bit_low": 24,
+                    "bit_high": 28
+                },
+                {
+                    "name": "high_density",
+                    "bit_low": 16,
+                    "bit_high": 16
+                },
+                {
+                    "name": "samples_per_converter_frame",
+                    "bit_low": 8,
+                    "bit_high": 12,
+                    "translation": "lambda x: x+1"
+                },
+                {
+                    "name": "scrambling",
+                    "bit_low": 0,
+                    "bit_high": 0
+                }
+            ]
+        },
+        {
+            "name": "ILA Config Data 6",
+            "addr": "0x818",
+            "addr_increment": "0x40",
+            "fields": [
+                {
+                    "name": "checksum",
+                    "bit_low": 16,
+                    "bit_high": 23
+                }
+            ]
+        },
+        {
+            "name": "ILA Config Data 7",
+            "addr": "0x81C",
+            "addr_increment": "0x40",
+            "fields": [
+                {
+                    "name": "adjdir",
+                    "bit_low": 16,
+                    "bit_high": 16
+                },
+                {
+                    "name": "phadj",
+                    "bit_low": 8,
+                    "bit_high": 8
+                },
+                {
+                    "name": "adjcnt",
+                    "bit_low": 0,
+                    "bit_high": 3
+                }
+            ]
+        },
+        {
+            "name": "Link Error Count",
+            "addr": "0x824",
+            "addr_increment": "0x40",
+            "fields": [
+                {
+                    "name": "count",
+                    "bit_low": 0,
+                    "bit_high": 31
+                }
+            ]
+        },
+        {
+            "name": "Rx Buffer Adj",
+            "addr": "0x830",
+            "addr_increment": "0x40",
+            "fields": [
+                {
+                    "name": "rxbuffer_adj",
+                    "bit_low": 0,
+                    "bit_high": 9
+                }
+            ]
+        },
+        {
+            "name": "ILA Support",
+            "addr": "0x008",
+            "fields": [
+                {
+                    "name": "ila_enabled",
+                    "bit_low": 0,
+                    "bit_high": 0
+                }
+            ]
+        },
+        {
+            "name": "Scrambling",
+            "addr": "0x00C",
+            "fields": [
+                {
+                    "name": "scrambling",
+                    "bit_low": 0,
+                    "bit_high": 0
+                }
+            ]
+        },
+        {
+            "name": "SYSRef",
+            "addr": "0x010",
+            "fields": [
+                {
+                    "name": "sysref_required_on_resync",
+                    "bit_low": 16,
+                    "bit_high": 16
+                },
+                {
+                    "name": "SYSREF_delay",
+                    "bit_low": 8,
+                    "bit_high":11 
+                },
+                {
+                    "name": "SYSREF_always",
+                    "bit_low": 0,
+                    "bit_high": 0 
+                }
+            ]
+        },
+        {
+            "name": "Test Modes",
+            "addr": "0x018",
+            "fields": [
+                {
+                    "name": "test_mode_select",
+                    "bit_low": 0,
+                    "bit_high": 4
+                }
+            ]
+        },
+        {
+            "name": "Link Error Status",
+            "addr": "0x01C",
+            "fields": [
+                {
+                    "name": "lane_alignment_error_detected",
+                    "bit_low": 31,
+                    "bit_high": 31 
+                },
+                {
+                    "name": "sysref_lmfc_alarm",
+                    "bit_low": 30,
+                    "bit_high": 30
+                },
+                {
+                    "name": "rx_buffer_overflow_alarm",
+                    "bit_low": 29,
+                    "bit_high": 29
+                },
+                {
+                    "name": "link_error_status_lane3",
+                    "bit_low": 9,
+                    "bit_high": 11,
+                    "translation": "translate_link_error_status"
+                },
+                {
+                    "name": "link_error_status_lane2",
+                    "bit_low": 6,
+                    "bit_high": 8,
+                    "translation": "translate_link_error_status"
+                },
+                {
+                    "name": "link_error_status_lane1",
+                    "bit_low": 3,
+                    "bit_high": 5,
+                    "translation": "translate_link_error_status"
+                },
+                {
+                    "name": "link_error_status_lane0",
+                    "bit_low": 0,
+                    "bit_high": 2,
+                    "translation": "translate_link_error_status"
+                }
+            ]
+        },
+        {
+            "name": "Octets per Multiframe",
+            "addr": "0x020",
+            "fields": [
+                {
+                    "name": "octets_per_frame",
+                    "bit_low": 7,
+                    "bit_high": 0 
+                }
+            ]
+        },
+        {
+            "name": "Frames per Multiframe",
+            "addr": "0x024",
+            "fields": [
+                {
+                    "name": "frames_per_multiframe",
+                    "bit_low": 0,
+                    "bit_high": 4 
+                }
+            ]
+        },
+        {
+            "name": "Lanes in use",
+            "addr": "0x028",
+            "fields": [
+                {
+                    "name": "lanes_in_use",
+                    "bit_low": 0,
+                    "bit_high": 7,
+                    "translation": "lambda x: bin(x)"
+                }
+            ]
+        },
+        {
+            "name": "Subclass",
+            "addr": "0x02C",
+            "fields": [
+                {
+                    "name": "subclass",
+                    "bit_low": 0,
+                    "bit_high": 1
+                }
+            ]
+        },
+        {
+            "name": "Rx Buffer Delay",
+            "addr": "0x030",
+            "fields": [
+                {
+                    "name": "rx_buffer_delay",
+                    "bit_low": 0,
+                    "bit_high": 9
+                }
+            ]
+        },
+        {
+            "name": "SYNC Status",
+            "addr": "0x038",
+            "fields": [
+                {
+                    "name": "SYSRef Captured",
+                    "bit_low": 16,
+                    "bit_high": 16
+                },
+                {
+                    "name": "SYNC Status",
+                    "bit_low": 0,
+                    "bit_high": 0
+                }
+            ]
+        },
+        {
+            "name": "Debug Status",
+            "addr": "0x03C",
+            "fields": [
+                {
+                    "name": "link_debug_status_lane3",
+                    "bit_low": 12,
+                    "bit_high": 15,
+                    "translation": "translate_debug_word"
+                },
+                {
+                    "name": "link_debug_status_lane2",
+                    "bit_low": 8,
+                    "bit_high": 11,
+                    "translation": "translate_debug_word"
+                },
+                {
+                    "name": "link_debug_status_lane1",
+                    "bit_low": 4,
+                    "bit_high": 7,
+                    "translation": "translate_debug_word"
+                },
+                {
+                    "name": "link_debug_status_lane0",
+                    "bit_low": 0,
+                    "bit_high": 3,
+                    "translation": "translate_debug_word"
+                }
+            ]
+        }
+    ]
+}

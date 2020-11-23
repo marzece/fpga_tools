@@ -1,0 +1,3006 @@
+{
+    "Registers": [
+        {
+            "Address": "0x0",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "2",
+            "Fields": [
+                {
+                    "Field_Name": "RESET[7:7]",
+                    "Start_Bit": "7",
+                    "End_Bit": "7",
+                    "Field_Description": "Software reset"
+                },
+                {
+                    "Field_Name": "SPI_3WIRE_DIS[4:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "4",
+                    "Field_Description": "Enable 4 wire SPI mode"
+                }
+            ]
+        },
+        {
+            "Address": "0x2",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "POWERDOWN[0:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "0",
+                    "Field_Description": "Powerdown device"
+                }
+            ]
+        },
+        {
+            "Address": "0x3",
+            "Default_Data": "0x0",
+            "Mode": "R",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "ID_DEVICE_TYPE[7:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "7",
+                    "Field_Description": "PLL product device type"
+                }
+            ]
+        },
+        {
+            "Address": "0x4",
+            "Default_Data": "0x0",
+            "Mode": "R",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "ID_PROD[15:8][7:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "7",
+                    "Field_Description": "MSB of the product identifier"
+                }
+            ]
+        },
+        {
+            "Address": "0x5",
+            "Default_Data": "0x0",
+            "Mode": "R",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "ID_PROD[7:0][7:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "7",
+                    "Field_Description": "LSB of the product identifier"
+                }
+            ]
+        },
+        {
+            "Address": "0x6",
+            "Default_Data": "0x0",
+            "Mode": "R",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "ID_MASKREV[7:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "7",
+                    "Field_Description": "IC version identifier"
+                }
+            ]
+        },
+        {
+            "Address": "0xC",
+            "Default_Data": "0x0",
+            "Mode": "R",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "ID_VNDR[15:8][7:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "7",
+                    "Field_Description": "MSB of the vendor identifier"
+                }
+            ]
+        },
+        {
+            "Address": "0xD",
+            "Default_Data": "0x0",
+            "Mode": "R",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "ID_VNDR[7:0][7:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "7",
+                    "Field_Description": "LSB of the vendor identifier"
+                }
+            ]
+        },
+        {
+            "Address": "0x100",
+            "Default_Data": "0x2",
+            "Mode": "R/W",
+            "No_Of_Fields": "3",
+            "Fields": [
+                {
+                    "Field_Name": "CLKout0_1_ODL[6:6]",
+                    "Start_Bit": "6",
+                    "End_Bit": "6",
+                    "Field_Description": "Output drive level."
+                },
+                {
+                    "Field_Name": "CLKout0_1_IDL[5:5]",
+                    "Start_Bit": "5",
+                    "End_Bit": "5",
+                    "Field_Description": "Input drive level."
+                },
+                {
+                    "Field_Name": "DCLKout0_DIV[4:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "4",
+                    "Field_Description": "DCLKoutX_DIV sets the divide value for the clock output, the divide may be even or odd. Both even or odd divides output a 50% duty cycle clock."
+                }
+            ]
+        },
+        {
+            "Address": "0x101",
+            "Default_Data": "0x55",
+            "Mode": "R/W",
+            "No_Of_Fields": "2",
+            "Fields": [
+                {
+                    "Field_Name": "DCLKout0_DDLY_CNTH[7:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "7",
+                    "Field_Description": "Number of clock cycles the output will be high when digital delay is engaged."
+                },
+                {
+                    "Field_Name": "DCLKout0_DDLY_CNTL[3:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "3",
+                    "Field_Description": "Number of clock cycles the output will be low when dynamic digital delay is engaged."
+                }
+            ]
+        },
+        {
+            "Address": "0x103",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "3",
+            "Fields": [
+                {
+                    "Field_Name": "DCLKout0_ADLY[7:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "7",
+                    "Field_Description": "Device clock analog delay value. Setting this value results in a 500 ps timing delay in additional to the delay of each 25 ps step."
+                },
+                {
+                    "Field_Name": "DCLKout0_ADLY_MUX[2:2]",
+                    "Start_Bit": "2",
+                    "End_Bit": "2",
+                    "Field_Description": "This register selects the input to the analog delay for the device clock."
+                },
+                {
+                    "Field_Name": "DCLKout0_MUX[1:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "1",
+                    "Field_Description": "This selects the input to the device clock buffer."
+                }
+            ]
+        },
+        {
+            "Address": "0x104",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "4",
+            "Fields": [
+                {
+                    "Field_Name": "DCLKout0_HS[6:6]",
+                    "Start_Bit": "6",
+                    "End_Bit": "6",
+                    "Field_Description": "Sets the device clock half step value. Half shift must be zero (0) for a divide of 1."
+                },
+                {
+                    "Field_Name": "SDCLKout1_MUX[5:5]",
+                    "Start_Bit": "5",
+                    "End_Bit": "5",
+                    "Field_Description": "Sets the input the the SDCLKoutX outputs."
+                },
+                {
+                    "Field_Name": "SDCLKout1_DDLY[4:1]",
+                    "Start_Bit": "1",
+                    "End_Bit": "4",
+                    "Field_Description": "Sets the number of VCO cycles to delay the SDCLKout by."
+                },
+                {
+                    "Field_Name": "SDCLKout1_HS[0:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "0",
+                    "Field_Description": "Sets the SYSREF clock half step value."
+                }
+            ]
+        },
+        {
+            "Address": "0x105",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "2",
+            "Fields": [
+                {
+                    "Field_Name": "SDCLKout1_ADLY_EN[4:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "4",
+                    "Field_Description": "Enables analog delay for the SYSREF output."
+                },
+                {
+                    "Field_Name": "SDCLKout1_ADLY[3:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "3",
+                    "Field_Description": "Sets the analog delay value for the SYSREF output."
+                }
+            ]
+        },
+        {
+            "Address": "0x106",
+            "Default_Data": "0x79",
+            "Mode": "R/W",
+            "No_Of_Fields": "7",
+            "Fields": [
+                {
+                    "Field_Name": "DCLKout0_DDLY_PD[7:7]",
+                    "Start_Bit": "7",
+                    "End_Bit": "7",
+                    "Field_Description": "Powerdown the device clock digital delay circuitry."
+                },
+                {
+                    "Field_Name": "DCLKout0_HSg_PD[6:6]",
+                    "Start_Bit": "6",
+                    "End_Bit": "6",
+                    "Field_Description": "Powerdown the device clock glitchless half step feature."
+                },
+                {
+                    "Field_Name": "DCLKout0_ADLYg_PD[5:5]",
+                    "Start_Bit": "5",
+                    "End_Bit": "5",
+                    "Field_Description": "Powerdown the device clock glitchless analog delay feature."
+                },
+                {
+                    "Field_Name": "DCLKout0_ADLY_PD[4:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "4",
+                    "Field_Description": "Powerdown the device clock analog delay feature."
+                },
+                {
+                    "Field_Name": "CLKout0_1_PD[3:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "3",
+                    "Field_Description": "Powerdown the clock group defined by X and Y."
+                },
+                {
+                    "Field_Name": "SDCLKout1_DIS_MODE[2:1]",
+                    "Start_Bit": "1",
+                    "End_Bit": "2",
+                    "Field_Description": "Configures the output state of the SYSREF"
+                },
+                {
+                    "Field_Name": "SDCLKout1_PD[0:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "0",
+                    "Field_Description": "Powerdown SDCLKoutY and set to the state defined by SDCLKoutY_DIS_MODE"
+                }
+            ]
+        },
+        {
+            "Address": "0x107",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "4",
+            "Fields": [
+                {
+                    "Field_Name": "SDCLKout1_POL[7:7]",
+                    "Start_Bit": "7",
+                    "End_Bit": "7",
+                    "Field_Description": "Sets the polarity of SYSREF clocks."
+                },
+                {
+                    "Field_Name": "SDCLKout1_FMT[6:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "6",
+                    "Field_Description": "Sets the output format of the SYSREF clocks"
+                },
+                {
+                    "Field_Name": "DCLKout0_POL[3:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "3",
+                    "Field_Description": "Sets the polarity of the device clocks."
+                },
+                {
+                    "Field_Name": "DCLKout0_FMT[2:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "2",
+                    "Field_Description": "Sets the output format of the device clocks."
+                }
+            ]
+        },
+        {
+            "Address": "0x108",
+            "Default_Data": "0x4",
+            "Mode": "R/W",
+            "No_Of_Fields": "3",
+            "Fields": [
+                {
+                    "Field_Name": "CLKout2_3_ODL[6:6]",
+                    "Start_Bit": "6",
+                    "End_Bit": "6",
+                    "Field_Description": "Output drive level."
+                },
+                {
+                    "Field_Name": "CLKout2_3_IDL[5:5]",
+                    "Start_Bit": "5",
+                    "End_Bit": "5",
+                    "Field_Description": "Input drive level."
+                },
+                {
+                    "Field_Name": "DCLKout2_DIV[4:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "4",
+                    "Field_Description": "DCLKoutX_DIV sets the divide value for the clock output, the divide may be even or odd. Both even or odd divides output a 50% duty cycle clock."
+                }
+            ]
+        },
+        {
+            "Address": "0x109",
+            "Default_Data": "0x55",
+            "Mode": "R/W",
+            "No_Of_Fields": "2",
+            "Fields": [
+                {
+                    "Field_Name": "DCLKout2_DDLY_CNTH[7:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "7",
+                    "Field_Description": "Number of clock cycles the output will be high when digital delay is engaged."
+                },
+                {
+                    "Field_Name": "DCLKout2_DDLY_CNTL[3:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "3",
+                    "Field_Description": "Number of clock cycles the output will be low when dynamic digital delay is engaged."
+                }
+            ]
+        },
+        {
+            "Address": "0x10B",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "3",
+            "Fields": [
+                {
+                    "Field_Name": "DCLKout2_ADLY[7:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "7",
+                    "Field_Description": "Device clock analog delay value. Setting this value results in a 500 ps timing delay in additional to the delay of each 25 ps step."
+                },
+                {
+                    "Field_Name": "DCLKout2_ADLY_MUX[2:2]",
+                    "Start_Bit": "2",
+                    "End_Bit": "2",
+                    "Field_Description": "This register selects the input to the analog delay for the device clock."
+                },
+                {
+                    "Field_Name": "DCLKout2_MUX[1:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "1",
+                    "Field_Description": "This selects the input to the device clock buffer."
+                }
+            ]
+        },
+        {
+            "Address": "0x10C",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "4",
+            "Fields": [
+                {
+                    "Field_Name": "DCLKout2_HS[6:6]",
+                    "Start_Bit": "6",
+                    "End_Bit": "6",
+                    "Field_Description": "Sets the device clock half step value. Half shift must be zero (0) for a divide of 1."
+                },
+                {
+                    "Field_Name": "SDCLKout3_MUX[5:5]",
+                    "Start_Bit": "5",
+                    "End_Bit": "5",
+                    "Field_Description": "Sets the input the the SDCLKoutX outputs."
+                },
+                {
+                    "Field_Name": "SDCLKout3_DDLY[4:1]",
+                    "Start_Bit": "1",
+                    "End_Bit": "4",
+                    "Field_Description": "Sets the number of VCO cycles to delay the SDCLKout by."
+                },
+                {
+                    "Field_Name": "SDCLKout3_HS[0:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "0",
+                    "Field_Description": "Sets the SYSREF clock half step value."
+                }
+            ]
+        },
+        {
+            "Address": "0x10D",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "2",
+            "Fields": [
+                {
+                    "Field_Name": "SDCLKout3_ADLY_EN[4:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "4",
+                    "Field_Description": "Enables analog delay for the SYSREF output."
+                },
+                {
+                    "Field_Name": "SDCLKout3_ADLY[3:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "3",
+                    "Field_Description": "Sets the analog delay value for the SYSREF output."
+                }
+            ]
+        },
+        {
+            "Address": "0x10E",
+            "Default_Data": "0x79",
+            "Mode": "R/W",
+            "No_Of_Fields": "7",
+            "Fields": [
+                {
+                    "Field_Name": "DCLKout2_DDLY_PD[7:7]",
+                    "Start_Bit": "7",
+                    "End_Bit": "7",
+                    "Field_Description": "Powerdown the device clock digital delay circuitry."
+                },
+                {
+                    "Field_Name": "DCLKout2_HSg_PD[6:6]",
+                    "Start_Bit": "6",
+                    "End_Bit": "6",
+                    "Field_Description": "Powerdown the device clock glitchless half step feature."
+                },
+                {
+                    "Field_Name": "DCLKout2_ADLYg_PD[5:5]",
+                    "Start_Bit": "5",
+                    "End_Bit": "5",
+                    "Field_Description": "Powerdown the device clock glitchless analog delay feature."
+                },
+                {
+                    "Field_Name": "DCLKout2_ADLY_PD[4:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "4",
+                    "Field_Description": "Powerdown the device clock analog delay feature."
+                },
+                {
+                    "Field_Name": "CLKout2_3_PD[3:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "3",
+                    "Field_Description": "Powerdown the clock group defined by X and Y."
+                },
+                {
+                    "Field_Name": "SDCLKout3_DIS_MODE[2:1]",
+                    "Start_Bit": "1",
+                    "End_Bit": "2",
+                    "Field_Description": "Configures the output state of the SYSREF"
+                },
+                {
+                    "Field_Name": "SDCLKout3_PD[0:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "0",
+                    "Field_Description": "Powerdown SDCLKoutY and set to the state defined by SDCLKoutY_DIS_MODE"
+                }
+            ]
+        },
+        {
+            "Address": "0x10F",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "4",
+            "Fields": [
+                {
+                    "Field_Name": "SDCLKout3_POL[7:7]",
+                    "Start_Bit": "7",
+                    "End_Bit": "7",
+                    "Field_Description": "Sets the polarity of SYSREF clocks."
+                },
+                {
+                    "Field_Name": "SDCLKout3_FMT[6:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "6",
+                    "Field_Description": "Sets the output format of the SYSREF clocks"
+                },
+                {
+                    "Field_Name": "DCLKout2_POL[3:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "3",
+                    "Field_Description": "Sets the polarity of the device clocks."
+                },
+                {
+                    "Field_Name": "DCLKout2_FMT[2:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "2",
+                    "Field_Description": "Sets the output format of the device clocks."
+                }
+            ]
+        },
+        {
+            "Address": "0x110",
+            "Default_Data": "0x8",
+            "Mode": "R/W",
+            "No_Of_Fields": "3",
+            "Fields": [
+                {
+                    "Field_Name": "CLKout4_5_ODL[6:6]",
+                    "Start_Bit": "6",
+                    "End_Bit": "6",
+                    "Field_Description": "Output drive level."
+                },
+                {
+                    "Field_Name": "CLKout4_5_IDL[5:5]",
+                    "Start_Bit": "5",
+                    "End_Bit": "5",
+                    "Field_Description": "Input drive level."
+                },
+                {
+                    "Field_Name": "DCLKout4_DIV[4:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "4",
+                    "Field_Description": "DCLKoutX_DIV sets the divide value for the clock output, the divide may be even or odd. Both even or odd divides output a 50% duty cycle clock."
+                }
+            ]
+        },
+        {
+            "Address": "0x111",
+            "Default_Data": "0x55",
+            "Mode": "R/W",
+            "No_Of_Fields": "2",
+            "Fields": [
+                {
+                    "Field_Name": "DCLKout4_DDLY_CNTH[7:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "7",
+                    "Field_Description": "Number of clock cycles the output will be high when digital delay is engaged."
+                },
+                {
+                    "Field_Name": "DCLKout4_DDLY_CNTL[3:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "3",
+                    "Field_Description": "Number of clock cycles the output will be low when dynamic digital delay is engaged."
+                }
+            ]
+        },
+        {
+            "Address": "0x113",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "3",
+            "Fields": [
+                {
+                    "Field_Name": "DCLKout4_ADLY[7:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "7",
+                    "Field_Description": "Device clock analog delay value. Setting this value results in a 500 ps timing delay in additional to the delay of each 25 ps step."
+                },
+                {
+                    "Field_Name": "DCLKout4_ADLY_MUX[2:2]",
+                    "Start_Bit": "2",
+                    "End_Bit": "2",
+                    "Field_Description": "This register selects the input to the analog delay for the device clock."
+                },
+                {
+                    "Field_Name": "DCLKout4_MUX[1:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "1",
+                    "Field_Description": "This selects the input to the device clock buffer."
+                }
+            ]
+        },
+        {
+            "Address": "0x114",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "4",
+            "Fields": [
+                {
+                    "Field_Name": "DCLKout4_HS[6:6]",
+                    "Start_Bit": "6",
+                    "End_Bit": "6",
+                    "Field_Description": "Sets the device clock half step value. Half shift must be zero (0) for a divide of 1."
+                },
+                {
+                    "Field_Name": "SDCLKout5_MUX[5:5]",
+                    "Start_Bit": "5",
+                    "End_Bit": "5",
+                    "Field_Description": "Sets the input the the SDCLKoutX outputs."
+                },
+                {
+                    "Field_Name": "SDCLKout5_DDLY[4:1]",
+                    "Start_Bit": "1",
+                    "End_Bit": "4",
+                    "Field_Description": "Sets the number of VCO cycles to delay the SDCLKout by."
+                },
+                {
+                    "Field_Name": "SDCLKout5_HS[0:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "0",
+                    "Field_Description": "Sets the SYSREF clock half step value."
+                }
+            ]
+        },
+        {
+            "Address": "0x115",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "2",
+            "Fields": [
+                {
+                    "Field_Name": "SDCLKout5_ADLY_EN[4:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "4",
+                    "Field_Description": "Enables analog delay for the SYSREF output."
+                },
+                {
+                    "Field_Name": "SDCLKout5_ADLY[3:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "3",
+                    "Field_Description": "Sets the analog delay value for the SYSREF output."
+                }
+            ]
+        },
+        {
+            "Address": "0x116",
+            "Default_Data": "0x71",
+            "Mode": "R/W",
+            "No_Of_Fields": "7",
+            "Fields": [
+                {
+                    "Field_Name": "DCLKout4_DDLY_PD[7:7]",
+                    "Start_Bit": "7",
+                    "End_Bit": "7",
+                    "Field_Description": "Powerdown the device clock digital delay circuitry."
+                },
+                {
+                    "Field_Name": "DCLKout4_HSg_PD[6:6]",
+                    "Start_Bit": "6",
+                    "End_Bit": "6",
+                    "Field_Description": "Powerdown the device clock glitchless half step feature."
+                },
+                {
+                    "Field_Name": "DCLKout4_ADLYg_PD[5:5]",
+                    "Start_Bit": "5",
+                    "End_Bit": "5",
+                    "Field_Description": "Powerdown the device clock glitchless analog delay feature."
+                },
+                {
+                    "Field_Name": "DCLKout4_ADLY_PD[4:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "4",
+                    "Field_Description": "Powerdown the device clock analog delay feature."
+                },
+                {
+                    "Field_Name": "CLKout4_5_PD[3:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "3",
+                    "Field_Description": "Powerdown the clock group defined by X and Y."
+                },
+                {
+                    "Field_Name": "SDCLKout5_DIS_MODE[2:1]",
+                    "Start_Bit": "1",
+                    "End_Bit": "2",
+                    "Field_Description": "Configures the output state of the SYSREF"
+                },
+                {
+                    "Field_Name": "SDCLKout5_PD[0:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "0",
+                    "Field_Description": "Powerdown SDCLKoutY and set to the state defined by SDCLKoutY_DIS_MODE"
+                }
+            ]
+        },
+        {
+            "Address": "0x117",
+            "Default_Data": "0x1",
+            "Mode": "R/W",
+            "No_Of_Fields": "4",
+            "Fields": [
+                {
+                    "Field_Name": "SDCLKout5_POL[7:7]",
+                    "Start_Bit": "7",
+                    "End_Bit": "7",
+                    "Field_Description": "Sets the polarity of SYSREF clocks."
+                },
+                {
+                    "Field_Name": "SDCLKout5_FMT[6:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "6",
+                    "Field_Description": "Sets the output format of the SYSREF clocks"
+                },
+                {
+                    "Field_Name": "DCLKout4_POL[3:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "3",
+                    "Field_Description": "Sets the polarity of the device clocks."
+                },
+                {
+                    "Field_Name": "DCLKout4_FMT[2:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "2",
+                    "Field_Description": "Sets the output format of the device clocks."
+                }
+            ]
+        },
+        {
+            "Address": "0x118",
+            "Default_Data": "0x8",
+            "Mode": "R/W",
+            "No_Of_Fields": "3",
+            "Fields": [
+                {
+                    "Field_Name": "CLKout6_7_ODL[6:6]",
+                    "Start_Bit": "6",
+                    "End_Bit": "6",
+                    "Field_Description": "Output drive level."
+                },
+                {
+                    "Field_Name": "CLKout6_7_IDL[5:5]",
+                    "Start_Bit": "5",
+                    "End_Bit": "5",
+                    "Field_Description": "Input drive level."
+                },
+                {
+                    "Field_Name": "DCLKout6_DIV[4:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "4",
+                    "Field_Description": "DCLKoutX_DIV sets the divide value for the clock output, the divide may be even or odd. Both even or odd divides output a 50% duty cycle clock."
+                }
+            ]
+        },
+        {
+            "Address": "0x119",
+            "Default_Data": "0x55",
+            "Mode": "R/W",
+            "No_Of_Fields": "2",
+            "Fields": [
+                {
+                    "Field_Name": "DCLKout6_DDLY_CNTH[7:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "7",
+                    "Field_Description": "Number of clock cycles the output will be high when digital delay is engaged."
+                },
+                {
+                    "Field_Name": "DCLKout6_DDLY_CNTL[3:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "3",
+                    "Field_Description": "Number of clock cycles the output will be low when dynamic digital delay is engaged."
+                }
+            ]
+        },
+        {
+            "Address": "0x11B",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "3",
+            "Fields": [
+                {
+                    "Field_Name": "DCLKout6_ADLY[7:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "7",
+                    "Field_Description": "Device clock analog delay value. Setting this value results in a 500 ps timing delay in additional to the delay of each 25 ps step."
+                },
+                {
+                    "Field_Name": "DCLKout6_ADLY_MUX[2:2]",
+                    "Start_Bit": "2",
+                    "End_Bit": "2",
+                    "Field_Description": "This register selects the input to the analog delay for the device clock."
+                },
+                {
+                    "Field_Name": "DCLKout6_MUX[1:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "1",
+                    "Field_Description": "This selects the input to the device clock buffer."
+                }
+            ]
+        },
+        {
+            "Address": "0x11C",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "4",
+            "Fields": [
+                {
+                    "Field_Name": "DCLKout6_HS[6:6]",
+                    "Start_Bit": "6",
+                    "End_Bit": "6",
+                    "Field_Description": "Sets the device clock half step value. Half shift must be zero (0) for a divide of 1."
+                },
+                {
+                    "Field_Name": "SDCLKout7_MUX[5:5]",
+                    "Start_Bit": "5",
+                    "End_Bit": "5",
+                    "Field_Description": "Sets the input the the SDCLKoutX outputs."
+                },
+                {
+                    "Field_Name": "SDCLKout7_DDLY[4:1]",
+                    "Start_Bit": "1",
+                    "End_Bit": "4",
+                    "Field_Description": "Sets the number of VCO cycles to delay the SDCLKout by."
+                },
+                {
+                    "Field_Name": "SDCLKout7_HS[0:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "0",
+                    "Field_Description": "Sets the SYSREF clock half step value."
+                }
+            ]
+        },
+        {
+            "Address": "0x11D",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "2",
+            "Fields": [
+                {
+                    "Field_Name": "SDCLKout7_ADLY_EN[4:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "4",
+                    "Field_Description": "Enables analog delay for the SYSREF output."
+                },
+                {
+                    "Field_Name": "SDCLKout7_ADLY[3:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "3",
+                    "Field_Description": "Sets the analog delay value for the SYSREF output."
+                }
+            ]
+        },
+        {
+            "Address": "0x11E",
+            "Default_Data": "0x71",
+            "Mode": "R/W",
+            "No_Of_Fields": "7",
+            "Fields": [
+                {
+                    "Field_Name": "DCLKout6_DDLY_PD[7:7]",
+                    "Start_Bit": "7",
+                    "End_Bit": "7",
+                    "Field_Description": "Powerdown the device clock digital delay circuitry."
+                },
+                {
+                    "Field_Name": "DCLKout6_HSg_PD[6:6]",
+                    "Start_Bit": "6",
+                    "End_Bit": "6",
+                    "Field_Description": "Powerdown the device clock glitchless half step feature."
+                },
+                {
+                    "Field_Name": "DCLKout6_ADLYg_PD[5:5]",
+                    "Start_Bit": "5",
+                    "End_Bit": "5",
+                    "Field_Description": "Powerdown the device clock glitchless analog delay feature."
+                },
+                {
+                    "Field_Name": "DCLKout6_ADLY_PD[4:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "4",
+                    "Field_Description": "Powerdown the device clock analog delay feature."
+                },
+                {
+                    "Field_Name": "CLKout6_7_PD[3:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "3",
+                    "Field_Description": "Powerdown the clock group defined by X and Y."
+                },
+                {
+                    "Field_Name": "SDCLKout7_DIS_MODE[2:1]",
+                    "Start_Bit": "1",
+                    "End_Bit": "2",
+                    "Field_Description": "Configures the output state of the SYSREF"
+                },
+                {
+                    "Field_Name": "SDCLKout7_PD[0:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "0",
+                    "Field_Description": "Powerdown SDCLKoutY and set to the state defined by SDCLKoutY_DIS_MODE"
+                }
+            ]
+        },
+        {
+            "Address": "0x11F",
+            "Default_Data": "0x1",
+            "Mode": "R/W",
+            "No_Of_Fields": "4",
+            "Fields": [
+                {
+                    "Field_Name": "SDCLKout7_POL[7:7]",
+                    "Start_Bit": "7",
+                    "End_Bit": "7",
+                    "Field_Description": "Sets the polarity of SYSREF clocks."
+                },
+                {
+                    "Field_Name": "SDCLKout7_FMT[6:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "6",
+                    "Field_Description": "Sets the output format of the SYSREF clocks"
+                },
+                {
+                    "Field_Name": "DCLKout6_POL[3:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "3",
+                    "Field_Description": "Sets the polarity of the device clocks."
+                },
+                {
+                    "Field_Name": "DCLKout6_FMT[2:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "2",
+                    "Field_Description": "Sets the output format of the device clocks."
+                }
+            ]
+        },
+        {
+            "Address": "0x120",
+            "Default_Data": "0x8",
+            "Mode": "R/W",
+            "No_Of_Fields": "3",
+            "Fields": [
+                {
+                    "Field_Name": "CLKout8_9_ODL[6:6]",
+                    "Start_Bit": "6",
+                    "End_Bit": "6",
+                    "Field_Description": "Output drive level."
+                },
+                {
+                    "Field_Name": "CLKout8_9_IDL[5:5]",
+                    "Start_Bit": "5",
+                    "End_Bit": "5",
+                    "Field_Description": "Input drive level."
+                },
+                {
+                    "Field_Name": "DCLKout8_DIV[4:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "4",
+                    "Field_Description": "DCLKoutX_DIV sets the divide value for the clock output, the divide may be even or odd. Both even or odd divides output a 50% duty cycle clock."
+                }
+            ]
+        },
+        {
+            "Address": "0x121",
+            "Default_Data": "0x55",
+            "Mode": "R/W",
+            "No_Of_Fields": "2",
+            "Fields": [
+                {
+                    "Field_Name": "DCLKout8_DDLY_CNTH[7:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "7",
+                    "Field_Description": "Number of clock cycles the output will be high when digital delay is engaged."
+                },
+                {
+                    "Field_Name": "DCLKout8_DDLY_CNTL[3:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "3",
+                    "Field_Description": "Number of clock cycles the output will be low when dynamic digital delay is engaged."
+                }
+            ]
+        },
+        {
+            "Address": "0x123",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "3",
+            "Fields": [
+                {
+                    "Field_Name": "DCLKout8_ADLY[7:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "7",
+                    "Field_Description": "Device clock analog delay value. Setting this value results in a 500 ps timing delay in additional to the delay of each 25 ps step."
+                },
+                {
+                    "Field_Name": "DCLKout8_ADLY_MUX[2:2]",
+                    "Start_Bit": "2",
+                    "End_Bit": "2",
+                    "Field_Description": "This register selects the input to the analog delay for the device clock."
+                },
+                {
+                    "Field_Name": "DCLKout8_MUX[1:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "1",
+                    "Field_Description": "This selects the input to the device clock buffer."
+                }
+            ]
+        },
+        {
+            "Address": "0x124",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "4",
+            "Fields": [
+                {
+                    "Field_Name": "DCLKout8_HS[6:6]",
+                    "Start_Bit": "6",
+                    "End_Bit": "6",
+                    "Field_Description": "Sets the device clock half step value. Half shift must be zero (0) for a divide of 1."
+                },
+                {
+                    "Field_Name": "SDCLKout9_MUX[5:5]",
+                    "Start_Bit": "5",
+                    "End_Bit": "5",
+                    "Field_Description": "Sets the input the the SDCLKoutX outputs."
+                },
+                {
+                    "Field_Name": "SDCLKout9_DDLY[4:1]",
+                    "Start_Bit": "1",
+                    "End_Bit": "4",
+                    "Field_Description": "Sets the number of VCO cycles to delay the SDCLKout by."
+                },
+                {
+                    "Field_Name": "SDCLKout9_HS[0:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "0",
+                    "Field_Description": "Sets the SYSREF clock half step value."
+                }
+            ]
+        },
+        {
+            "Address": "0x125",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "2",
+            "Fields": [
+                {
+                    "Field_Name": "SDCLKout9_ADLY_EN[4:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "4",
+                    "Field_Description": "Enables analog delay for the SYSREF output."
+                },
+                {
+                    "Field_Name": "SDCLKout9_ADLY[3:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "3",
+                    "Field_Description": "Sets the analog delay value for the SYSREF output."
+                }
+            ]
+        },
+        {
+            "Address": "0x126",
+            "Default_Data": "0x71",
+            "Mode": "R/W",
+            "No_Of_Fields": "7",
+            "Fields": [
+                {
+                    "Field_Name": "DCLKout8_DDLY_PD[7:7]",
+                    "Start_Bit": "7",
+                    "End_Bit": "7",
+                    "Field_Description": "Powerdown the device clock digital delay circuitry."
+                },
+                {
+                    "Field_Name": "DCLKout8_HSg_PD[6:6]",
+                    "Start_Bit": "6",
+                    "End_Bit": "6",
+                    "Field_Description": "Powerdown the device clock glitchless half step feature."
+                },
+                {
+                    "Field_Name": "DCLKout8_ADLYg_PD[5:5]",
+                    "Start_Bit": "5",
+                    "End_Bit": "5",
+                    "Field_Description": "Powerdown the device clock glitchless analog delay feature."
+                },
+                {
+                    "Field_Name": "DCLKout8_ADLY_PD[4:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "4",
+                    "Field_Description": "Powerdown the device clock analog delay feature."
+                },
+                {
+                    "Field_Name": "CLKout8_9_PD[3:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "3",
+                    "Field_Description": "Powerdown the clock group defined by X and Y."
+                },
+                {
+                    "Field_Name": "SDCLKout9_DIS_MODE[2:1]",
+                    "Start_Bit": "1",
+                    "End_Bit": "2",
+                    "Field_Description": "Configures the output state of the SYSREF"
+                },
+                {
+                    "Field_Name": "SDCLKout9_PD[0:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "0",
+                    "Field_Description": "Powerdown SDCLKoutY and set to the state defined by SDCLKoutY_DIS_MODE"
+                }
+            ]
+        },
+        {
+            "Address": "0x127",
+            "Default_Data": "0x1",
+            "Mode": "R/W",
+            "No_Of_Fields": "4",
+            "Fields": [
+                {
+                    "Field_Name": "SDCLKout9_POL[7:7]",
+                    "Start_Bit": "7",
+                    "End_Bit": "7",
+                    "Field_Description": "Sets the polarity of SYSREF clocks."
+                },
+                {
+                    "Field_Name": "SDCLKout9_FMT[6:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "6",
+                    "Field_Description": "Sets the output format of the SYSREF clocks"
+                },
+                {
+                    "Field_Name": "DCLKout8_POL[3:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "3",
+                    "Field_Description": "Sets the polarity of the device clocks."
+                },
+                {
+                    "Field_Name": "DCLKout8_FMT[2:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "2",
+                    "Field_Description": "Sets the output format of the device clocks."
+                }
+            ]
+        },
+        {
+            "Address": "0x128",
+            "Default_Data": "0x8",
+            "Mode": "R/W",
+            "No_Of_Fields": "3",
+            "Fields": [
+                {
+                    "Field_Name": "CLKout10_11_ODL[6:6]",
+                    "Start_Bit": "6",
+                    "End_Bit": "6",
+                    "Field_Description": "Output drive level."
+                },
+                {
+                    "Field_Name": "CLKout10_11_IDL[5:5]",
+                    "Start_Bit": "5",
+                    "End_Bit": "5",
+                    "Field_Description": "Input drive level."
+                },
+                {
+                    "Field_Name": "DCLKout10_DIV[4:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "4",
+                    "Field_Description": "DCLKoutX_DIV sets the divide value for the clock output, the divide may be even or odd. Both even or odd divides output a 50% duty cycle clock."
+                }
+            ]
+        },
+        {
+            "Address": "0x129",
+            "Default_Data": "0x55",
+            "Mode": "R/W",
+            "No_Of_Fields": "2",
+            "Fields": [
+                {
+                    "Field_Name": "DCLKout10_DDLY_CNTH[7:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "7",
+                    "Field_Description": "Number of clock cycles the output will be high when digital delay is engaged."
+                },
+                {
+                    "Field_Name": "DCLKout10_DDLY_CNTL[3:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "3",
+                    "Field_Description": "Number of clock cycles the output will be low when dynamic digital delay is engaged."
+                }
+            ]
+        },
+        {
+            "Address": "0x12B",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "3",
+            "Fields": [
+                {
+                    "Field_Name": "DCLKout10_ADLY[7:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "7",
+                    "Field_Description": "Device clock analog delay value. Setting this value results in a 500 ps timing delay in additional to the delay of each 25 ps step."
+                },
+                {
+                    "Field_Name": "DCLKout10_ADLY_MUX[2:2]",
+                    "Start_Bit": "2",
+                    "End_Bit": "2",
+                    "Field_Description": "This register selects the input to the analog delay for the device clock."
+                },
+                {
+                    "Field_Name": "DCLKout10_MUX[1:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "1",
+                    "Field_Description": "This selects the input to the device clock buffer."
+                }
+            ]
+        },
+        {
+            "Address": "0x12C",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "4",
+            "Fields": [
+                {
+                    "Field_Name": "DCLKout10_HS[6:6]",
+                    "Start_Bit": "6",
+                    "End_Bit": "6",
+                    "Field_Description": "Sets the device clock half step value. Half shift must be zero (0) for a divide of 1."
+                },
+                {
+                    "Field_Name": "SDCLKout11_MUX[5:5]",
+                    "Start_Bit": "5",
+                    "End_Bit": "5",
+                    "Field_Description": "Sets the input the the SDCLKoutX outputs."
+                },
+                {
+                    "Field_Name": "SDCLKout11_DDLY[4:1]",
+                    "Start_Bit": "1",
+                    "End_Bit": "4",
+                    "Field_Description": "Sets the number of VCO cycles to delay the SDCLKout by."
+                },
+                {
+                    "Field_Name": "SDCLKout11_HS[0:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "0",
+                    "Field_Description": "Sets the SYSREF clock half step value."
+                }
+            ]
+        },
+        {
+            "Address": "0x12D",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "2",
+            "Fields": [
+                {
+                    "Field_Name": "SDCLKout11_ADLY_EN[4:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "4",
+                    "Field_Description": "Enables analog delay for the SYSREF output."
+                },
+                {
+                    "Field_Name": "SDCLKout11_ADLY[3:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "3",
+                    "Field_Description": "Sets the analog delay value for the SYSREF output."
+                }
+            ]
+        },
+        {
+            "Address": "0x12E",
+            "Default_Data": "0x71",
+            "Mode": "R/W",
+            "No_Of_Fields": "7",
+            "Fields": [
+                {
+                    "Field_Name": "DCLKout10_DDLY_PD[7:7]",
+                    "Start_Bit": "7",
+                    "End_Bit": "7",
+                    "Field_Description": "Powerdown the device clock digital delay circuitry."
+                },
+                {
+                    "Field_Name": "DCLKout10_HSg_PD[6:6]",
+                    "Start_Bit": "6",
+                    "End_Bit": "6",
+                    "Field_Description": "Powerdown the device clock glitchless half step feature."
+                },
+                {
+                    "Field_Name": "DCLKout10_ADLYg_PD[5:5]",
+                    "Start_Bit": "5",
+                    "End_Bit": "5",
+                    "Field_Description": "Powerdown the device clock glitchless analog delay feature."
+                },
+                {
+                    "Field_Name": "DCLKout10_ADLY_PD[4:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "4",
+                    "Field_Description": "Powerdown the device clock analog delay feature."
+                },
+                {
+                    "Field_Name": "CLKout10_11_PD[3:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "3",
+                    "Field_Description": "Powerdown the clock group defined by X and Y."
+                },
+                {
+                    "Field_Name": "SDCLKout11_DIS_MODE[2:1]",
+                    "Start_Bit": "1",
+                    "End_Bit": "2",
+                    "Field_Description": "Configures the output state of the SYSREF"
+                },
+                {
+                    "Field_Name": "SDCLKout11_PD[0:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "0",
+                    "Field_Description": "Powerdown SDCLKoutY and set to the state defined by SDCLKoutY_DIS_MODE"
+                }
+            ]
+        },
+        {
+            "Address": "0x12F",
+            "Default_Data": "0x1",
+            "Mode": "R/W",
+            "No_Of_Fields": "4",
+            "Fields": [
+                {
+                    "Field_Name": "SDCLKout11_POL[7:7]",
+                    "Start_Bit": "7",
+                    "End_Bit": "7",
+                    "Field_Description": "Sets the polarity of SYSREF clocks."
+                },
+                {
+                    "Field_Name": "SDCLKout11_FMT[6:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "6",
+                    "Field_Description": "Sets the output format of the SYSREF clocks"
+                },
+                {
+                    "Field_Name": "DCLKout10_POL[3:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "3",
+                    "Field_Description": "Sets the polarity of the device clocks."
+                },
+                {
+                    "Field_Name": "DCLKout10_FMT[2:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "2",
+                    "Field_Description": "Sets the output format of the device clocks."
+                }
+            ]
+        },
+        {
+            "Address": "0x130",
+            "Default_Data": "0x2",
+            "Mode": "R/W",
+            "No_Of_Fields": "3",
+            "Fields": [
+                {
+                    "Field_Name": "CLKout12_13_ODL[6:6]",
+                    "Start_Bit": "6",
+                    "End_Bit": "6",
+                    "Field_Description": "Output drive level."
+                },
+                {
+                    "Field_Name": "CLKout12_13_IDL[5:5]",
+                    "Start_Bit": "5",
+                    "End_Bit": "5",
+                    "Field_Description": "Input drive level."
+                },
+                {
+                    "Field_Name": "DCLKout12_DIV[4:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "4",
+                    "Field_Description": "DCLKoutX_DIV sets the divide value for the clock output, the divide may be even or odd. Both even or odd divides output a 50% duty cycle clock."
+                }
+            ]
+        },
+        {
+            "Address": "0x131",
+            "Default_Data": "0x55",
+            "Mode": "R/W",
+            "No_Of_Fields": "2",
+            "Fields": [
+                {
+                    "Field_Name": "DCLKout12_DDLY_CNTH[7:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "7",
+                    "Field_Description": "Number of clock cycles the output will be high when digital delay is engaged."
+                },
+                {
+                    "Field_Name": "DCLKout12_DDLY_CNTL[3:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "3",
+                    "Field_Description": "Number of clock cycles the output will be low when dynamic digital delay is engaged."
+                }
+            ]
+        },
+        {
+            "Address": "0x133",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "3",
+            "Fields": [
+                {
+                    "Field_Name": "DCLKout12_ADLY[7:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "7",
+                    "Field_Description": "Device clock analog delay value. Setting this value results in a 500 ps timing delay in additional to the delay of each 25 ps step."
+                },
+                {
+                    "Field_Name": "DCLKout12_ADLY_MUX[2:2]",
+                    "Start_Bit": "2",
+                    "End_Bit": "2",
+                    "Field_Description": "This register selects the input to the analog delay for the device clock."
+                },
+                {
+                    "Field_Name": "DCLKout12_MUX[1:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "1",
+                    "Field_Description": "This selects the input to the device clock buffer."
+                }
+            ]
+        },
+        {
+            "Address": "0x134",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "4",
+            "Fields": [
+                {
+                    "Field_Name": "DCLKout12_HS[6:6]",
+                    "Start_Bit": "6",
+                    "End_Bit": "6",
+                    "Field_Description": "Sets the device clock half step value. Half shift must be zero (0) for a divide of 1."
+                },
+                {
+                    "Field_Name": "SDCLKout13_MUX[5:5]",
+                    "Start_Bit": "5",
+                    "End_Bit": "5",
+                    "Field_Description": "Sets the input the the SDCLKoutX outputs."
+                },
+                {
+                    "Field_Name": "SDCLKout13_DDLY[4:1]",
+                    "Start_Bit": "1",
+                    "End_Bit": "4",
+                    "Field_Description": "Sets the number of VCO cycles to delay the SDCLKout by."
+                },
+                {
+                    "Field_Name": "SDCLKout13_HS[0:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "0",
+                    "Field_Description": "Sets the SYSREF clock half step value."
+                }
+            ]
+        },
+        {
+            "Address": "0x135",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "2",
+            "Fields": [
+                {
+                    "Field_Name": "SDCLKout13_ADLY_EN[4:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "4",
+                    "Field_Description": "Enables analog delay for the SYSREF output."
+                },
+                {
+                    "Field_Name": "SDCLKout13_ADLY[3:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "3",
+                    "Field_Description": "Sets the analog delay value for the SYSREF output."
+                }
+            ]
+        },
+        {
+            "Address": "0x136",
+            "Default_Data": "0x79",
+            "Mode": "R/W",
+            "No_Of_Fields": "7",
+            "Fields": [
+                {
+                    "Field_Name": "DCLKout12_DDLY_PD[7:7]",
+                    "Start_Bit": "7",
+                    "End_Bit": "7",
+                    "Field_Description": "Powerdown the device clock digital delay circuitry."
+                },
+                {
+                    "Field_Name": "DCLKout12_HSg_PD[6:6]",
+                    "Start_Bit": "6",
+                    "End_Bit": "6",
+                    "Field_Description": "Powerdown the device clock glitchless half step feature."
+                },
+                {
+                    "Field_Name": "DCLKout12_ADLYg_PD[5:5]",
+                    "Start_Bit": "5",
+                    "End_Bit": "5",
+                    "Field_Description": "Powerdown the device clock glitchless analog delay feature."
+                },
+                {
+                    "Field_Name": "DCLKout12_ADLY_PD[4:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "4",
+                    "Field_Description": "Powerdown the device clock analog delay feature."
+                },
+                {
+                    "Field_Name": "CLKout12_13_PD[3:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "3",
+                    "Field_Description": "Powerdown the clock group defined by X and Y."
+                },
+                {
+                    "Field_Name": "SDCLKout13_DIS_MODE[2:1]",
+                    "Start_Bit": "1",
+                    "End_Bit": "2",
+                    "Field_Description": "Configures the output state of the SYSREF"
+                },
+                {
+                    "Field_Name": "SDCLKout13_PD[0:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "0",
+                    "Field_Description": "Powerdown SDCLKoutY and set to the state defined by SDCLKoutY_DIS_MODE"
+                }
+            ]
+        },
+        {
+            "Address": "0x137",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "4",
+            "Fields": [
+                {
+                    "Field_Name": "SDCLKout13_POL[7:7]",
+                    "Start_Bit": "7",
+                    "End_Bit": "7",
+                    "Field_Description": "Sets the polarity of SYSREF clocks."
+                },
+                {
+                    "Field_Name": "SDCLKout13_FMT[6:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "6",
+                    "Field_Description": "Sets the output format of the SYSREF clocks"
+                },
+                {
+                    "Field_Name": "DCLKout12_POL[3:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "3",
+                    "Field_Description": "Sets the polarity of the device clocks."
+                },
+                {
+                    "Field_Name": "DCLKout12_FMT[2:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "2",
+                    "Field_Description": "Sets the output format of the device clocks."
+                }
+            ]
+        },
+        {
+            "Address": "0x138",
+            "Default_Data": "0x4",
+            "Mode": "R/W",
+            "No_Of_Fields": "3",
+            "Fields": [
+                {
+                    "Field_Name": "VCO_MUX[6:5]",
+                    "Start_Bit": "5",
+                    "End_Bit": "6",
+                    "Field_Description": "Selects clock distribution path source from VCO0, VCO1, or CLKin (external VCO)"
+                },
+                {
+                    "Field_Name": "OSCout_MUX[4:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "4",
+                    "Field_Description": "Select the source for OSCout:"
+                },
+                {
+                    "Field_Name": "OSCout_FMT[3:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "3",
+                    "Field_Description": "Selects the output format of OSCout"
+                }
+            ]
+        },
+        {
+            "Address": "0x139",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "2",
+            "Fields": [
+                {
+                    "Field_Name": "SYSREF_CLKin0_MUX[2:0]",
+                    "Start_Bit": "2",
+                    "End_Bit": "2",
+                    "Field_Description": "Selects the SYSREF output from SYSREF_MUX or CLKin0 direct"
+                },
+                {
+                    "Field_Name": "SYSREF_MUX[2:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "1",
+                    "Field_Description": "Selects the SYSREF source"
+                }
+            ]
+        },
+        {
+            "Address": "0x13A",
+            "Default_Data": "0xC",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "SYSREF_DIV[12:8][4:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "4",
+                    "Field_Description": "Divide value for the SYSREF outputs."
+                }
+            ]
+        },
+        {
+            "Address": "0x13B",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "SYSREF_DIV[7:0][7:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "7",
+                    "Field_Description": "Divide value for the SYSREF outputs."
+                }
+            ]
+        },
+        {
+            "Address": "0x13C",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "SYSREF_DDLY[12:8][4:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "4",
+                    "Field_Description": "Sets the value of the SYSREF digital delay."
+                }
+            ]
+        },
+        {
+            "Address": "0x13D",
+            "Default_Data": "0x8",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "SYSREF_DDLY[7:0][7:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "7",
+                    "Field_Description": "Sets the value of the SYSREF digital delay."
+                }
+            ]
+        },
+        {
+            "Address": "0x13E",
+            "Default_Data": "0x3",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "SYSREF_PULSE_CNT[1:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "1",
+                    "Field_Description": "Sets the number of SYSREF pulses generated when not in continuous mode."
+                }
+            ]
+        },
+        {
+            "Address": "0x13F",
+            "Default_Data": "0x18",
+            "Mode": "R/W",
+            "No_Of_Fields": "4",
+            "Fields": [
+                {
+                    "Field_Name": "PLL2_NCLK_MUX[4:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "4",
+                    "Field_Description": "Selects the input to the PLL2 N Divider"
+                },
+                {
+                    "Field_Name": "PLL1_NCLK_MUX[3:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "3",
+                    "Field_Description": "Selects the input to the PLL1 N Delay."
+                },
+                {
+                    "Field_Name": "FB_MUX[2:1]",
+                    "Start_Bit": "1",
+                    "End_Bit": "2",
+                    "Field_Description": "When in 0-delay mode, the feedback mux selects the clock output to be fed back into the PLL1 N Divider."
+                },
+                {
+                    "Field_Name": "FB_MUX_EN[0:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "0",
+                    "Field_Description": "When using 0-delay or dynamic digital delay, FB_MUX_EN must be set to 1 power up the feedback mux."
+                }
+            ]
+        },
+        {
+            "Address": "0x140",
+            "Default_Data": "0x7",
+            "Mode": "R/W",
+            "No_Of_Fields": "8",
+            "Fields": [
+                {
+                    "Field_Name": "PLL1_PD[7:7]",
+                    "Start_Bit": "7",
+                    "End_Bit": "7",
+                    "Field_Description": "Powerdown PLL1"
+                },
+                {
+                    "Field_Name": "VCO_LDO_PD",
+                    "Start_Bit": "6",
+                    "End_Bit": "6",
+                    "Field_Description": "Powerdown VCO_LDO"
+                },
+                {
+                    "Field_Name": "VCO_PD",
+                    "Start_Bit": "5",
+                    "End_Bit": "5",
+                    "Field_Description": "Powerdown VCO"
+                },
+                {
+                    "Field_Name": "OSCin_PD[4:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "4",
+                    "Field_Description": "Powerdown the OSCin port."
+                },
+                {
+                    "Field_Name": "SYSREF_GBL_PD[3:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "3",
+                    "Field_Description": "Powerdown the SYSREF block."
+                },
+                {
+                    "Field_Name": "SYSREF_PD[2:2]",
+                    "Start_Bit": "2",
+                    "End_Bit": "2",
+                    "Field_Description": "Powerdown the SYSREF and source."
+                },
+                {
+                    "Field_Name": "SYSREF_DDLY_PD[1:1]",
+                    "Start_Bit": "1",
+                    "End_Bit": "1",
+                    "Field_Description": "Powerdown the SYSREF digital delay circuitry."
+                },
+                {
+                    "Field_Name": "SYSREF_PLSR_PD[0:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "0",
+                    "Field_Description": "Powerdown the SYSREF pulse generator."
+                }
+            ]
+        },
+        {
+            "Address": "0x141",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "8",
+            "Fields": [
+                {
+                    "Field_Name": "DDLYd_SYSREF_EN[7:7]",
+                    "Start_Bit": "7",
+                    "End_Bit": "7",
+                    "Field_Description": "Enables dynamic digital delay on SYSREF outputs"
+                },
+                {
+                    "Field_Name": "DDLYd12_EN[6:6]",
+                    "Start_Bit": "6",
+                    "End_Bit": "6",
+                    "Field_Description": "Enables dynamic digital delay on DCLKout12"
+                },
+                {
+                    "Field_Name": "DDLYd10_EN[5:5]",
+                    "Start_Bit": "5",
+                    "End_Bit": "5",
+                    "Field_Description": "Enables dynamic digital delay on DCLKout10"
+                },
+                {
+                    "Field_Name": "DDLYd8_EN[4:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "4",
+                    "Field_Description": "Enables dynamic digital delay on DCLKout8"
+                },
+                {
+                    "Field_Name": "DDLYd6_EN[3:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "3",
+                    "Field_Description": "Enables dynamic digital delay on DCLKout6"
+                },
+                {
+                    "Field_Name": "DDLYd4_EN[2:2]",
+                    "Start_Bit": "2",
+                    "End_Bit": "2",
+                    "Field_Description": "Enables dynamic digital delay on DCLKout4"
+                },
+                {
+                    "Field_Name": "DDLYd2_EN[1:1]",
+                    "Start_Bit": "1",
+                    "End_Bit": "1",
+                    "Field_Description": "Enables dynamic digital delay on DCLKout2"
+                },
+                {
+                    "Field_Name": "DDLYd0_EN[0:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "0",
+                    "Field_Description": "Enables dynamic digital delay on DCLKout0"
+                }
+            ]
+        },
+        {
+            "Address": "0x142",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "DDLYd_STEP_CNT[3:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "3",
+                    "Field_Description": "Sets the number of dynamic digital delay adjustments that will occur."
+                }
+            ]
+        },
+        {
+            "Address": "0x143",
+            "Default_Data": "0x11",
+            "Mode": "R/W",
+            "No_Of_Fields": "7",
+            "Fields": [
+                {
+                    "Field_Name": "SYSREF_CLR[5:5]",
+                    "Start_Bit": "7",
+                    "End_Bit": "7",
+                    "Field_Description": "Except during SYSREF Setup Procedure (see SYNC/SYSREF), this bit should always be programmed to 0. While this bit is set, extra current is used Refer to Table 84"
+                },
+                {
+                    "Field_Name": "SYNC_1SHOT_EN[5:5]",
+                    "Start_Bit": "6",
+                    "End_Bit": "6",
+                    "Field_Description": "SYNC one shot enables edge sensitive SYNC.\n 0: SYNC is level sensitive and outputs will be held in SYNC as long as SYNC is asserted.\n 1: SYNC is edge sensitive, outputs will be SYNCed on rising edge of SYNC. This results in the clock being held in SYNC for a minimum amount of time."
+                },
+                {
+                    "Field_Name": "SYNC_POL[5:5]",
+                    "Start_Bit": "5",
+                    "End_Bit": "5",
+                    "Field_Description": "Sets the polarity of the SYNC pin."
+                },
+                {
+                    "Field_Name": "SYNC_EN[4:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "4",
+                    "Field_Description": "Enables the SYNC functionality."
+                },
+                {
+                    "Field_Name": "SYNC_PLL2_DLD[3:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "3",
+                    "Field_Description": "Assert SYNC until PLL2 DLD = 1"
+                },
+                {
+                    "Field_Name": "SYNC_PLL1_DLD[2:2]",
+                    "Start_Bit": "2",
+                    "End_Bit": "2",
+                    "Field_Description": "Assert SYNC until PLL1 DLD = 1"
+                },
+                {
+                    "Field_Name": "SYNC_MODE[1:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "1",
+                    "Field_Description": "Sets the method of generating a SYNC event."
+                }
+            ]
+        },
+        {
+            "Address": "0x144",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "8",
+            "Fields": [
+                {
+                    "Field_Name": "SYNC_DISSYSREF[7:7]",
+                    "Start_Bit": "7",
+                    "End_Bit": "7",
+                    "Field_Description": "Prevent the SYSREF clocks from becoming synchronized during a SYNC event. If SYNC_DISSYSREF is enabled it will continue to operate normally during a SYNC event."
+                },
+                {
+                    "Field_Name": "SYNC_DIS12[6:6]",
+                    "Start_Bit": "6",
+                    "End_Bit": "6",
+                    "Field_Description": "Prevent the device clock output from becoming synchronized during a SYNC event. If SYNC_DIS bit for a particular output is enabled then it will continue to operate normally during a SYNC event."
+                },
+                {
+                    "Field_Name": "SYNC_DIS10[5:5]",
+                    "Start_Bit": "5",
+                    "End_Bit": "5",
+                    "Field_Description": "Prevent the device clock output from becoming synchronized during a SYNC event. If SYNC_DIS bit for a particular output is enabled then it will continue to operate normally during a SYNC event."
+                },
+                {
+                    "Field_Name": "SYNC_DIS8[4:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "4",
+                    "Field_Description": "Prevent the device clock output from becoming synchronized during a SYNC event. If SYNC_DIS bit for a particular output is enabled then it will continue to operate normally during a SYNC event."
+                },
+                {
+                    "Field_Name": "SYNC_DIS6[3:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "3",
+                    "Field_Description": "Prevent the device clock output from becoming synchronized during a SYNC event. If SYNC_DIS bit for a particular output is enabled then it will continue to operate normally during a SYNC event."
+                },
+                {
+                    "Field_Name": "SYNC_DIS4[2:2]",
+                    "Start_Bit": "2",
+                    "End_Bit": "2",
+                    "Field_Description": "Prevent the device clock output from becoming synchronized during a SYNC event. If SYNC_DIS bit for a particular output is enabled then it will continue to operate normally during a SYNC event."
+                },
+                {
+                    "Field_Name": "SYNC_DIS2[1:1]",
+                    "Start_Bit": "1",
+                    "End_Bit": "1",
+                    "Field_Description": "Prevent the device clock output from becoming synchronized during a SYNC event. If SYNC_DIS bit for a particular output is enabled then it will continue to operate normally during a SYNC event."
+                },
+                {
+                    "Field_Name": "SYNC_DIS0[0:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "0",
+                    "Field_Description": "Prevent the device clock output from becoming synchronized during a SYNC event. If SYNC_DIS bit for a particular output is enabled then it will continue to operate normally during a SYNC event."
+                }
+            ]
+        },
+        {
+            "Address": "0x145",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "Fixed_Register_0x145[7:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "7",
+                    "Field_Description": "Always Program to 127"
+                }
+            ]
+        },
+        {
+            "Address": "0x146",
+            "Default_Data": "0x18",
+            "Mode": "R/W",
+            "No_Of_Fields": "6",
+            "Fields": [
+                {
+                    "Field_Name": "CLKin2_EN[5:5]",
+                    "Start_Bit": "5",
+                    "End_Bit": "5",
+                    "Field_Description": "Enable CLKin2 to be used during auto-switching of CLKin_SEL_MODE."
+                },
+                {
+                    "Field_Name": "CLKin1_EN[4:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "4",
+                    "Field_Description": "Enable CLKin1 to be used during auto-switching of CLKin_SEL_MODE."
+                },
+                {
+                    "Field_Name": "CLKin0_EN[3:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "3",
+                    "Field_Description": "Enable CLKin0 to be used during auto-switching of CLKin_SEL_MODE."
+                },
+                {
+                    "Field_Name": "CLKin2_TYPE[2:2]",
+                    "Start_Bit": "2",
+                    "End_Bit": "2",
+                    "Field_Description": "There are two buffer types for CLKin2, bipolar and CMOS. Bipolar is recommended for differential inputs like LVDS or LVPECL. CMOS is recommended for DC coupled single ended inputs. When using bipolar, CLKinX and CLKinX* must be AC coupled. When using CMOS, CLKinX and CLKinX* may be AC or DC coupled if the input signal is differential. If the input signal is singleended the used input may be either AC or DC coupled and the unused input must AC grounded."
+                },
+                {
+                    "Field_Name": "CLKin1_TYPE[1:1]",
+                    "Start_Bit": "1",
+                    "End_Bit": "1",
+                    "Field_Description": "There are two buffer types for CLKin1, bipolar and CMOS. Bipolar is recommended for differential inputs like LVDS or LVPECL. CMOS is recommended for DC coupled single ended inputs. When using bipolar, CLKinX and CLKinX* must be AC coupled. When using CMOS, CLKinX and CLKinX* may be AC or DC coupled if the input signal is differential. If the input signal is singleended the used input may be either AC or DC coupled and the unused input must AC grounded."
+                },
+                {
+                    "Field_Name": "CLKin0_TYPE[0:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "0",
+                    "Field_Description": "There are two buffer types for CLKin1, bipolar and CMOS. Bipolar is recommended for differential inputs like LVDS or LVPECL. CMOS is recommended for DC coupled single ended inputs. When using bipolar, CLKinX and CLKinX* must be AC coupled. When using CMOS, CLKinX and CLKinX* may be AC or DC coupled if the input signal is differential. If the input signal is singleended the used input may be either AC or DC coupled and the unused input must AC grounded."
+                }
+            ]
+        },
+        {
+            "Address": "0x147",
+            "Default_Data": "0x3A",
+            "Mode": "R/W",
+            "No_Of_Fields": "4",
+            "Fields": [
+                {
+                    "Field_Name": "CLKin_SEL_POL[7:7]",
+                    "Start_Bit": "7",
+                    "End_Bit": "7",
+                    "Field_Description": "Inverts the CLKin polarity."
+                },
+                {
+                    "Field_Name": "CLKin_SEL_MODE[6:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "6",
+                    "Field_Description": "Sets the mode used in determining the reference for PLL1. The state machine will automatically select the appropriate input of CLKin_MUX based on the CLKin_SEL_MODE selected."
+                },
+                {
+                    "Field_Name": "CLKin1_OUT_MUX[3:2]",
+                    "Start_Bit": "2",
+                    "End_Bit": "3",
+                    "Field_Description": "Selects where the output of the CLKin1 buffer is directed."
+                },
+                {
+                    "Field_Name": "CLKin0_OUT_MUX[1:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "1",
+                    "Field_Description": "Selects where the output of the CLKin0 buffer is directed."
+                }
+            ]
+        },
+        {
+            "Address": "0x148",
+            "Default_Data": "0x2",
+            "Mode": "R/W",
+            "No_Of_Fields": "2",
+            "Fields": [
+                {
+                    "Field_Name": "CLKin_SEL0_MUX[5:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "5",
+                    "Field_Description": "This set the output value of the CLKin_SEL0 pin. This register only applies if CLKin_SEL0_TYPE is set to an output mode"
+                },
+                {
+                    "Field_Name": "CLKin_SEL0_TYPE[2:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "2",
+                    "Field_Description": "This sets the IO type of the CLKin_SEL0 pin."
+                }
+            ]
+        },
+        {
+            "Address": "0x149",
+            "Default_Data": "0x42",
+            "Mode": "R/W",
+            "No_Of_Fields": "3",
+            "Fields": [
+                {
+                    "Field_Name": "SDIO_RDBK_TYPE[6:6]",
+                    "Start_Bit": "6",
+                    "End_Bit": "6",
+                    "Field_Description": "Sets the SDIO pin to open drain during SPI readback in 3 wire mode."
+                },
+                {
+                    "Field_Name": "CLKin_SEL1_MUX[5:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "5",
+                    "Field_Description": "This set the output value of the CLKin_SEL1 pin. This register only applies if CLKin_SEL1_TYPE is set to an output mode"
+                },
+                {
+                    "Field_Name": "CLKin_SEL1_TYPE[2:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "2",
+                    "Field_Description": "This sets the IO type of the CLKin_SEL1 pin."
+                }
+            ]
+        },
+        {
+            "Address": "0x14A",
+            "Default_Data": "0x2",
+            "Mode": "R/W",
+            "No_Of_Fields": "2",
+            "Fields": [
+                {
+                    "Field_Name": "RESET_MUX[5:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "5",
+                    "Field_Description": "This sets the output value of the RESET pin. This register only applies if RESET_TYPE is set to an output mode."
+                },
+                {
+                    "Field_Name": "RESET_TYPE[2:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "2",
+                    "Field_Description": "This sets the IO type of the RESET pin."
+                }
+            ]
+        },
+        {
+            "Address": "0x14B",
+            "Default_Data": "0x16",
+            "Mode": "R/W",
+            "No_Of_Fields": "6",
+            "Fields": [
+                {
+                    "Field_Name": "LOS_TIMEOUT[7:6]",
+                    "Start_Bit": "6",
+                    "End_Bit": "7",
+                    "Field_Description": "This controls the amount of time in which no activity on a CLKin forces a clock switch event."
+                },
+                {
+                    "Field_Name": "LOS_EN[5:5]",
+                    "Start_Bit": "5",
+                    "End_Bit": "5",
+                    "Field_Description": "Enables the LOS (Loss-of-Signal) timeout control."
+                },
+                {
+                    "Field_Name": "TRACK_EN[4:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "4",
+                    "Field_Description": "Enable the DAC to track the PLL1 tuning voltage, optionally for use in holdover mode. Tracking can be used to monitor PLL1 voltage in any mode."
+                },
+                {
+                    "Field_Name": "HOLDOVER_FORCE[3:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "3",
+                    "Field_Description": "This bit forces holdover mode. When holdover mode is forced, if in fixed CPout1 mode, then the DAC will set the programmed MAN_DAC value. If in tracked CPout1 mode, then the DAC will set the current tracked DAC value. Setting HOLDOVER_FORCE does not constitute a clock input switch event unless HOLDOVER_PLL1_DET = 1, since in holdover mode, PLL1_DLD = 0 this will trigger the clock input switch event."
+                },
+                {
+                    "Field_Name": "MAN_DAC_EN[2:2]",
+                    "Start_Bit": "2",
+                    "End_Bit": "2",
+                    "Field_Description": "This bit enables the manual DAC mode."
+                },
+                {
+                    "Field_Name": "MAN_DAC[9:8][1:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "1",
+                    "Field_Description": "Sets the value of the manual DAC when in manual DAC mode."
+                }
+            ]
+        },
+        {
+            "Address": "0x14C",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "MAN_DAC[7:0][7:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "7",
+                    "Field_Description": "Sets the value of the manual DAC when in manual DAC mode."
+                }
+            ]
+        },
+        {
+            "Address": "0x14D",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "DAC_TRIP_LOW[5:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "5",
+                    "Field_Description": "Voltage from Vcc at which holdover is entered if HOLDOVER_VTUNE_DET is enabled."
+                }
+            ]
+        },
+        {
+            "Address": "0x14E",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "2",
+            "Fields": [
+                {
+                    "Field_Name": "DAC_CLK_MULT[7:6]",
+                    "Start_Bit": "6",
+                    "End_Bit": "7",
+                    "Field_Description": "This is the multiplier for the DAC_CLK_CNTR which sets the value at which holdover mode is entered."
+                },
+                {
+                    "Field_Name": "DAC_TRIP_HIGH[5:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "5",
+                    "Field_Description": "Voltage from GND at which holdover is entered if HOLDOVER_VTUNE_DET is enabled."
+                }
+            ]
+        },
+        {
+            "Address": "0x14F",
+            "Default_Data": "0x7F",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "DAC_CLK_CNTR[7:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "7",
+                    "Field_Description": "This has the value of the DAC when in tracked mode."
+                }
+            ]
+        },
+        {
+            "Address": "0x150",
+            "Default_Data": "0x3",
+            "Mode": "R/W",
+            "No_Of_Fields": "6",
+            "Fields": [
+                {
+                    "Field_Name": "CLKin_OVERRIDE[6:6]",
+                    "Start_Bit": "6",
+                    "End_Bit": "6",
+                    "Field_Description": "When CLKin_SEL_MODE = 0/1/2 to select a manual clock input, CLKin_OVERRIDE=1 will force that clock input. Used with clock distribution mode for best performance.\n 0: Normal, no override.\n 1: Force select of only CLKin 0/1/2 sas specified by CLKin_SEL_MODE in manual mode."
+                },
+                {
+                    "Field_Name": "HOLDOVER_PLL1_DET[4:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "4",
+                    "Field_Description": "This enables the HOLDOVER when PLL1 lock detect signal transitions from high to low. When using Pin Select Mode as the input clock switch mode, this bit should normally be cleared."
+                },
+                {
+                    "Field_Name": "HOLDOVER_LOS_DET[3:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "3",
+                    "Field_Description": "This enables HOLDOVER when PLL1 LOS signal is detected."
+                },
+                {
+                    "Field_Name": "HOLDOVER_VTUNE_DET[2:2]",
+                    "Start_Bit": "2",
+                    "End_Bit": "2",
+                    "Field_Description": "Enables the DAC Vtune rail detections. When the DAC achieves a specified Vtune, if this bit is enabled, the current clock input is considered invalid and an input clock switch event is generated."
+                },
+                {
+                    "Field_Name": "HOLDOVER_HITLESS_SWITCH[1:1]",
+                    "Start_Bit": "1",
+                    "End_Bit": "1",
+                    "Field_Description": "Determines whether a clock switch event will enter holdover use hitless switching."
+                },
+                {
+                    "Field_Name": "HOLDOVER_EN[0:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "0",
+                    "Field_Description": "Sets whether holdover mode is active or not."
+                }
+            ]
+        },
+        {
+            "Address": "0x151",
+            "Default_Data": "0x2",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "HOLDOVER_DLD_CNT[13:8][5:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "5",
+                    "Field_Description": "The number of valid clocks of PLL1 PDF before holdover mode is exited."
+                }
+            ]
+        },
+        {
+            "Address": "0x152",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "HOLDOVER_DLD_CNT[7:0][7:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "7",
+                    "Field_Description": "The number of valid clocks of PLL1 PDF before holdover mode is exited."
+                }
+            ]
+        },
+        {
+            "Address": "0x153",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "CLKin0_R[13:8][5:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "5",
+                    "Field_Description": "The value of PLL1 R counter when CLKin0 is selected."
+                }
+            ]
+        },
+        {
+            "Address": "0x154",
+            "Default_Data": "0x78",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "CLKin0_R[7:0][7:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "7",
+                    "Field_Description": "The value of PLL1 R counter when CLKin0 is selected."
+                }
+            ]
+        },
+        {
+            "Address": "0x155",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "CLKin1_R[13:8][5:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "5",
+                    "Field_Description": "The value of PLL1 R counter when CLKin1 is selected."
+                }
+            ]
+        },
+        {
+            "Address": "0x156",
+            "Default_Data": "0x96",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "CLKin1_R[7:0][7:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "7",
+                    "Field_Description": "The value of PLL1 R counter when CLKin1 is selected."
+                }
+            ]
+        },
+        {
+            "Address": "0x157",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "CLKin2_R[13:8][5:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "5",
+                    "Field_Description": "The value of PLL1 R counter when CLKin2 is selected."
+                }
+            ]
+        },
+        {
+            "Address": "0x158",
+            "Default_Data": "0x96",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "CLKin2_R[7:0][7:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "7",
+                    "Field_Description": "The value of PLL1 R counter when CLKin2 is selected."
+                }
+            ]
+        },
+        {
+            "Address": "0x159",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "PLL1_N[13:8][5:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "5",
+                    "Field_Description": "The value of PLL1 N counter."
+                }
+            ]
+        },
+        {
+            "Address": "0x15A",
+            "Default_Data": "0x78",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "PLL1_N[7:0][7:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "7",
+                    "Field_Description": "The value of PLL1 N counter."
+                }
+            ]
+        },
+        {
+            "Address": "0x15B",
+            "Default_Data": "0x14",
+            "Mode": "R/W",
+            "No_Of_Fields": "4",
+            "Fields": [
+                {
+                    "Field_Name": "PLL1_WND_SIZE[7:6]",
+                    "Start_Bit": "6",
+                    "End_Bit": "7",
+                    "Field_Description": "PLL1_WND_SIZE sets the window size used for digital lock detect for PLL1. If the phase error between the reference and feedback of PLL1 is less than specified time, then the PLL1 lock counter increments."
+                },
+                {
+                    "Field_Name": "PLL1_CP_TRI[5:5]",
+                    "Start_Bit": "5",
+                    "End_Bit": "5",
+                    "Field_Description": "This bit allows for the PLL1 charge pump output pin, CPout1, to be placed into TRI-STATE."
+                },
+                {
+                    "Field_Name": "PLL1_CP_POL[4:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "4",
+                    "Field_Description": "PLL1_CP_POL sets the charge pump polarity for PLL1. Many VCXOs use positive slope. A positive slope VCXO increases output frequency with increasing voltage. A negative slope VCXO decreases output frequency with increasing voltage."
+                },
+                {
+                    "Field_Name": "PLL1_CP_GAIN[3:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "3",
+                    "Field_Description": "This bit programs the PLL1 charge pump output current level."
+                }
+            ]
+        },
+        {
+            "Address": "0x15C",
+            "Default_Data": "0x20",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "PLL1_DLD_CNT[13:8][5:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "5",
+                    "Field_Description": "The reference and feedback of PLL1 must be within the window of phase error as specified by PLL1_WND_SIZE for this many phase detector cycles before PLL1 digital lock detect is asserted."
+                }
+            ]
+        },
+        {
+            "Address": "0x15D",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "PLL1_DLD_CNT[7:0][7:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "7",
+                    "Field_Description": "The reference and feedback of PLL1 must be within the window of phase error as specified by PLL1_WND_SIZE for this many phase detector cycles before PLL1 digital lock detect is asserted."
+                }
+            ]
+        },
+        {
+            "Address": "0x15E",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "2",
+            "Fields": [
+                {
+                    "Field_Name": "PLL1_R_DLY[5:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "5",
+                    "Field_Description": "Increasing delay of PLL1_R_DLY will cause the outputs to lag from CLKinX. For use in 0-delay mode."
+                },
+                {
+                    "Field_Name": "PLL1_N_DLY[2:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "2",
+                    "Field_Description": "Increasing delay of PLL1_N_DLY will cause the outputs to lead from CLKinX. For use in 0-delay mode."
+                }
+            ]
+        },
+        {
+            "Address": "0x15F",
+            "Default_Data": "0xE",
+            "Mode": "R/W",
+            "No_Of_Fields": "2",
+            "Fields": [
+                {
+                    "Field_Name": "PLL1_LD_MUX[7:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "7",
+                    "Field_Description": "This sets the output value of the Status_LD1 pin."
+                },
+                {
+                    "Field_Name": "PLL1_LD_TYPE[2:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "2",
+                    "Field_Description": "Sets the IO type of the Status_LD1 pin."
+                }
+            ]
+        },
+        {
+            "Address": "0x160",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "PLL2_R[11:8][3:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "3",
+                    "Field_Description": "PLL2 R divider value"
+                }
+            ]
+        },
+        {
+            "Address": "0x161",
+            "Default_Data": "0x2",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "PLL2_R[7:0][7:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "7",
+                    "Field_Description": "PLL2 R divider value"
+                }
+            ]
+        },
+        {
+            "Address": "0x162",
+            "Default_Data": "0x5D",
+            "Mode": "R/W",
+            "No_Of_Fields": "4",
+            "Fields": [
+                {
+                    "Field_Name": "PLL2_P[7:5]",
+                    "Start_Bit": "5",
+                    "End_Bit": "7",
+                    "Field_Description": "The PLL2 N Prescaler divides the output of the VCO as selected by Mode_MUX1 and is connected to the PLL2 N divider."
+                },
+                {
+                    "Field_Name": "OSCin_FREQ[4:2]",
+                    "Start_Bit": "2",
+                    "End_Bit": "4",
+                    "Field_Description": "The frequency of the PLL2 reference input to the PLL2 Phase Detector (OSCin/OSCin*port) must be programmed in order to support proper operation of the frequency calibration routine which locks the internal VCO to the target frequency."
+                },
+                {
+                    "Field_Name": "PLL2_XTAL_EN[1:1]",
+                    "Start_Bit": "1",
+                    "End_Bit": "1",
+                    "Field_Description": "f an external crystal is being used to implement a discrete VCXO, the internal feedback amplifier must be enabled with this bit in order to complete the oscillator circuit."
+                },
+                {
+                    "Field_Name": "PLL2_REF_2X_EN[0:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "0",
+                    "Field_Description": "Enabling the PLL2 reference frequency doubler allows for higher phase detector frequencies on PLL2 than would normally be allowed with the given VCXO or Crystal frequency. Higher phase detector frequencies reduces the PLL N values which makes the design of wider loop bandwidth filters possible."
+                }
+            ]
+        },
+        {
+            "Address": "0x163",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "PLL2_N_CAL[17:16][1:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "1",
+                    "Field_Description": "This register disables frequency calibration and sets the PLL2 N divider value."
+                }
+            ]
+        },
+        {
+            "Address": "0x164",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "PLL2_N_CAL[15:8][7:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "7",
+                    "Field_Description": "This register disables frequency calibration and sets the PLL2 N divider value."
+                }
+            ]
+        },
+        {
+            "Address": "0x165",
+            "Default_Data": "0xC",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "PLL2_N_CAL[7:0][7:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "7",
+                    "Field_Description": "This register disables frequency calibration and sets the PLL2 N divider value."
+                }
+            ]
+        },
+        {
+            "Address": "0x166",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "2",
+            "Fields": [
+                {
+                    "Field_Name": "PLL2_FCAL_DIS[2:2]",
+                    "Start_Bit": "2",
+                    "End_Bit": "2",
+                    "Field_Description": "This disables the PLL2 frequency calibration."
+                },
+                {
+                    "Field_Name": "PLL2_N[17:16][1:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "1",
+                    "Field_Description": "This register contains the value of the PLL2 N divider used in calibration for 0-delay modes."
+                }
+            ]
+        },
+        {
+            "Address": "0x167",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "PLL2_N[15:8][7:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "7",
+                    "Field_Description": "This register contains the value of the PLL2 N divider used in calibration for 0-delay modes."
+                }
+            ]
+        },
+        {
+            "Address": "0x168",
+            "Default_Data": "0xC",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "PLL2_N[7:0][7:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "7",
+                    "Field_Description": "This register contains the value of the PLL2 N divider used in calibration for 0-delay modes."
+                }
+            ]
+        },
+        {
+            "Address": "0x169",
+            "Default_Data": "0x59",
+            "Mode": "R/W",
+            "No_Of_Fields": "5",
+            "Fields": [
+                {
+                    "Field_Name": "PLL2_WND_SIZE[6:5]",
+                    "Start_Bit": "5",
+                    "End_Bit": "6",
+                    "Field_Description": "PLL2_WND_SIZE sets the window size used for digital lock detect for PLL2. If the phase error between the reference and feedback of PLL2 is less than specified time, then the PLL2 lock counter increments. This value must be programmed to 2 (3.7 ns)."
+                },
+                {
+                    "Field_Name": "PLL2_CP_GAIN[4:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "4",
+                    "Field_Description": "This bit programs the PLL2 charge pump output current level. The table below also illustrates the impact of the PLL2 TRISTATE bit in conjunction with PLL2_CP_GAIN."
+                },
+                {
+                    "Field_Name": "PLL2_CP_POL[2:2]",
+                    "Start_Bit": "2",
+                    "End_Bit": "2",
+                    "Field_Description": "PLL2_CP_POL sets the charge pump polarity for PLL2. The internal VCO requires the negative charge pump polarity to be selected. Many VCOs use positive slope. A positive slope VCO increases output frequency with increasing voltage. A negative slope VCO decreases output frequency with increasing voltage."
+                },
+                {
+                    "Field_Name": "PLL2_CP_TRI[1:1]",
+                    "Start_Bit": "1",
+                    "End_Bit": "1",
+                    "Field_Description": "PLL2_CP_TRI tri-states the output of the PLL2 charge pump."
+                },
+                {
+                    "Field_Name": "Fixed_Value_0x169[0:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "0",
+                    "Field_Description": "When programming register 0x169 this field must be set to 1."
+                }
+            ]
+        },
+        {
+            "Address": "0x16A",
+            "Default_Data": "0x20",
+            "Mode": "R/W",
+            "No_Of_Fields": "2",
+            "Fields": [
+                {
+                    "Field_Name": "SYSREF_REQ_EN[6:6]",
+                    "Start_Bit": "6",
+                    "End_Bit": "6",
+                    "Field_Description": "Enables the SYNC/SYSREF_REQ pin to force the SYSREF_MUX=3 for continuous pulses. When using this feature enable pulser and set SYSREF_MUX=2 (Pulser)."
+                },
+                {
+                    "Field_Name": "PLL2_DLD_CNT[13:8][5:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "5",
+                    "Field_Description": "The reference and feedback of PLL2 must be within the window of phase error as specified by PLL2_WND_SIZE for PLL2_DLD_CNT cycles before PLL2 digital lock detect is asserted."
+                }
+            ]
+        },
+        {
+            "Address": "0x16B",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "PLL2_DLD_CNT[7:0][7:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "7",
+                    "Field_Description": "The reference and feedback of PLL2 must be within the window of phase error as specified by PLL2_WND_SIZE for PLL2_DLD_CNT cycles before PLL2 digital lock detect is asserted."
+                }
+            ]
+        },
+        {
+            "Address": "0x16C",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "2",
+            "Fields": [
+                {
+                    "Field_Name": "PLL2_LF_R4[5:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "5",
+                    "Field_Description": "Internal loop filter components are available for PLL2, enabling either 3rd or 4th order loop filters without requiring external components."
+                },
+                {
+                    "Field_Name": "PLL2_LF_R3[2:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "2",
+                    "Field_Description": "Internal loop filter components are available for PLL2, enabling either 3rd or 4th order loop filters without requiring external components."
+                }
+            ]
+        },
+        {
+            "Address": "0x16D",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "2",
+            "Fields": [
+                {
+                    "Field_Name": "PLL2_LF_C4[7:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "7",
+                    "Field_Description": "Internal loop filter components are available for PLL2, enabling either 3rd or 4th order loop filters without requiring external components."
+                },
+                {
+                    "Field_Name": "PLL2_LF_C3[3:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "3",
+                    "Field_Description": "Internal loop filter components are available for PLL2, enabling either 3rd or 4th order loop filters without requiring external components."
+                }
+            ]
+        },
+        {
+            "Address": "0x16E",
+            "Default_Data": "0x16",
+            "Mode": "R/W",
+            "No_Of_Fields": "2",
+            "Fields": [
+                {
+                    "Field_Name": "PLL2_LD_MUX[7:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "7",
+                    "Field_Description": "This sets the output value of the Status_LD2 pin."
+                },
+                {
+                    "Field_Name": "PLL2_LD_TYPE[2:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "2",
+                    "Field_Description": "Sets the IO type of the Status_LD2 pin."
+                }
+            ]
+        },
+        {
+            "Address": "0x171",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "Fixed_Register_0x171[7:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "7",
+                    "Field_Description": "Always program ot 170 (0xAA)"
+                }
+            ]
+        },
+        {
+            "Address": "0x172",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "Fixed_Register_0x172[7:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "7",
+                    "Field_Description": "Always program ot 2 (0x2)"
+                }
+            ]
+        },
+        {
+            "Address": "0x173",
+            "Default_Data": "0x0",
+            "Mode": "R/W",
+            "No_Of_Fields": "2",
+            "Fields": [
+                {
+                    "Field_Name": "PLL2_PRE_PD",
+                    "Start_Bit": "6",
+                    "End_Bit": "6",
+                    "Field_Description": "Powerdown PLL2 prescaler.\n0: Normal Operation\n1: Powerdown"
+                },
+                {
+                    "Field_Name": "PLL2_PD",
+                    "Start_Bit": "5",
+                    "End_Bit": "5",
+                    "Field_Description": "Powerdown PLL2.\n0: Normal Operation\n1: Powerdown"
+                }
+            ]
+        },
+        {
+            "Address": "0x17C",
+            "Default_Data": "0x15",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "OPT_REG_1[7:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "7",
+                    "Field_Description": "This register must be written with the correct value depending on which LMK04820 family part is used.\n 21: LMK04821\n24: LMK04826\n21:LMK04828"
+                }
+            ]
+        },
+        {
+            "Address": "0x17D",
+            "Default_Data": "0xF",
+            "Mode": "R/W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "OPT_REG_2[7:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "7",
+                    "Field_Description": "This register must be written with the correct value depending on which LMK04820 family part is used.\n51: LMK04821\n119: LMK04826\n51: LMK04828"
+                }
+            ]
+        },
+        {
+            "Address": "0x182",
+            "Mode": "R/W",
+            "No_Of_Fields": "3",
+            "Fields": [
+                {
+                    "Field_Name": "RB_PLL1_LD_LOST[2:2]",
+                    "Start_Bit": "2",
+                    "End_Bit": "2",
+                    "Field_Description": "This is set when PLL1 DLD edge falls. Does not set if cleared while PLL1 DLD is low"
+                },
+                {
+                    "Field_Name": "RB_PLL1_LD[1:1]",
+                    "Start_Bit": "1",
+                    "End_Bit": "1",
+                    "Field_Description": "Read back 0: PLL1 DLD is low.\nRead back 1: PLL1 DLD is high."
+                },
+                {
+                    "Field_Name": "CLR_PLL1_LD_LOST[0:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "0",
+                    "Field_Description": "To reset RB_PLL1_LD_LOST, write CLR_PLL1_LD_LOST with 1 and then 0.\n 0: RB_PLL1_LD_LOST will be set on the next falling PLL1 DLD edge.\n 1: RB_PLL1_LD_LOST is hel clear (0). User must clear this bit to allow RB_PLL1_LD_LOST to become set again."
+                }
+            ]
+        },
+        {
+            "Address": "0x183",
+            "Mode": "R/W",
+            "No_Of_Fields": "3",
+            "Fields": [
+                {
+                    "Field_Name": "RB_PLL2_LD_LOST[2:2]",
+                    "Start_Bit": "2",
+                    "End_Bit": "2",
+                    "Field_Description": "This is set when PLL2 DLD edge falls. Does not set if cleared while PLL2 DLD is low."
+                },
+                {
+                    "Field_Name": "RB_PLL2_LD[1:1]",
+                    "Start_Bit": "1",
+                    "End_Bit": "1",
+                    "Field_Description": "PLL1_LD_MUX or PLL2_LD_MUX must select setting 2 (PLL2 DLD) for valid reading of this bit.\nRead back 0: PLL2 DLD is low.\nRead back 1: PLL2 DLD is high."
+                },
+                {
+                    "Field_Name": "CLR_PLL2_LD_LOST[0:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "0",
+                    "Field_Description": "To reset RB_PLL2_LD_LOST, write CLR_PLL2_LD_LOST with 1 and then 0.\n 0: RB_PLL2_LD_LOST will be set on the next falling PLL2 DLD edge.\n 1: RB_PLL2_LD_LOST is hel clear (0). User must clear this bit to allow RB_PLL2_LD_LOST to become set again."
+                }
+            ]
+        },
+        {
+            "Address": "0x184",
+            "Mode": "R",
+            "No_Of_Fields": "6",
+            "Fields": [
+                {
+                    "Field_Name": "RB_DAC_VALUE[9:8][7:6]",
+                    "Start_Bit": "7",
+                    "End_Bit": "6",
+                    "Field_Description": "See RB_DAC_VALUE section"
+                },
+                {
+                    "Field_Name": "RB_CLKin2_SEL[5:5]",
+                    "Start_Bit": "5",
+                    "End_Bit": "5",
+                    "Field_Description": "Read back 0: CLKin2 is not selected for input to PLL1.\n Read back 1: CLKin2 is selected for input to PLL1"
+                },
+                {
+                    "Field_Name": "RB_CLKin1_SEL[4:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "4",
+                    "Field_Description": "Read back 0: CLKin1 is not selected for input to PLL1.\n Read back 1: CLKin1 is selected for input to PLL1"
+                },
+                {
+                    "Field_Name": "RB_CLKin0_SEL[3:3]",
+                    "Start_Bit": "3",
+                    "End_Bit": "3",
+                    "Field_Description": "Read back 0: CLKin0 is not selected for input to PLL1.\n Read back 1: CLKin0 is selected for input to PLL1"
+                },
+                {
+                    "Field_Name": "RB_CLKin1_LOS[1:1]",
+                    "Start_Bit": "1",
+                    "End_Bit": "1",
+                    "Field_Description": "Read back 0: CLKin1 LOS is active\n Read back 1: CLKin1 LOS is not active."
+                },
+                {
+                    "Field_Name": "RB_CLKin1_LOS[0:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "0",
+                    "Field_Description": "Read back 0: CLKin0 LOS is active\n Read back 1: CLKin0 LOS is not active."
+                }
+            ]
+        },
+        {
+            "Address": "0x185",
+            "Mode": "R",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "RB_DAC_VALUE[7:0][7:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "7",
+                    "Field_Description": "DAC value is 512 on power on reset, if PLL1 locs upon power-up the DAC value will change"
+                }
+            ]
+        },
+        {
+            "Address": "0x188",
+            "Mode": "R",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "RB_HOLDOVER[4:4]",
+                    "Start_Bit": "4",
+                    "End_Bit": "4",
+                    "Field_Description": "Read back 0: Not in HOLDOVER\n Read back 1: In HOLDOVER"
+                }
+            ]
+        },
+        {
+            "Address": "0x1FFD",
+            "Mode": "W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "SPI_LOCK[23:16][7:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "7",
+                    "Field_Description": "0: Registers unlocked.\n 1 to 255: Registers locked"
+                }
+            ]
+        },
+        {
+            "Address": "0x1FFE",
+            "Mode": "W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "SPI_LOCK[15:8][7:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "7",
+                    "Field_Description": "0: Registers unlocked.\n 1 to 255: Registers locked"
+                }
+            ]
+        },
+        {
+            "Address": "0x1FFF",
+            "Mode": "W",
+            "No_Of_Fields": "1",
+            "Fields": [
+                {
+                    "Field_Name": "SPI_LOCK[7:0][7:0]",
+                    "Start_Bit": "0",
+                    "End_Bit": "7",
+                    "Field_Description": "0 to 82: Registers locked\n 83: Registers unlocked.\n 84 to 255: Registers locked"
+                }
+            ]
+        }
+    ]
+}

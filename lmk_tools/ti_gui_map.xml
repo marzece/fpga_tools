@@ -1,0 +1,3478 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Project_Name>
+   <Project_Name />
+   <Version />
+   <Register_Map>
+      <Block Block_Name="LMK04828">
+         <Block_Name>LMK04828</Block_Name>
+         <Register Address="0x0" Name="x000">
+            <Name>x000</Name>
+            <Address>0x0</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>2</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>RESET[7:7]</Field_Name>
+                  <Start_Bit>7</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Software reset</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>SPI_4WIRE_EN[4:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>Enable 4 wire SPI mode</Field_Description>
+               </Field2>
+            </Fields>
+         </Register>
+         <Register Address="0x2" Name="x002">
+            <Name>x002</Name>
+            <Address>0x2</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>POWERDOWN[0:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>0</End_Bit>
+                  <Field_Description>Powerdown device</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x3" Name="x003">
+            <Name>x003</Name>
+            <Address>0x3</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>ID_DEVICE_TYPE[7:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>PLL product device type</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x4" Name="x004">
+            <Name>x004</Name>
+            <Address>0x4</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>ID_PROD[15:8][7:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>MSB of the product identifier</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x5" Name="x005">
+            <Name>x005</Name>
+            <Address>0x5</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>ID_PROD[7:0][7:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>LSB of the product identifier</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x6" Name="x006">
+            <Name>x006</Name>
+            <Address>0x6</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>ID_MASKREV[7:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>IC version identifier</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0xC" Name="x00C">
+            <Name>x00C</Name>
+            <Address>0xC</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>ID_VNDR[15:8][7:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>MSB of the vendor identifier</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0xE" Name="x00E">
+            <Name>x00E</Name>
+            <Address>0xE</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>ID_VNDR[7:0][7:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>LSB of the vendor identifier</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x100" Name="x100">
+            <Name>x100</Name>
+            <Address>0x100</Address>
+            <Default_Data>0x2</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>3</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>CLKout0_1_ODL[6:6]</Field_Name>
+                  <Start_Bit>6</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Output drive level.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>CLKout0_1_IDL[5:5]</Field_Name>
+                  <Start_Bit>5</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>Input drive level.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>DCLKout0_DIV[4:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>DCLKoutX_DIV sets the divide value for the clock output, the divide may be even or odd. Both even or odd divides output a 50% duty cycle clock.</Field_Description>
+               </Field3>
+            </Fields>
+         </Register>
+         <Register Address="0x101" Name="x101">
+            <Name>x101</Name>
+            <Address>0x101</Address>
+            <Default_Data>0x55</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>2</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DCLKout0_DDLY_CNTH[7:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Number of clock cycles the output will be high when digital delay is engaged.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>DCLKout0_DDLY_CNTL[3:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Number of clock cycles the output will be low when dynamic digital delay is engaged.</Field_Description>
+               </Field2>
+            </Fields>
+         </Register>
+         <Register Address="0x103" Name="x103">
+            <Name>x103</Name>
+            <Address>0x103</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>3</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DCLKout0_ADLY[7:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Device clock analog delay value. Setting this value results in a 500 ps timing delay in additional to the delay of each 25 ps step.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>DCLKout0_ADLY_MUX[2:2]</Field_Name>
+                  <Start_Bit>2</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>This register selects the input to the analog delay for the device clock.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>DCLKout0_MUX[1:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>1</End_Bit>
+                  <Field_Description>This selects the input to the device clock buffer.</Field_Description>
+               </Field3>
+            </Fields>
+         </Register>
+         <Register Address="0x104" Name="x104">
+            <Name>x104</Name>
+            <Address>0x104</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>4</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DCLKout0_HS[6:6]</Field_Name>
+                  <Start_Bit>6</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Sets the device clock half step value. Half shift must be zero (0) for a divide of 1.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>SDCLKout1_MUX[5:5]</Field_Name>
+                  <Start_Bit>5</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>Sets the input the the SDCLKoutX outputs.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>SDCLKout1_DDLY[4:1]</Field_Name>
+                  <Start_Bit>1</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>Sets the number of VCO cycles to delay the SDCLKout by.</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>SDCLKout1_HS[0:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>0</End_Bit>
+                  <Field_Description>Sets the SYSREF clock half step value.</Field_Description>
+               </Field4>
+            </Fields>
+         </Register>
+         <Register Address="0x105" Name="x105">
+            <Name>x105</Name>
+            <Address>0x105</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>2</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>SDCLKout1_ADLY_EN[4:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>Enables analog delay for the SYSREF output.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>SDCLKout1_ADLY[3:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Sets the analog delay value for the SYSREF output.</Field_Description>
+               </Field2>
+            </Fields>
+         </Register>
+         <Register Address="0x106" Name="x106">
+            <Name>x106</Name>
+            <Address>0x106</Address>
+            <Default_Data>0x79</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>7</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DCLKout0_DDLY_PD[7:7]</Field_Name>
+                  <Start_Bit>7</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Powerdown the device clock digital delay circuitry.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>DCLKout0_HSg_PD[6:6]</Field_Name>
+                  <Start_Bit>6</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Powerdown the device clock glitchless half step feature.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>DCLKout0_ADLYg_PD[5:5]</Field_Name>
+                  <Start_Bit>5</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>Powerdown the device clock glitchless analog delay feature.</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>DCLKout0_ADLY_PD[4:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>Powerdown the device clock analog delay feature.</Field_Description>
+               </Field4>
+               <Field5>
+                  <Field_Name>CLKout0_1_PD[3:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Powerdown the clock group defined by X and Y.</Field_Description>
+               </Field5>
+               <Field6>
+                  <Field_Name>SDCLKout1_DIS_MODE[2:1]</Field_Name>
+                  <Start_Bit>1</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>Configures the output state of the SYSREF</Field_Description>
+               </Field6>
+               <Field7>
+                  <Field_Name>SDCLKout1_PD[0:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>0</End_Bit>
+                  <Field_Description>Powerdown SDCLKoutY and set to the state defined by SDCLKoutY_DIS_MODE</Field_Description>
+               </Field7>
+            </Fields>
+         </Register>
+         <Register Address="0x107" Name="x107">
+            <Name>x107</Name>
+            <Address>0x107</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>4</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>SDCLKout1_POL[7:7]</Field_Name>
+                  <Start_Bit>7</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Sets the polarity of SYSREF clocks.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>SDCLKout1_FMT[6:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Sets the output format of the SYSREF clocks</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>DCLKout0_POL[3:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Sets the polarity of the device clocks.</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>DCLKout0_FMT[2:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>Sets the output format of the device clocks.</Field_Description>
+               </Field4>
+            </Fields>
+         </Register>
+         <Register Address="0x108" Name="x108">
+            <Name>x108</Name>
+            <Address>0x108</Address>
+            <Default_Data>0x4</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>3</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>CLKout2_3_ODL[6:6]</Field_Name>
+                  <Start_Bit>6</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Output drive level.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>CLKout2_3_IDL[5:5]</Field_Name>
+                  <Start_Bit>5</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>Input drive level.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>DCLKout2_DIV[4:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>DCLKoutX_DIV sets the divide value for the clock output, the divide may be even or odd. Both even or odd divides output a 50% duty cycle clock.</Field_Description>
+               </Field3>
+            </Fields>
+         </Register>
+         <Register Address="0x109" Name="x109">
+            <Name>x109</Name>
+            <Address>0x109</Address>
+            <Default_Data>0x55</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>2</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DCLKout2_DDLY_CNTH[7:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Number of clock cycles the output will be high when digital delay is engaged.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>DCLKout2_DDLY_CNTL[3:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Number of clock cycles the output will be low when dynamic digital delay is engaged.</Field_Description>
+               </Field2>
+            </Fields>
+         </Register>
+         <Register Address="0x10B" Name="x10B">
+            <Name>x10B</Name>
+            <Address>0x10B</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>3</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DCLKout2_ADLY[7:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Device clock analog delay value. Setting this value results in a 500 ps timing delay in additional to the delay of each 25 ps step.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>DCLKout2_ADLY_MUX[2:2]</Field_Name>
+                  <Start_Bit>2</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>This register selects the input to the analog delay for the device clock.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>DCLKout2_MUX[1:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>1</End_Bit>
+                  <Field_Description>This selects the input to the device clock buffer.</Field_Description>
+               </Field3>
+            </Fields>
+         </Register>
+         <Register Address="0x10C" Name="x10C">
+            <Name>x10C</Name>
+            <Address>0x10C</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>4</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DCLKout2_HS[6:6]</Field_Name>
+                  <Start_Bit>6</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Sets the device clock half step value. Half shift must be zero (0) for a divide of 1.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>SDCLKout3_MUX[5:5]</Field_Name>
+                  <Start_Bit>5</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>Sets the input the the SDCLKoutX outputs.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>SDCLKout3_DDLY[4:1]</Field_Name>
+                  <Start_Bit>1</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>Sets the number of VCO cycles to delay the SDCLKout by.</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>SDCLKout3_HS[0:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>0</End_Bit>
+                  <Field_Description>Sets the SYSREF clock half step value.</Field_Description>
+               </Field4>
+            </Fields>
+         </Register>
+         <Register Address="0x10D" Name="x10D">
+            <Name>x10D</Name>
+            <Address>0x10D</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>2</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>SDCLKout3_ADLY_EN[4:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>Enables analog delay for the SYSREF output.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>SDCLKout3_ADLY[3:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Sets the analog delay value for the SYSREF output.</Field_Description>
+               </Field2>
+            </Fields>
+         </Register>
+         <Register Address="0x10E" Name="x10E">
+            <Name>x10E</Name>
+            <Address>0x10E</Address>
+            <Default_Data>0x79</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>7</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DCLKout2_DDLY_PD[7:7]</Field_Name>
+                  <Start_Bit>7</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Powerdown the device clock digital delay circuitry.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>DCLKout2_HSg_PD[6:6]</Field_Name>
+                  <Start_Bit>6</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Powerdown the device clock glitchless half step feature.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>DCLKout2_ADLYg_PD[5:5]</Field_Name>
+                  <Start_Bit>5</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>Powerdown the device clock glitchless analog delay feature.</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>DCLKout2_ADLY_PD[4:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>Powerdown the device clock analog delay feature.</Field_Description>
+               </Field4>
+               <Field5>
+                  <Field_Name>CLKout2_3_PD[3:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Powerdown the clock group defined by X and Y.</Field_Description>
+               </Field5>
+               <Field6>
+                  <Field_Name>SDCLKout3_DIS_MODE[2:1]</Field_Name>
+                  <Start_Bit>1</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>Configures the output state of the SYSREF</Field_Description>
+               </Field6>
+               <Field7>
+                  <Field_Name>SDCLKout3_PD[0:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>0</End_Bit>
+                  <Field_Description>Powerdown SDCLKoutY and set to the state defined by SDCLKoutY_DIS_MODE</Field_Description>
+               </Field7>
+            </Fields>
+         </Register>
+         <Register Address="0x10F" Name="x10F">
+            <Name>x10F</Name>
+            <Address>0x10F</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>4</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>SDCLKout3_POL[7:7]</Field_Name>
+                  <Start_Bit>7</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Sets the polarity of SYSREF clocks.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>SDCLKout3_FMT[6:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Sets the output format of the SYSREF clocks</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>DCLKout2_POL[3:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Sets the polarity of the device clocks.</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>DCLKout2_FMT[2:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>Sets the output format of the device clocks.</Field_Description>
+               </Field4>
+            </Fields>
+         </Register>
+         <Register Address="0x110" Name="x110">
+            <Name>x110</Name>
+            <Address>0x110</Address>
+            <Default_Data>0x8</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>3</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>CLKout4_5_ODL[6:6]</Field_Name>
+                  <Start_Bit>6</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Output drive level.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>CLKout4_5_IDL[5:5]</Field_Name>
+                  <Start_Bit>5</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>Input drive level.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>DCLKout4_DIV[4:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>DCLKoutX_DIV sets the divide value for the clock output, the divide may be even or odd. Both even or odd divides output a 50% duty cycle clock.</Field_Description>
+               </Field3>
+            </Fields>
+         </Register>
+         <Register Address="0x111" Name="x111">
+            <Name>x111</Name>
+            <Address>0x111</Address>
+            <Default_Data>0x55</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>2</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DCLKout4_DDLY_CNTH[7:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Number of clock cycles the output will be high when digital delay is engaged.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>DCLKout4_DDLY_CNTL[3:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Number of clock cycles the output will be low when dynamic digital delay is engaged.</Field_Description>
+               </Field2>
+            </Fields>
+         </Register>
+         <Register Address="0x113" Name="x113">
+            <Name>x113</Name>
+            <Address>0x113</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>3</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DCLKout4_ADLY[7:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Device clock analog delay value. Setting this value results in a 500 ps timing delay in additional to the delay of each 25 ps step.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>DCLKout4_ADLY_MUX[2:2]</Field_Name>
+                  <Start_Bit>2</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>This register selects the input to the analog delay for the device clock.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>DCLKout4_MUX[1:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>1</End_Bit>
+                  <Field_Description>This selects the input to the device clock buffer.</Field_Description>
+               </Field3>
+            </Fields>
+         </Register>
+         <Register Address="0x114" Name="x114">
+            <Name>x114</Name>
+            <Address>0x114</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>4</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DCLKout4_HS[6:6]</Field_Name>
+                  <Start_Bit>6</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Sets the device clock half step value. Half shift must be zero (0) for a divide of 1.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>SDCLKout5_MUX[5:5]</Field_Name>
+                  <Start_Bit>5</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>Sets the input the the SDCLKoutX outputs.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>SDCLKout5_DDLY[4:1]</Field_Name>
+                  <Start_Bit>1</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>Sets the number of VCO cycles to delay the SDCLKout by.</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>SDCLKout5_HS[0:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>0</End_Bit>
+                  <Field_Description>Sets the SYSREF clock half step value.</Field_Description>
+               </Field4>
+            </Fields>
+         </Register>
+         <Register Address="0x115" Name="x115">
+            <Name>x115</Name>
+            <Address>0x115</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>2</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>SDCLKout5_ADLY_EN[4:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>Enables analog delay for the SYSREF output.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>SDCLKout5_ADLY[3:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Sets the analog delay value for the SYSREF output.</Field_Description>
+               </Field2>
+            </Fields>
+         </Register>
+         <Register Address="0x116" Name="x116">
+            <Name>x116</Name>
+            <Address>0x116</Address>
+            <Default_Data>0x71</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>7</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DCLKout4_DDLY_PD[7:7]</Field_Name>
+                  <Start_Bit>7</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Powerdown the device clock digital delay circuitry.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>DCLKout4_HSg_PD[6:6]</Field_Name>
+                  <Start_Bit>6</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Powerdown the device clock glitchless half step feature.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>DCLKout4_ADLYg_PD[5:5]</Field_Name>
+                  <Start_Bit>5</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>Powerdown the device clock glitchless analog delay feature.</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>DCLKout4_ADLY_PD[4:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>Powerdown the device clock analog delay feature.</Field_Description>
+               </Field4>
+               <Field5>
+                  <Field_Name>CLKout4_5_PD[3:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Powerdown the clock group defined by X and Y.</Field_Description>
+               </Field5>
+               <Field6>
+                  <Field_Name>SDCLKout5_DIS_MODE[2:1]</Field_Name>
+                  <Start_Bit>1</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>Configures the output state of the SYSREF</Field_Description>
+               </Field6>
+               <Field7>
+                  <Field_Name>SDCLKout5_PD[0:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>0</End_Bit>
+                  <Field_Description>Powerdown SDCLKoutY and set to the state defined by SDCLKoutY_DIS_MODE</Field_Description>
+               </Field7>
+            </Fields>
+         </Register>
+         <Register Address="0x117" Name="x117">
+            <Name>x117</Name>
+            <Address>0x117</Address>
+            <Default_Data>0x1</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>4</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>SDCLKout5_POL[7:7]</Field_Name>
+                  <Start_Bit>7</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Sets the polarity of SYSREF clocks.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>SDCLKout5_FMT[6:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Sets the output format of the SYSREF clocks</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>DCLKout4_POL[3:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Sets the polarity of the device clocks.</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>DCLKout4_FMT[2:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>Sets the output format of the device clocks.</Field_Description>
+               </Field4>
+            </Fields>
+         </Register>
+         <Register Address="0x118" Name="x118">
+            <Name>x118</Name>
+            <Address>0x118</Address>
+            <Default_Data>0x8</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>3</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>CLKout6_7_ODL[6:6]</Field_Name>
+                  <Start_Bit>6</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Output drive level.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>CLKout6_7_IDL[5:5]</Field_Name>
+                  <Start_Bit>5</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>Input drive level.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>DCLKout6_DIV[4:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>DCLKoutX_DIV sets the divide value for the clock output, the divide may be even or odd. Both even or odd divides output a 50% duty cycle clock.</Field_Description>
+               </Field3>
+            </Fields>
+         </Register>
+         <Register Address="0x119" Name="x119">
+            <Name>x119</Name>
+            <Address>0x119</Address>
+            <Default_Data>0x55</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>2</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DCLKout6_DDLY_CNTH[7:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Number of clock cycles the output will be high when digital delay is engaged.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>DCLKout6_DDLY_CNTL[3:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Number of clock cycles the output will be low when dynamic digital delay is engaged.</Field_Description>
+               </Field2>
+            </Fields>
+         </Register>
+         <Register Address="0x11B" Name="x11B">
+            <Name>x11B</Name>
+            <Address>0x11B</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>3</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DCLKout6_ADLY[7:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Device clock analog delay value. Setting this value results in a 500 ps timing delay in additional to the delay of each 25 ps step.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>DCLKout6_ADLY_MUX[2:2]</Field_Name>
+                  <Start_Bit>2</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>This register selects the input to the analog delay for the device clock.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>DCLKout6_MUX[1:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>1</End_Bit>
+                  <Field_Description>This selects the input to the device clock buffer.</Field_Description>
+               </Field3>
+            </Fields>
+         </Register>
+         <Register Address="0x11C" Name="x11C">
+            <Name>x11C</Name>
+            <Address>0x11C</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>4</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DCLKout6_HS[6:6]</Field_Name>
+                  <Start_Bit>6</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Sets the device clock half step value. Half shift must be zero (0) for a divide of 1.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>SDCLKout7_MUX[5:5]</Field_Name>
+                  <Start_Bit>5</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>Sets the input the the SDCLKoutX outputs.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>SDCLKout7_DDLY[4:1]</Field_Name>
+                  <Start_Bit>1</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>Sets the number of VCO cycles to delay the SDCLKout by.</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>SDCLKout7_HS[0:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>0</End_Bit>
+                  <Field_Description>Sets the SYSREF clock half step value.</Field_Description>
+               </Field4>
+            </Fields>
+         </Register>
+         <Register Address="0x11D" Name="x11D">
+            <Name>x11D</Name>
+            <Address>0x11D</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>2</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>SDCLKout7_ADLY_EN[4:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>Enables analog delay for the SYSREF output.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>SDCLKout7_ADLY[3:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Sets the analog delay value for the SYSREF output.</Field_Description>
+               </Field2>
+            </Fields>
+         </Register>
+         <Register Address="0x11E" Name="x11E">
+            <Name>x11E</Name>
+            <Address>0x11E</Address>
+            <Default_Data>0x71</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>7</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DCLKout6_DDLY_PD[7:7]</Field_Name>
+                  <Start_Bit>7</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Powerdown the device clock digital delay circuitry.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>DCLKout6_HSg_PD[6:6]</Field_Name>
+                  <Start_Bit>6</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Powerdown the device clock glitchless half step feature.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>DCLKout6_ADLYg_PD[5:5]</Field_Name>
+                  <Start_Bit>5</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>Powerdown the device clock glitchless analog delay feature.</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>DCLKout6_ADLY_PD[4:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>Powerdown the device clock analog delay feature.</Field_Description>
+               </Field4>
+               <Field5>
+                  <Field_Name>CLKout6_7_PD[3:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Powerdown the clock group defined by X and Y.</Field_Description>
+               </Field5>
+               <Field6>
+                  <Field_Name>SDCLKout7_DIS_MODE[2:1]</Field_Name>
+                  <Start_Bit>1</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>Configures the output state of the SYSREF</Field_Description>
+               </Field6>
+               <Field7>
+                  <Field_Name>SDCLKout7_PD[0:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>0</End_Bit>
+                  <Field_Description>Powerdown SDCLKoutY and set to the state defined by SDCLKoutY_DIS_MODE</Field_Description>
+               </Field7>
+            </Fields>
+         </Register>
+         <Register Address="0x11F" Name="x11F">
+            <Name>x11F</Name>
+            <Address>0x11F</Address>
+            <Default_Data>0x1</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>4</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>SDCLKout7_POL[7:7]</Field_Name>
+                  <Start_Bit>7</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Sets the polarity of SYSREF clocks.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>SDCLKout7_FMT[6:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Sets the output format of the SYSREF clocks</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>DCLKout6_POL[3:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Sets the polarity of the device clocks.</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>DCLKout6_FMT[2:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>Sets the output format of the device clocks.</Field_Description>
+               </Field4>
+            </Fields>
+         </Register>
+         <Register Address="0x120" Name="x120">
+            <Name>x120</Name>
+            <Address>0x120</Address>
+            <Default_Data>0x8</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>3</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>CLKout8_9_ODL[6:6]</Field_Name>
+                  <Start_Bit>6</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Output drive level.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>CLKout8_9_IDL[5:5]</Field_Name>
+                  <Start_Bit>5</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>Input drive level.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>DCLKout8_DIV[4:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>DCLKoutX_DIV sets the divide value for the clock output, the divide may be even or odd. Both even or odd divides output a 50% duty cycle clock.</Field_Description>
+               </Field3>
+            </Fields>
+         </Register>
+         <Register Address="0x121" Name="x121">
+            <Name>x121</Name>
+            <Address>0x121</Address>
+            <Default_Data>0x55</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>2</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DCLKout8_DDLY_CNTH[7:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Number of clock cycles the output will be high when digital delay is engaged.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>DCLKout8_DDLY_CNTL[3:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Number of clock cycles the output will be low when dynamic digital delay is engaged.</Field_Description>
+               </Field2>
+            </Fields>
+         </Register>
+         <Register Address="0x123" Name="x123">
+            <Name>x123</Name>
+            <Address>0x123</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>3</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DCLKout8_ADLY[7:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Device clock analog delay value. Setting this value results in a 500 ps timing delay in additional to the delay of each 25 ps step.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>DCLKout8_ADLY_MUX[2:2]</Field_Name>
+                  <Start_Bit>2</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>This register selects the input to the analog delay for the device clock.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>DCLKout8_MUX[1:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>1</End_Bit>
+                  <Field_Description>This selects the input to the device clock buffer.</Field_Description>
+               </Field3>
+            </Fields>
+         </Register>
+         <Register Address="0x124" Name="x124">
+            <Name>x124</Name>
+            <Address>0x124</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>4</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DCLKout8_HS[6:6]</Field_Name>
+                  <Start_Bit>6</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Sets the device clock half step value. Half shift must be zero (0) for a divide of 1.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>SDCLKout9_MUX[5:5]</Field_Name>
+                  <Start_Bit>5</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>Sets the input the the SDCLKoutX outputs.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>SDCLKout9_DDLY[4:1]</Field_Name>
+                  <Start_Bit>1</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>Sets the number of VCO cycles to delay the SDCLKout by.</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>SDCLKout9_HS[0:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>0</End_Bit>
+                  <Field_Description>Sets the SYSREF clock half step value.</Field_Description>
+               </Field4>
+            </Fields>
+         </Register>
+         <Register Address="0x125" Name="x125">
+            <Name>x125</Name>
+            <Address>0x125</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>2</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>SDCLKout9_ADLY_EN[4:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>Enables analog delay for the SYSREF output.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>SDCLKout9_ADLY[3:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Sets the analog delay value for the SYSREF output.</Field_Description>
+               </Field2>
+            </Fields>
+         </Register>
+         <Register Address="0x126" Name="x126">
+            <Name>x126</Name>
+            <Address>0x126</Address>
+            <Default_Data>0x71</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>7</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DCLKout8_DDLY_PD[7:7]</Field_Name>
+                  <Start_Bit>7</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Powerdown the device clock digital delay circuitry.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>DCLKout8_HSg_PD[6:6]</Field_Name>
+                  <Start_Bit>6</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Powerdown the device clock glitchless half step feature.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>DCLKout8_ADLYg_PD[5:5]</Field_Name>
+                  <Start_Bit>5</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>Powerdown the device clock glitchless analog delay feature.</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>DCLKout8_ADLY_PD[4:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>Powerdown the device clock analog delay feature.</Field_Description>
+               </Field4>
+               <Field5>
+                  <Field_Name>CLKout8_9_PD[3:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Powerdown the clock group defined by X and Y.</Field_Description>
+               </Field5>
+               <Field6>
+                  <Field_Name>SDCLKout9_DIS_MODE[2:1]</Field_Name>
+                  <Start_Bit>1</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>Configures the output state of the SYSREF</Field_Description>
+               </Field6>
+               <Field7>
+                  <Field_Name>SDCLKout9_PD[0:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>0</End_Bit>
+                  <Field_Description>Powerdown SDCLKoutY and set to the state defined by SDCLKoutY_DIS_MODE</Field_Description>
+               </Field7>
+            </Fields>
+         </Register>
+         <Register Address="0x127" Name="x127">
+            <Name>x127</Name>
+            <Address>0x127</Address>
+            <Default_Data>0x1</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>4</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>SDCLKout9_POL[7:7]</Field_Name>
+                  <Start_Bit>7</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Sets the polarity of SYSREF clocks.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>SDCLKout9_FMT[6:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Sets the output format of the SYSREF clocks</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>DCLKout8_POL[3:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Sets the polarity of the device clocks.</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>DCLKout8_FMT[2:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>Sets the output format of the device clocks.</Field_Description>
+               </Field4>
+            </Fields>
+         </Register>
+         <Register Address="0x128" Name="x128">
+            <Name>x128</Name>
+            <Address>0x128</Address>
+            <Default_Data>0x8</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>3</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>CLKout10_11_ODL[6:6]</Field_Name>
+                  <Start_Bit>6</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Output drive level.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>CLKout10_11_IDL[5:5]</Field_Name>
+                  <Start_Bit>5</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>Input drive level.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>DCLKout10_DIV[4:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>DCLKoutX_DIV sets the divide value for the clock output, the divide may be even or odd. Both even or odd divides output a 50% duty cycle clock.</Field_Description>
+               </Field3>
+            </Fields>
+         </Register>
+         <Register Address="0x129" Name="x129">
+            <Name>x129</Name>
+            <Address>0x129</Address>
+            <Default_Data>0x55</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>2</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DCLKout10_DDLY_CNTH[7:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Number of clock cycles the output will be high when digital delay is engaged.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>DCLKout10_DDLY_CNTL[3:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Number of clock cycles the output will be low when dynamic digital delay is engaged.</Field_Description>
+               </Field2>
+            </Fields>
+         </Register>
+         <Register Address="0x12B" Name="x12B">
+            <Name>x12B</Name>
+            <Address>0x12B</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>3</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DCLKout10_ADLY[7:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Device clock analog delay value. Setting this value results in a 500 ps timing delay in additional to the delay of each 25 ps step.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>DCLKout10_ADLY_MUX[2:2]</Field_Name>
+                  <Start_Bit>2</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>This register selects the input to the analog delay for the device clock.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>DCLKout10_MUX[1:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>1</End_Bit>
+                  <Field_Description>This selects the input to the device clock buffer.</Field_Description>
+               </Field3>
+            </Fields>
+         </Register>
+         <Register Address="0x12C" Name="x12C">
+            <Name>x12C</Name>
+            <Address>0x12C</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>4</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DCLKout10_HS[6:6]</Field_Name>
+                  <Start_Bit>6</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Sets the device clock half step value. Half shift must be zero (0) for a divide of 1.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>SDCLKout11_MUX[5:5]</Field_Name>
+                  <Start_Bit>5</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>Sets the input the the SDCLKoutX outputs.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>SDCLKout11_DDLY[4:1]</Field_Name>
+                  <Start_Bit>1</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>Sets the number of VCO cycles to delay the SDCLKout by.</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>SDCLKout11_HS[0:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>0</End_Bit>
+                  <Field_Description>Sets the SYSREF clock half step value.</Field_Description>
+               </Field4>
+            </Fields>
+         </Register>
+         <Register Address="0x12D" Name="x12D">
+            <Name>x12D</Name>
+            <Address>0x12D</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>2</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>SDCLKout11_ADLY_EN[4:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>Enables analog delay for the SYSREF output.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>SDCLKout11_ADLY[3:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Sets the analog delay value for the SYSREF output.</Field_Description>
+               </Field2>
+            </Fields>
+         </Register>
+         <Register Address="0x12E" Name="x12E">
+            <Name>x12E</Name>
+            <Address>0x12E</Address>
+            <Default_Data>0x71</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>7</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DCLKout10_DDLY_PD[7:7]</Field_Name>
+                  <Start_Bit>7</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Powerdown the device clock digital delay circuitry.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>DCLKout10_HSg_PD[6:6]</Field_Name>
+                  <Start_Bit>6</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Powerdown the device clock glitchless half step feature.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>DCLKout10_ADLYg_PD[5:5]</Field_Name>
+                  <Start_Bit>5</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>Powerdown the device clock glitchless analog delay feature.</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>DCLKout10_ADLY_PD[4:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>Powerdown the device clock analog delay feature.</Field_Description>
+               </Field4>
+               <Field5>
+                  <Field_Name>CLKout10_11_PD[3:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Powerdown the clock group defined by X and Y.</Field_Description>
+               </Field5>
+               <Field6>
+                  <Field_Name>SDCLKout11_DIS_MODE[2:1]</Field_Name>
+                  <Start_Bit>1</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>Configures the output state of the SYSREF</Field_Description>
+               </Field6>
+               <Field7>
+                  <Field_Name>SDCLKout11_PD[0:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>0</End_Bit>
+                  <Field_Description>Powerdown SDCLKoutY and set to the state defined by SDCLKoutY_DIS_MODE</Field_Description>
+               </Field7>
+            </Fields>
+         </Register>
+         <Register Address="0x12F" Name="x12F">
+            <Name>x12F</Name>
+            <Address>0x12F</Address>
+            <Default_Data>0x1</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>4</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>SDCLKout11_POL[7:7]</Field_Name>
+                  <Start_Bit>7</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Sets the polarity of SYSREF clocks.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>SDCLKout11_FMT[6:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Sets the output format of the SYSREF clocks</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>DCLKout10_POL[3:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Sets the polarity of the device clocks.</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>DCLKout10_FMT[2:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>Sets the output format of the device clocks.</Field_Description>
+               </Field4>
+            </Fields>
+         </Register>
+         <Register Address="0x130" Name="x130">
+            <Name>x130</Name>
+            <Address>0x130</Address>
+            <Default_Data>0x2</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>3</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>CLKout12_13_ODL[6:6]</Field_Name>
+                  <Start_Bit>6</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Output drive level.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>CLKout12_13_IDL[5:5]</Field_Name>
+                  <Start_Bit>5</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>Input drive level.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>DCLKout12_DIV[4:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>DCLKoutX_DIV sets the divide value for the clock output, the divide may be even or odd. Both even or odd divides output a 50% duty cycle clock.</Field_Description>
+               </Field3>
+            </Fields>
+         </Register>
+         <Register Address="0x131" Name="x131">
+            <Name>x131</Name>
+            <Address>0x131</Address>
+            <Default_Data>0x55</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>2</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DCLKout12_DDLY_CNTH[7:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Number of clock cycles the output will be high when digital delay is engaged.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>DCLKout12_DDLY_CNTL[3:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Number of clock cycles the output will be low when dynamic digital delay is engaged.</Field_Description>
+               </Field2>
+            </Fields>
+         </Register>
+         <Register Address="0x133" Name="x133">
+            <Name>x133</Name>
+            <Address>0x133</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>3</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DCLKout12_ADLY[7:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Device clock analog delay value. Setting this value results in a 500 ps timing delay in additional to the delay of each 25 ps step.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>DCLKout12_ADLY_MUX[2:2]</Field_Name>
+                  <Start_Bit>2</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>This register selects the input to the analog delay for the device clock.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>DCLKout12_MUX[1:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>1</End_Bit>
+                  <Field_Description>This selects the input to the device clock buffer.</Field_Description>
+               </Field3>
+            </Fields>
+         </Register>
+         <Register Address="0x134" Name="x134">
+            <Name>x134</Name>
+            <Address>0x134</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>4</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DCLKout12_HS[6:6]</Field_Name>
+                  <Start_Bit>6</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Sets the device clock half step value. Half shift must be zero (0) for a divide of 1.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>SDCLKout13_MUX[5:5]</Field_Name>
+                  <Start_Bit>5</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>Sets the input the the SDCLKoutX outputs.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>SDCLKout13_DDLY[4:1]</Field_Name>
+                  <Start_Bit>1</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>Sets the number of VCO cycles to delay the SDCLKout by.</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>SDCLKout13_HS[0:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>0</End_Bit>
+                  <Field_Description>Sets the SYSREF clock half step value.</Field_Description>
+               </Field4>
+            </Fields>
+         </Register>
+         <Register Address="0x135" Name="x135">
+            <Name>x135</Name>
+            <Address>0x135</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>2</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>SDCLKout13_ADLY_EN[4:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>Enables analog delay for the SYSREF output.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>SDCLKout13_ADLY[3:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Sets the analog delay value for the SYSREF output.</Field_Description>
+               </Field2>
+            </Fields>
+         </Register>
+         <Register Address="0x136" Name="x136">
+            <Name>x136</Name>
+            <Address>0x136</Address>
+            <Default_Data>0x79</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>7</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DCLKout12_DDLY_PD[7:7]</Field_Name>
+                  <Start_Bit>7</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Powerdown the device clock digital delay circuitry.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>DCLKout12_HSg_PD[6:6]</Field_Name>
+                  <Start_Bit>6</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Powerdown the device clock glitchless half step feature.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>DCLKout12_ADLYg_PD[5:5]</Field_Name>
+                  <Start_Bit>5</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>Powerdown the device clock glitchless analog delay feature.</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>DCLKout12_ADLY_PD[4:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>Powerdown the device clock analog delay feature.</Field_Description>
+               </Field4>
+               <Field5>
+                  <Field_Name>CLKout12_13_PD[3:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Powerdown the clock group defined by X and Y.</Field_Description>
+               </Field5>
+               <Field6>
+                  <Field_Name>SDCLKout13_DIS_MODE[2:1]</Field_Name>
+                  <Start_Bit>1</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>Configures the output state of the SYSREF</Field_Description>
+               </Field6>
+               <Field7>
+                  <Field_Name>SDCLKout13_PD[0:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>0</End_Bit>
+                  <Field_Description>Powerdown SDCLKoutY and set to the state defined by SDCLKoutY_DIS_MODE</Field_Description>
+               </Field7>
+            </Fields>
+         </Register>
+         <Register Address="0x137" Name="x137">
+            <Name>x137</Name>
+            <Address>0x137</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>4</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>SDCLKout13_POL[7:7]</Field_Name>
+                  <Start_Bit>7</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Sets the polarity of SYSREF clocks.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>SDCLKout13_FMT[6:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Sets the output format of the SYSREF clocks</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>DCLKout12_POL[3:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Sets the polarity of the device clocks.</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>DCLKout12_FMT[2:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>Sets the output format of the device clocks.</Field_Description>
+               </Field4>
+            </Fields>
+         </Register>
+         <Register Address="0x138" Name="x138">
+            <Name>x138</Name>
+            <Address>0x138</Address>
+            <Default_Data>0x4</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>3</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>VCO_MUX[6:5]</Field_Name>
+                  <Start_Bit>5</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Selects clock distribution path source from VCO0, VCO1, or CLKin (external VCO)</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>OSCout_MUX[4:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>Select the source for OSCout:</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>OSCout_FMT[3:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Selects the output format of OSCout</Field_Description>
+               </Field3>
+            </Fields>
+         </Register>
+         <Register Address="0x139" Name="x139">
+            <Name>x139</Name>
+            <Address>0x139</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>SYSREF_MUX[2:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>Selects the SYSREF source</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x13A" Name="x13A">
+            <Name>x13A</Name>
+            <Address>0x13A</Address>
+            <Default_Data>0xC</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>SYSREF_DIV[12:8][4:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>Divide value for the SYSREF outputs.</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x13B" Name="x13B">
+            <Name>x13B</Name>
+            <Address>0x13B</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>SYSREF_DIV[7:0][7:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Divide value for the SYSREF outputs.</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x13C" Name="x13C">
+            <Name>x13C</Name>
+            <Address>0x13C</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>SYSREF_DDLY[12:8][4:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>Sets the value of the SYSREF digital delay.</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x13D" Name="x13D">
+            <Name>x13D</Name>
+            <Address>0x13D</Address>
+            <Default_Data>0x8</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>SYSREF_DDLY[7:0][7:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Sets the value of the SYSREF digital delay.</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x13E" Name="x13E">
+            <Name>x13E</Name>
+            <Address>0x13E</Address>
+            <Default_Data>0x3</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>SYSREF_PULSE_CNT[1:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>1</End_Bit>
+                  <Field_Description>Sets the number of SYSREF pulses generated when not in continuous mode.</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x13F" Name="x13F">
+            <Name>x13F</Name>
+            <Address>0x13F</Address>
+            <Default_Data>0x18</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>4</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>PLL2_NCLK_MUX[4:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>Selects the input to the PLL2 N Divider</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>PLL1_NCLK_MUX[3:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Selects the input to the PLL1 N Delay.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>FB_MUX[2:1]</Field_Name>
+                  <Start_Bit>1</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>When in 0-delay mode, the feedback mux selects the clock output to be fed back into the PLL1 N Divider.</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>FB_MUX_EN[0:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>0</End_Bit>
+                  <Field_Description>When using 0-delay or dynamic digital delay, FB_MUX_EN must be set to 1 power up the feedback mux.</Field_Description>
+               </Field4>
+            </Fields>
+         </Register>
+         <Register Address="0x140" Name="x140">
+            <Name>x140</Name>
+            <Address>0x140</Address>
+            <Default_Data>0x7</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>5</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>OSCin_PD[4:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>Powerdown the OSCin port.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>SYSREF_GBL_PD[3:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Powerdown the SYSREF block.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>SYSREF_PD[2:2]</Field_Name>
+                  <Start_Bit>2</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>Powerdown the SYSREF and source.</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>SYSREF_DDLY_PD[1:1]</Field_Name>
+                  <Start_Bit>1</Start_Bit>
+                  <End_Bit>1</End_Bit>
+                  <Field_Description>Powerdown the SYSREF digital delay circuitry.</Field_Description>
+               </Field4>
+               <Field5>
+                  <Field_Name>SYSREF_PLSR_PD[0:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>0</End_Bit>
+                  <Field_Description>Powerdown the SYSREF pulse generator.</Field_Description>
+               </Field5>
+            </Fields>
+         </Register>
+         <Register Address="0x141" Name="x141">
+            <Name>x141</Name>
+            <Address>0x141</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>8</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DDLYd_SYSREF_EN[7:7]</Field_Name>
+                  <Start_Bit>7</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Enables dynamic digital delay on SYSREF outputs</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>DDLYd12_EN[6:6]</Field_Name>
+                  <Start_Bit>6</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Enables dynamic digital delay on DCLKout12</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>DDLYd10_EN[5:5]</Field_Name>
+                  <Start_Bit>5</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>Enables dynamic digital delay on DCLKout10</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>DDLYd8_EN[4:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>Enables dynamic digital delay on DCLKout8</Field_Description>
+               </Field4>
+               <Field5>
+                  <Field_Name>DDLYd6_EN[3:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Enables dynamic digital delay on DCLKout6</Field_Description>
+               </Field5>
+               <Field6>
+                  <Field_Name>DDLYd4_EN[2:2]</Field_Name>
+                  <Start_Bit>2</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>Enables dynamic digital delay on DCLKout4</Field_Description>
+               </Field6>
+               <Field7>
+                  <Field_Name>DDLYd2_EN[1:1]</Field_Name>
+                  <Start_Bit>1</Start_Bit>
+                  <End_Bit>1</End_Bit>
+                  <Field_Description>Enables dynamic digital delay on DCLKout2</Field_Description>
+               </Field7>
+               <Field8>
+                  <Field_Name>DDLYd0_EN[0:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>0</End_Bit>
+                  <Field_Description>Enables dynamic digital delay on DCLKout0</Field_Description>
+               </Field8>
+            </Fields>
+         </Register>
+         <Register Address="0x142" Name="x142">
+            <Name>x142</Name>
+            <Address>0x142</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DDLYd_STEP_CNT[3:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Sets the number of dynamic digital delay adjustments that will occur.</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x143" Name="x143">
+            <Name>x143</Name>
+            <Address>0x143</Address>
+            <Default_Data>0x11</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>5</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>SYNC_POL[5:5]</Field_Name>
+                  <Start_Bit>5</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>Sets the polarity of the SYNC pin.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>SYNC_EN[4:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>Enables the SYNC functionality.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>SYNC_PLL2_DLD[3:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Assert SYNC until PLL2 DLD = 1</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>SYNC_PLL1_DLD[2:2]</Field_Name>
+                  <Start_Bit>2</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>Assert SYNC until PLL1 DLD = 1</Field_Description>
+               </Field4>
+               <Field5>
+                  <Field_Name>SYNC_MODE[1:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>1</End_Bit>
+                  <Field_Description>Sets the method of generating a SYNC event.</Field_Description>
+               </Field5>
+            </Fields>
+         </Register>
+         <Register Address="0x144" Name="x144">
+            <Name>x144</Name>
+            <Address>0x144</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>8</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>SYNC_DISSYSREF[7:7]</Field_Name>
+                  <Start_Bit>7</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Prevent the SYSREF clocks from becoming synchronized during a SYNC event. If SYNC_DISSYSREF is enabled it will continue to operate normally during a SYNC event.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>SYNC_DIS12[6:6]</Field_Name>
+                  <Start_Bit>6</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Prevent the device clock output from becoming synchronized during a SYNC event. If SYNC_DIS bit for a particular output is enabled then it will continue to operate normally during a SYNC event.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>SYNC_DIS10[5:5]</Field_Name>
+                  <Start_Bit>5</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>Prevent the device clock output from becoming synchronized during a SYNC event. If SYNC_DIS bit for a particular output is enabled then it will continue to operate normally during a SYNC event.</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>SYNC_DIS8[4:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>Prevent the device clock output from becoming synchronized during a SYNC event. If SYNC_DIS bit for a particular output is enabled then it will continue to operate normally during a SYNC event.</Field_Description>
+               </Field4>
+               <Field5>
+                  <Field_Name>SYNC_DIS6[3:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Prevent the device clock output from becoming synchronized during a SYNC event. If SYNC_DIS bit for a particular output is enabled then it will continue to operate normally during a SYNC event.</Field_Description>
+               </Field5>
+               <Field6>
+                  <Field_Name>SYNC_DIS4[2:2]</Field_Name>
+                  <Start_Bit>2</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>Prevent the device clock output from becoming synchronized during a SYNC event. If SYNC_DIS bit for a particular output is enabled then it will continue to operate normally during a SYNC event.</Field_Description>
+               </Field6>
+               <Field7>
+                  <Field_Name>SYNC_DIS2[1:1]</Field_Name>
+                  <Start_Bit>1</Start_Bit>
+                  <End_Bit>1</End_Bit>
+                  <Field_Description>Prevent the device clock output from becoming synchronized during a SYNC event. If SYNC_DIS bit for a particular output is enabled then it will continue to operate normally during a SYNC event.</Field_Description>
+               </Field7>
+               <Field8>
+                  <Field_Name>SYNC_DIS0[0:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>0</End_Bit>
+                  <Field_Description>Prevent the device clock output from becoming synchronized during a SYNC event. If SYNC_DIS bit for a particular output is enabled then it will continue to operate normally during a SYNC event.</Field_Description>
+               </Field8>
+            </Fields>
+         </Register>
+         <Register Address="0x145" Name="x145">
+            <Name>x145</Name>
+            <Address>0x145</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>7</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DDLY_CONT_CLK12[6:6]</Field_Name>
+                  <Start_Bit>6</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>This register sets the condition of the dynamic digital delay inserted pulse. This is only used when DDLYd#_EN is enabled and dynamic digital delay step count register is programmed (DDLYd_STEP_CNT).</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>DDLY_CONT_CLK10[5:5]</Field_Name>
+                  <Start_Bit>5</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>This register sets the condition of the dynamic digital delay inserted pulse. This is only used when DDLYd#_EN is enabled and dynamic digital delay step count register is programmed (DDLYd_STEP_CNT).</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>DDLY_CONT_CLK8[4:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>This register sets the condition of the dynamic digital delay inserted pulse. This is only used when DDLYd#_EN is enabled and dynamic digital delay step count register is programmed (DDLYd_STEP_CNT).</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>DDLY_CONT_CLK6[3:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>This register sets the condition of the dynamic digital delay inserted pulse. This is only used when DDLYd#_EN is enabled and dynamic digital delay step count register is programmed (DDLYd_STEP_CNT).</Field_Description>
+               </Field4>
+               <Field5>
+                  <Field_Name>DDLY_CONT_CLK4[2:2]</Field_Name>
+                  <Start_Bit>2</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>This register sets the condition of the dynamic digital delay inserted pulse. This is only used when DDLYd#_EN is enabled and dynamic digital delay step count register is programmed (DDLYd_STEP_CNT).</Field_Description>
+               </Field5>
+               <Field6>
+                  <Field_Name>DDLY_CONT_CLK2[1:1]</Field_Name>
+                  <Start_Bit>1</Start_Bit>
+                  <End_Bit>1</End_Bit>
+                  <Field_Description>This register sets the condition of the dynamic digital delay inserted pulse. This is only used when DDLYd#_EN is enabled and dynamic digital delay step count register is programmed (DDLYd_STEP_CNT).</Field_Description>
+               </Field6>
+               <Field7>
+                  <Field_Name>DDLY_CONT_CLK0[0:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>0</End_Bit>
+                  <Field_Description>This register sets the condition of the dynamic digital delay inserted pulse. This is only used when DDLYd#_EN is enabled and dynamic digital delay step count register is programmed (DDLYd_STEP_CNT).</Field_Description>
+               </Field7>
+            </Fields>
+         </Register>
+         <Register Address="0x146" Name="x146">
+            <Name>x146</Name>
+            <Address>0x146</Address>
+            <Default_Data>0x18</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>6</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>CLKin2_EN[5:5]</Field_Name>
+                  <Start_Bit>5</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>Enable CLKin2 to be used during auto-switching of CLKin_SEL_MODE.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>CLKin1_EN[4:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>Enable CLKin1 to be used during auto-switching of CLKin_SEL_MODE.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>CLKin0_EN[3:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Enable CLKin0 to be used during auto-switching of CLKin_SEL_MODE.</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>CLKin2_TYPE[2:2]</Field_Name>
+                  <Start_Bit>2</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>There are two buffer types for CLKin2, bipolar and CMOS. Bipolar is recommended for differential inputs like LVDS or LVPECL. CMOS is recommended for DC coupled single ended inputs. When using bipolar, CLKinX and CLKinX* must be AC coupled. When using CMOS, CLKinX and CLKinX* may be AC or DC coupled if the input signal is differential. If the input signal is singleended the used input may be either AC or DC coupled and the unused input must AC grounded.</Field_Description>
+               </Field4>
+               <Field5>
+                  <Field_Name>CLKin1_TYPE[1:1]</Field_Name>
+                  <Start_Bit>1</Start_Bit>
+                  <End_Bit>1</End_Bit>
+                  <Field_Description>There are two buffer types for CLKin1, bipolar and CMOS. Bipolar is recommended for differential inputs like LVDS or LVPECL. CMOS is recommended for DC coupled single ended inputs. When using bipolar, CLKinX and CLKinX* must be AC coupled. When using CMOS, CLKinX and CLKinX* may be AC or DC coupled if the input signal is differential. If the input signal is singleended the used input may be either AC or DC coupled and the unused input must AC grounded.</Field_Description>
+               </Field5>
+               <Field6>
+                  <Field_Name>CLKin0_TYPE[0:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>0</End_Bit>
+                  <Field_Description>There are two buffer types for CLKin1, bipolar and CMOS. Bipolar is recommended for differential inputs like LVDS or LVPECL. CMOS is recommended for DC coupled single ended inputs. When using bipolar, CLKinX and CLKinX* must be AC coupled. When using CMOS, CLKinX and CLKinX* may be AC or DC coupled if the input signal is differential. If the input signal is singleended the used input may be either AC or DC coupled and the unused input must AC grounded.</Field_Description>
+               </Field6>
+            </Fields>
+         </Register>
+         <Register Address="0x147" Name="x147">
+            <Name>x147</Name>
+            <Address>0x147</Address>
+            <Default_Data>0x3A</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>4</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>CLKin_SEL_POL[7:7]</Field_Name>
+                  <Start_Bit>7</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Inverts the CLKin polarity.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>CLKin_SEL_MODE[6:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Sets the mode used in determining the reference for PLL1. The state machine will automatically select the appropriate input of CLKin_MUX based on the CLKin_SEL_MODE selected.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>CLKin1_OUT_MUX[3:2]</Field_Name>
+                  <Start_Bit>2</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Selects where the output of the CLKin1 buffer is directed.</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>CLKin0_OUT_MUX[1:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>1</End_Bit>
+                  <Field_Description>Selects where the output of the CLKin0 buffer is directed.</Field_Description>
+               </Field4>
+            </Fields>
+         </Register>
+         <Register Address="0x148" Name="x148">
+            <Name>x148</Name>
+            <Address>0x148</Address>
+            <Default_Data>0x2</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>2</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>CLKin_SEL0_MUX[5:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>This set the output value of the CLKin_SEL0 pin. This register only applies if CLKin_SEL0_TYPE is set to an output mode</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>CLKin_SEL0_TYPE[2:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>This sets the IO type of the CLKin_SEL0 pin.</Field_Description>
+               </Field2>
+            </Fields>
+         </Register>
+         <Register Address="0x149" Name="x149">
+            <Name>x149</Name>
+            <Address>0x149</Address>
+            <Default_Data>0x42</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>3</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>SDIO_RDBK_TYPE[6:6]</Field_Name>
+                  <Start_Bit>6</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>Sets the SDIO pin to open drain during SPI readback in 3 wire mode.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>CLKin_SEL1_MUX[5:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>This set the output value of the CLKin_SEL1 pin. This register only applies if CLKin_SEL1_TYPE is set to an output mode</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>CLKin_SEL1_TYPE[2:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>This sets the IO type of the CLKin_SEL1 pin.</Field_Description>
+               </Field3>
+            </Fields>
+         </Register>
+         <Register Address="0x14A" Name="x14A">
+            <Name>x14A</Name>
+            <Address>0x14A</Address>
+            <Default_Data>0x2</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>2</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>RESET_MUX[5:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>This sets the output value of the RESET pin. This register only applies if RESET_TYPE is set to an output mode.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>RESET_TYPE[2:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>This sets the IO type of the RESET pin.</Field_Description>
+               </Field2>
+            </Fields>
+         </Register>
+         <Register Address="0x14B" Name="x14B">
+            <Name>x14B</Name>
+            <Address>0x14B</Address>
+            <Default_Data>0x16</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>6</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>LOS_TIMEOUT[7:6]</Field_Name>
+                  <Start_Bit>6</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>This controls the amount of time in which no activity on a CLKin forces a clock switch event.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>LOS_EN[5:5]</Field_Name>
+                  <Start_Bit>5</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>Enables the LOS (Loss-of-Signal) timeout control.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>TRACK_EN[4:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>Enable the DAC to track the PLL1 tuning voltage, optionally for use in holdover mode. Tracking can be used to monitor PLL1 voltage in any mode.</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>HOLDOVER_FORCE[3:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>This bit forces holdover mode. When holdover mode is forced, if in fixed CPout1 mode, then the DAC will set the programmed MAN_DAC value. If in tracked CPout1 mode, then the DAC will set the current tracked DAC value. Setting HOLDOVER_FORCE does not constitute a clock input switch event unless HOLDOVER_PLL1_DET = 1, since in holdover mode, PLL1_DLD = 0 this will trigger the clock input switch event.</Field_Description>
+               </Field4>
+               <Field5>
+                  <Field_Name>MAN_DAC_EN[2:2]</Field_Name>
+                  <Start_Bit>2</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>This bit enables the manual DAC mode.</Field_Description>
+               </Field5>
+               <Field6>
+                  <Field_Name>MAN_DAC[9:8][1:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>1</End_Bit>
+                  <Field_Description>Sets the value of the manual DAC when in manual DAC mode.</Field_Description>
+               </Field6>
+            </Fields>
+         </Register>
+         <Register Address="0x14C" Name="x14C">
+            <Name>x14C</Name>
+            <Address>0x14C</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>MAN_DAC[7:0][7:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Sets the value of the manual DAC when in manual DAC mode.</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x14D" Name="x14D">
+            <Name>x14D</Name>
+            <Address>0x14D</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DAC_TRIP_LOW[5:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>Voltage from Vcc at which holdover is entered if HOLDOVER_VTUNE_DET is enabled.</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x14E" Name="x14E">
+            <Name>x14E</Name>
+            <Address>0x14E</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>2</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DAC_CLK_MULT[7:6]</Field_Name>
+                  <Start_Bit>6</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>This is the multiplier for the DAC_CLK_CNTR which sets the value at which holdover mode is entered.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>DAC_TRIP_HIGH[5:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>Voltage from GND at which holdover is entered if HOLDOVER_VTUNE_DET is enabled.</Field_Description>
+               </Field2>
+            </Fields>
+         </Register>
+         <Register Address="0x14F" Name="x14F">
+            <Name>x14F</Name>
+            <Address>0x14F</Address>
+            <Default_Data>0x7F</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>DAC_CLK_CNTR[7:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>This has the value of the DAC when in tracked mode.</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x150" Name="x150">
+            <Name>x150</Name>
+            <Address>0x150</Address>
+            <Default_Data>0x3</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>5</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>HOLDOVER_PLL1_DET[4:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>This enables the HOLDOVER when PLL1 lock detect signal transitions from high to low. When using Pin Select Mode as the input clock switch mode, this bit should normally be cleared.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>HOLDOVER_LOS_DET[3:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>This enables HOLDOVER when PLL1 LOS signal is detected.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>HOLDOVER_VTUNE_DET[2:2]</Field_Name>
+                  <Start_Bit>2</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>Enables the DAC Vtune rail detections. When the DAC achieves a specified Vtune, if this bit is enabled, the current clock input is considered invalid and an input clock switch event is generated.</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>HOLDOVER_HITLESS_SWITCH[1:1]</Field_Name>
+                  <Start_Bit>1</Start_Bit>
+                  <End_Bit>1</End_Bit>
+                  <Field_Description>Determines whether a clock switch event will enter holdover use hitless switching.</Field_Description>
+               </Field4>
+               <Field5>
+                  <Field_Name>HOLDOVER_EN[0:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>0</End_Bit>
+                  <Field_Description>Sets whether holdover mode is active or not.</Field_Description>
+               </Field5>
+            </Fields>
+         </Register>
+         <Register Address="0x151" Name="x151">
+            <Name>x151</Name>
+            <Address>0x151</Address>
+            <Default_Data>0x2</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>HOLDOVER_DLD_CNT[13:8][5:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>The number of valid clocks of PLL1 PDF before holdover mode is exited.</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x152" Name="x152">
+            <Name>x152</Name>
+            <Address>0x152</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>HOLDOVER_DLD_CNT[7:0][7:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>The number of valid clocks of PLL1 PDF before holdover mode is exited.</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x153" Name="x153">
+            <Name>x153</Name>
+            <Address>0x153</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>CLKin0_R[13:8][5:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>The value of PLL1 R counter when CLKin0 is selected.</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x154" Name="x154">
+            <Name>x154</Name>
+            <Address>0x154</Address>
+            <Default_Data>0x78</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>CLKin0_R[7:0][7:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>The value of PLL1 R counter when CLKin0 is selected.</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x155" Name="x155">
+            <Name>x155</Name>
+            <Address>0x155</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>CLKin1_R[13:8][5:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>The value of PLL1 R counter when CLKin1 is selected.</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x156" Name="x156">
+            <Name>x156</Name>
+            <Address>0x156</Address>
+            <Default_Data>0x96</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>CLKin1_R[7:0][7:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>The value of PLL1 R counter when CLKin1 is selected.</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x157" Name="x157">
+            <Name>x157</Name>
+            <Address>0x157</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>CLKin2_R[13:8][5:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>The value of PLL1 R counter when CLKin2 is selected.</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x158" Name="x158">
+            <Name>x158</Name>
+            <Address>0x158</Address>
+            <Default_Data>0x96</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>CLKin2_R[7:0][7:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>The value of PLL1 R counter when CLKin2 is selected.</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x159" Name="x159">
+            <Name>x159</Name>
+            <Address>0x159</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>PLL1_N[13:8][5:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>The value of PLL1 N counter.</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x15A" Name="x15A">
+            <Name>x15A</Name>
+            <Address>0x15A</Address>
+            <Default_Data>0x78</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>PLL1_N[7:0][7:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>The value of PLL1 N counter.</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x15B" Name="x15B">
+            <Name>x15B</Name>
+            <Address>0x15B</Address>
+            <Default_Data>0x14</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>4</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>PLL1_WND_SIZE[7:6]</Field_Name>
+                  <Start_Bit>6</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>PLL1_WND_SIZE sets the window size used for digital lock detect for PLL1. If the phase error between the reference and feedback of PLL1 is less than specified time, then the PLL1 lock counter increments.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>PLL1_CP_TRI[5:5]</Field_Name>
+                  <Start_Bit>5</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>This bit allows for the PLL1 charge pump output pin, CPout1, to be placed into TRI-STATE.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>PLL1_CP_POL[4:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>PLL1_CP_POL sets the charge pump polarity for PLL1. Many VCXOs use positive slope. A positive slope VCXO increases output frequency with increasing voltage. A negative slope VCXO decreases output frequency with increasing voltage.</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>PLL1_CP_GAIN[3:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>This bit programs the PLL1 charge pump output current level.</Field_Description>
+               </Field4>
+            </Fields>
+         </Register>
+         <Register Address="0x15C" Name="x15C">
+            <Name>x15C</Name>
+            <Address>0x15C</Address>
+            <Default_Data>0x20</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>PLL1_DLD_CNT[13:8][5:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>The reference and feedback of PLL1 must be within the window of phase error as specified by PLL1_WND_SIZE for this many phase detector cycles before PLL1 digital lock detect is asserted.</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x15D" Name="x15D">
+            <Name>x15D</Name>
+            <Address>0x15D</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>PLL1_DLD_CNT[7:0][7:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>The reference and feedback of PLL1 must be within the window of phase error as specified by PLL1_WND_SIZE for this many phase detector cycles before PLL1 digital lock detect is asserted.</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x15E" Name="x15E">
+            <Name>x15E</Name>
+            <Address>0x15E</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>2</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>PLL1_R_DLY[5:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>Increasing delay of PLL1_R_DLY will cause the outputs to lag from CLKinX. For use in 0-delay mode.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>PLL1_N_DLY[2:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>Increasing delay of PLL1_N_DLY will cause the outputs to lead from CLKinX. For use in 0-delay mode.</Field_Description>
+               </Field2>
+            </Fields>
+         </Register>
+         <Register Address="0x15F" Name="x15F">
+            <Name>x15F</Name>
+            <Address>0x15F</Address>
+            <Default_Data>0xE</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>2</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>PLL1_LD_MUX[7:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>This sets the output value of the Status_LD1 pin.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>PLL1_LD_TYPE[2:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>Sets the IO type of the Status_LD1 pin.</Field_Description>
+               </Field2>
+            </Fields>
+         </Register>
+         <Register Address="0x160" Name="x160">
+            <Name>x160</Name>
+            <Address>0x160</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>PLL2_R[11:8][3:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>PLL2 R divider value</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x161" Name="x161">
+            <Name>x161</Name>
+            <Address>0x161</Address>
+            <Default_Data>0x2</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>PLL2_R[7:0][7:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>PLL2 R divider value</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x162" Name="x162">
+            <Name>x162</Name>
+            <Address>0x162</Address>
+            <Default_Data>0x5D</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>4</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>PLL2_P[7:5]</Field_Name>
+                  <Start_Bit>5</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>The PLL2 N Prescaler divides the output of the VCO as selected by Mode_MUX1 and is connected to the PLL2 N divider.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>OSCin_FREQ[4:2]</Field_Name>
+                  <Start_Bit>2</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>The frequency of the PLL2 reference input to the PLL2 Phase Detector (OSCin/OSCin*port) must be programmed in order to support proper operation of the frequency calibration routine which locks the internal VCO to the target frequency.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>PLL2_XTAL_EN[1:1]</Field_Name>
+                  <Start_Bit>1</Start_Bit>
+                  <End_Bit>1</End_Bit>
+                  <Field_Description>f an external crystal is being used to implement a discrete VCXO, the internal feedback amplifier must be enabled with this bit in order to complete the oscillator circuit.</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>PLL2_REF_2X_EN[0:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>0</End_Bit>
+                  <Field_Description>Enabling the PLL2 reference frequency doubler allows for higher phase detector frequencies on PLL2 than would normally be allowed with the given VCXO or Crystal frequency. Higher phase detector frequencies reduces the PLL N values which makes the design of wider loop bandwidth filters possible.</Field_Description>
+               </Field4>
+            </Fields>
+         </Register>
+         <Register Address="0x163" Name="x163">
+            <Name>x163</Name>
+            <Address>0x163</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>PLL2_N_CAL[17:16][1:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>1</End_Bit>
+                  <Field_Description>This register disables frequency calibration and sets the PLL2 N divider value.</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x164" Name="x164">
+            <Name>x164</Name>
+            <Address>0x164</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>PLL2_N_CAL[15:8][7:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>This register disables frequency calibration and sets the PLL2 N divider value.</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x165" Name="x165">
+            <Name>x165</Name>
+            <Address>0x165</Address>
+            <Default_Data>0xC</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>PLL2_N_CAL[7:0][7:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>This register disables frequency calibration and sets the PLL2 N divider value.</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x166" Name="x166">
+            <Name>x166</Name>
+            <Address>0x166</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>2</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>PLL2_FCAL_DIS[2:2]</Field_Name>
+                  <Start_Bit>2</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>This disables the PLL2 frequency calibration.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>PLL2_N[17:16][1:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>1</End_Bit>
+                  <Field_Description>This register contains the value of the PLL2 N divider used in calibration for 0-delay modes.</Field_Description>
+               </Field2>
+            </Fields>
+         </Register>
+         <Register Address="0x167" Name="x167">
+            <Name>x167</Name>
+            <Address>0x167</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>PLL2_N[15:8][7:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>This register contains the value of the PLL2 N divider used in calibration for 0-delay modes.</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x168" Name="x168">
+            <Name>x168</Name>
+            <Address>0x168</Address>
+            <Default_Data>0xC</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>PLL2_N[7:0][7:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>This register contains the value of the PLL2 N divider used in calibration for 0-delay modes.</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x169" Name="x169">
+            <Name>x169</Name>
+            <Address>0x169</Address>
+            <Default_Data>0x59</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>5</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>PLL2_WND_SIZE[6:5]</Field_Name>
+                  <Start_Bit>5</Start_Bit>
+                  <End_Bit>6</End_Bit>
+                  <Field_Description>PLL2_WND_SIZE sets the window size used for digital lock detect for PLL2. If the phase error between the reference and feedback of PLL2 is less than specified time, then the PLL2 lock counter increments. This value must be programmed to 2 (3.7 ns).</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>PLL2_CP_GAIN[4:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>4</End_Bit>
+                  <Field_Description>This bit programs the PLL2 charge pump output current level. The table below also illustrates the impact of the PLL2 TRISTATE bit in conjunction with PLL2_CP_GAIN.</Field_Description>
+               </Field2>
+               <Field3>
+                  <Field_Name>PLL2_CP_POL[2:2]</Field_Name>
+                  <Start_Bit>2</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>PLL2_CP_POL sets the charge pump polarity for PLL2. The internal VCO requires the negative charge pump polarity to be selected. Many VCOs use positive slope. A positive slope VCO increases output frequency with increasing voltage. A negative slope VCO decreases output frequency with increasing voltage.</Field_Description>
+               </Field3>
+               <Field4>
+                  <Field_Name>PLL2_CP_TRI[1:1]</Field_Name>
+                  <Start_Bit>1</Start_Bit>
+                  <End_Bit>1</End_Bit>
+                  <Field_Description>PLL2_CP_TRI tri-states the output of the PLL2 charge pump.</Field_Description>
+               </Field4>
+               <Field5>
+                  <Field_Name>PLL2_FAST_PDF[0:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>0</End_Bit>
+                  <Field_Description>When PLL2 phase detector frequency is greater than 100 MHz, set the PLL2_FAST_PDF to ensure proper operation of device.</Field_Description>
+               </Field5>
+            </Fields>
+         </Register>
+         <Register Address="0x16A" Name="x16A">
+            <Name>x16A</Name>
+            <Address>0x16A</Address>
+            <Default_Data>0x20</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>PLL2_DLD_CNT[13:8][5:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>The reference and feedback of PLL2 must be within the window of phase error as specified by PLL2_WND_SIZE for PLL2_DLD_CNT cycles before PLL2 digital lock detect is asserted.</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x16B" Name="x16B">
+            <Name>x16B</Name>
+            <Address>0x16B</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>PLL2_DLD_CNT[7:0][7:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>The reference and feedback of PLL2 must be within the window of phase error as specified by PLL2_WND_SIZE for PLL2_DLD_CNT cycles before PLL2 digital lock detect is asserted.</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x16C" Name="x16C">
+            <Name>x16C</Name>
+            <Address>0x16C</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>2</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>PLL2_LF_R4[5:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>5</End_Bit>
+                  <Field_Description>Internal loop filter components are available for PLL2, enabling either 3rd or 4th order loop filters without requiring external components.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>PLL2_LF_R3[2:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>Internal loop filter components are available for PLL2, enabling either 3rd or 4th order loop filters without requiring external components.</Field_Description>
+               </Field2>
+            </Fields>
+         </Register>
+         <Register Address="0x16D" Name="x16D">
+            <Name>x16D</Name>
+            <Address>0x16D</Address>
+            <Default_Data>0x0</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>2</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>PLL2_LF_C4[7:4]</Field_Name>
+                  <Start_Bit>4</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>Internal loop filter components are available for PLL2, enabling either 3rd or 4th order loop filters without requiring external components.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>PLL2_LF_C3[3:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>3</End_Bit>
+                  <Field_Description>Internal loop filter components are available for PLL2, enabling either 3rd or 4th order loop filters without requiring external components.</Field_Description>
+               </Field2>
+            </Fields>
+         </Register>
+         <Register Address="0x16E" Name="x16E">
+            <Name>x16E</Name>
+            <Address>0x16E</Address>
+            <Default_Data>0x16</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>2</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>PLL2_LD_MUX[7:3]</Field_Name>
+                  <Start_Bit>3</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>This sets the output value of the Status_LD2 pin.</Field_Description>
+               </Field1>
+               <Field2>
+                  <Field_Name>PLL2_LD_TYPE[2:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>2</End_Bit>
+                  <Field_Description>Sets the IO type of the Status_LD2 pin.</Field_Description>
+               </Field2>
+            </Fields>
+         </Register>
+         <Register Address="0x17C" Name="x17C">
+            <Name>x17C</Name>
+            <Address>0x17C</Address>
+            <Default_Data>0x15</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>OPT_REG_1[7:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>This register must be written with the correct value depending on which LMK04820 family part is used.</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+         <Register Address="0x17D" Name="x17D">
+            <Name>x17D</Name>
+            <Address>0x17D</Address>
+            <Default_Data>0xF</Default_Data>
+            <Size>8</Size>
+            <Mode>R/W</Mode>
+            <Device_Addr>0x0</Device_Addr>
+            <Mask_Pattern>0</Mask_Pattern>
+            <Mask_Data>0</Mask_Data>
+            <Mask_EN>0</Mask_EN>
+            <No_Of_Fields>1</No_Of_Fields>
+            <Fields>
+               <Field1>
+                  <Field_Name>OPT_REG_2[7:0]</Field_Name>
+                  <Start_Bit>0</Start_Bit>
+                  <End_Bit>7</End_Bit>
+                  <Field_Description>This register must be written with the correct value depending on which LMK04820 family part is used.</Field_Description>
+               </Field1>
+            </Fields>
+         </Register>
+      </Block>
+   </Register_Map>
+</Project_Name>
