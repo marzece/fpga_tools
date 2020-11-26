@@ -107,7 +107,11 @@ uint32_t write_addr_command(uint32_t* args) {
 }
 
 uint32_t read_addr_command(uint32_t* args) {
-    return read_addr(args[0], 0);
+    return double_read_addr(args[0], 0);
+}
+
+uint32_t sleep_command(uint32_t* args) {
+    return sleep(args[0]);
 }
 
 static ServerCommand commandTable[] = {
@@ -133,11 +137,16 @@ static ServerCommand commandTable[] = {
     {"write_ads_b", write_ads_b_if_command, 2},
     {"write_a_adc_spi", write_a_adc_spi_command, 3},
     {"write_b_adc_spi", write_b_adc_spi_command, 3},
+    {"ads_a_spi_data_available", ads_a_spi_data_available_command, 0},
+    {"ads_b_spi_data_available", ads_b_spi_data_available_command, 0},
+    {"ads_a_spi_pop", ads_a_spi_data_pop_command, 0},
+    {"ads_b_spi_pop", ads_b_spi_data_pop_command, 0},
     {"write_lmk_if", write_lmk_if_command, 2},
     {"read_lmk_if", read_lmk_if_command, 1},
     {"write_lmk_spi", write_lmk_spi_command, 3},
     {"lmk_spi_data_available", lmk_spi_data_available_command, 0},
     {"lmk_spi_data_pop", lmk_spi_data_pop_command, 0},
+    {"sleep", sleep_command, 1},
     {"", NULL, 0} // Must be last
 };
 
@@ -270,7 +279,7 @@ int main(int argc, char **argv) {
     // Now connect to FPGA
     if(setup_udp()) {
         printf("error ocurred connecting to fpga\n");
-        return 0;
+        return 1;
     }
 
     /* Now this is the main loop of the typical linenoise-based application.
