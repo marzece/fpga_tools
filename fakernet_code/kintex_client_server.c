@@ -29,7 +29,7 @@ static volatile int end_main_loop = 0;
 typedef uint32_t (*CLIFunc)(uint32_t* args);
 
 typedef struct ServerCommand {
-    char* name;
+    const char* name;
     CLIFunc func;
     int nargs;
 } ServerCommand;
@@ -48,7 +48,7 @@ int setup_udp() {
 }
 
 void sig_handler(int dummy) {
-    printf("sign_handler\n");
+    (void) dummy;
     if(!end_main_loop) {
         end_main_loop = 1;
     }
@@ -170,14 +170,11 @@ static ServerCommand commandTable[] = {
 };
 
 int handle_line(const char* line) {
-    size_t bytes_sent = 0;
-    int bytes_recvd;
     // first check if the first char is a '#' or the line is empty
     // if it is, treat this as a comment
     if(strlen(line) == 0 || line[0] == '#') {
         return 0;
     }
-
     char* command_name = NULL;
     char* arg_buff[11]= {command_name, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
     char* line_copy = malloc(sizeof(char)*(strlen(line)+1));
@@ -203,10 +200,15 @@ int handle_line(const char* line) {
         }
         cmd_index +=1;
     }
+    if(commandTable[cmd_index].func == NULL) {
+        snprintf(resp_buffer, BUFFER_SIZE,"Invalid/Unknown command given\n");
+        return 0;
+    }
+
     if(command->nargs != nargs) {
         // Too few arguments
         // TODO send back error message
-        printf("Err: Command \"%s\" requires %i arguments, %i given.\n",command_name, command->nargs, nargs);
+        snprintf(resp_buffer, BUFFER_SIZE, "Err: Command \"%s\" requires %i arguments, %i given.\n",command_name, command->nargs, nargs);
         return 0;
     }
 
@@ -217,12 +219,12 @@ int handle_line(const char* line) {
     }
 
     uint32_t ret = command->func(args);
-    printf("0x%x\n", ret);
+    snprintf(resp_buffer, BUFFER_SIZE, "0x%x\n", ret);
     free(args);
     return 0;
 }
 
-int main(int argc, char **argv) {
+int main() {
     // First connect to FPGA
     if(setup_udp()) {
         printf("error ocurred connecting to fpga\n");
@@ -243,9 +245,10 @@ int main(int argc, char **argv) {
         printf("Error making response pipe\n");
         return 1;
     }
-    int _recv_fd = open(command_fn, O_RDONLY | O_NONBLOCK);
+    int _recv_fd = open(command_fn, O_RDONLY);
     if(_recv_fd <= 0) {
         printf("Error ocurred opening command recieve pipe\n");
+        printf("%s\n", strerror(errno));
         return 1;
     }
     // This will block until someone connects to the pipe!
@@ -264,16 +267,17 @@ int main(int argc, char **argv) {
     
     while(!end_main_loop) {
         int nbytes = read(_recv_fd, command_buffer, BUFFER_SIZE);
-        if(nbytes ==0) {
+        if(nbytes == 0) {
             continue;
         }
-        printf("command_buffer");
-        // Check if command buffer is EOF here TODO
+        printf("%s", command_buffer);
+        // handle_line should always write it's results to the resp_buffer,
+        // don't need to check iff it returns 0 or not.
         handle_line(command_buffer);
         write(_resp_fd, &resp_buffer, strlen(resp_buffer)+1);
     }
 
-    printf("EOF found, quitting\n");
+    printf("Cntrl-C found, quitting\n");
     close(_recv_fd);
     close(_resp_fd);
     unlink(command_fn);

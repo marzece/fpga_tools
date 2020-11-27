@@ -61,8 +61,10 @@ uint32_t write_lmk_spi_command(uint32_t* args) {
 }
 
 uint32_t lmk_spi_data_available_command(uint32_t* args) {
+    (void) args;
     return read_lmk_if(SPI_FIFO_OCC_OFFSET);
 }
 uint32_t lmk_spi_data_pop_command(uint32_t* args) {
+    (void) args;
     return read_lmk_if(SPIDRR_OFFSET);
 }

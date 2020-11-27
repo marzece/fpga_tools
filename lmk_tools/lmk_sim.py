@@ -87,4 +87,4 @@ def SDClockOut(lmk, clk_num):
     return deepcopy(SYSRef_Output(lmk))
 
 if __name__ == "__main__":
-    lmk = LMK("MASADA_LMK_Config.cfg")
+    lmk = LMK("HERMES_Config.cfg")

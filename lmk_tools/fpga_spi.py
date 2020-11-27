@@ -1,5 +1,10 @@
 import socket
 
+def connect_to_local_client():
+    resp_pipe = open("kintex_response_pipe", "r")
+    command_pipe = open("kintex_command_pipe", "wb", 0)
+    return command_pipe, resp_pipe
+
 def connect_to_fpga():
     HOST = "192.168.1.10"
     PORT = 4001

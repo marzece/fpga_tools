@@ -96,7 +96,7 @@ void initialize_lwip() {
         printf("%s\n", strerror(errno));
 
     }
-    write_fd = open(fake_fifo_ostream_fn, O_WRONLY);
+    write_fd = open(fake_fifo_ostream_fn, O_WRONLY | O_NONBLOCK);
     if(write_fd < 0) {
         printf("Error opening output file: %s\n", strerror(errno));
     }

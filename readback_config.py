@@ -2,7 +2,7 @@ import socket
 import argparse
 from time import sleep
 from collections import defaultdict, namedtuple
-from fpga_spi import adc_spi, connect_to_fpga
+from fpga_spi import adc_spi, connect_to_local_client
 
 
 dig_pages = {"interleaving": 0x6100, "decimation": 0x6141, "main_dig": 0x6800,
@@ -63,5 +63,5 @@ def adc_readback(conn):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     args = parser.parse_args()
-    fpga_conn = connect_to_fpga()
+    fpga_conn = connect_to_local_client()
     adc_readback(fpga_conn)
