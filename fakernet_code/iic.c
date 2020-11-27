@@ -68,7 +68,6 @@ uint32_t write_iic_bus_command(uint32_t* args) {
     uint32_t iic_addr = args[0];
     uint32_t iic_value = args[1];
     uint8_t err_loc = 0;
-    int err=0;
     // May as well set the RX_FIFO_PIRQ to max (0xF) (PIRQ = Programmable Interrupt btw)
     // If the Rx FIFO reaches the PIRQ value in interrupt (if enabled) is emitted
     if(iic_write(IIC_PIRQ_OFFSET, 0xF)) {
@@ -118,7 +117,7 @@ uint32_t read_iic_bus_with_reg_command(uint32_t* args) {
     }
     err_loc++;
 
-    const unsigned int NBYTES = 1;
+    const int NBYTES = 1;
     // The goal here is to read from register 0x0 on the ADC sensor
     // The sensor is I2C address 0xCE
     // First set the correct bits in the control register.
@@ -180,7 +179,6 @@ uint32_t write_iic_bus_with_reg_command(uint32_t* args) {
     uint32_t reg_value = args[2];
     uint8_t err_loc = 0;
 
-    const int NBYTES = 2;
     // May as well set the RX_FIFO_PIRQ to max (0xF) (PIRQ = Programmable Interrupt btw)
     // If the Rx FIFO reaches the PIRQ value in interrupt (if enabled) is emitted
     if(iic_write(IIC_PIRQ_OFFSET, 0xF)) {

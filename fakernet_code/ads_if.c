@@ -95,18 +95,22 @@ uint32_t write_b_adc_spi_command(uint32_t* args) {
 }
 
 uint32_t ads_a_spi_data_available_command(uint32_t* args) {
+    (void) args;
     return read_ads_a_if(SPI_FIFO_OCC_OFFSET);
 }
 
 uint32_t ads_a_spi_data_pop_command(uint32_t* args) {
+    (void) args;
     return read_ads_a_if(SPIDRR_OFFSET);
 }
 
 uint32_t ads_b_spi_data_available_command(uint32_t* args) {
+    (void) args;
     return read_ads_b_if(SPI_FIFO_OCC_OFFSET);
 }
 
 uint32_t ads_b_spi_data_pop_command(uint32_t* args) {
+    (void) args;
     return read_ads_b_if(SPIDRR_OFFSET);
 }
 
