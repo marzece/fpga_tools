@@ -32,12 +32,13 @@ def parse_config_file(f):
 def spi_command(server, command):
     #command = command.encode('ascii')
     print(command)
+    pop_command = "lmk_spi_data_pop\n" if "lmk" in command else "ads_a_spi_pop\n"
     server.write(command)
     # Get response
     # Now read whatever was on the SPI in line
-    server.write("spi_pop\n")
-    server.write("spi_pop\n")
-    server.write("spi_pop\n")
+    server.write(pop_command)
+    server.write(pop_command)
+    server.write(pop_command)
     return 0,0,0
 
 def do_programming(server, instructions):
@@ -56,7 +57,7 @@ def program_clock(server, addr, value):
     # Remove anything that locks/unlocks stuff, this function handles that
 
     print(addr, value)
-    resp = spi_command(server, "write_clk_spi 0x%x 0x%x 0x%x\n" % (0x0, addr, value))
+    resp = spi_command(server, "write_lmk_spi 0x%x 0x%x 0x%x\n" % (0x0, addr, value))
     print(resp)
 
 def program_adc(server, addr, value):
@@ -70,14 +71,14 @@ def program_adc(server, addr, value):
         else:
             wmpch = (addr & 0xF000)>>12
             addr = (addr & 0xFFF)
-        spi_command(server, "write_adc_spi 0x%x 0x%x 0x%x\n" % (wmpch, addr, value))
+        spi_command(server, "write_a_adc_spi 0x%x 0x%x 0x%x\n" % (wmpch, addr, value))
 
     elif(addr > 0x8000 and addr < 0xF000):
         # Analog registers
         page_addr = (addr & 0xFF00)>> 8
         reg_addr = (addr & 0x00FF)
-        spi_command(server, "write_adc_spi 0x%x 0x%x 0x%x\n" % (0x0, 0x11, page_addr)),
-        spi_command(server, "write_adc_spi 0x%x 0x%x 0x%x\n" % (0x0, reg_addr, value)),
+        spi_command(server, "write_a_adc_spi 0x%x 0x%x 0x%x\n" % (0x0, 0x11, page_addr)),
+        spi_command(server, "write_a_adc_spi 0x%x 0x%x 0x%x\n" % (0x0, reg_addr, value)),
     else:
         # Must be digital (TODO add more validation)
         page_addr = (addr & 0xFFFF00) >> 8
@@ -90,9 +91,9 @@ def program_adc(server, addr, value):
         page_addr2 = (page_addr2 & 0xEF)
 
         # Not sure about the wmpch values here
-        spi_command(server, "write_adc_spi 0x%x 0x%x 0x%x\n" % (0x4, 0x3, page_addr1))
-        spi_command(server, "write_adc_spi 0x%x 0x%x 0x%x\n" % (0x4, 0x4, page_addr2))
-        spi_command(server, "write_adc_spi 0x%x 0x%x 0x%x\n" % (wmpch, reg_addr, value))
+        spi_command(server, "write_a_adc_spi 0x%x 0x%x 0x%x\n" % (0x4, 0x3, page_addr1))
+        spi_command(server, "write_a_adc_spi 0x%x 0x%x 0x%x\n" % (0x4, 0x4, page_addr2))
+        spi_command(server, "write_a_adc_spi 0x%x 0x%x 0x%x\n" % (wmpch, reg_addr, value))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
