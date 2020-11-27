@@ -4,4 +4,6 @@
 *.pyc
 *.dSYM
 .DS_Store
+*.txt
+*.dat
 
