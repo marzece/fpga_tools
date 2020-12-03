@@ -14,9 +14,12 @@
 #include "gpio.h"
 #include "ads_if.h"
 #include "lmk_if.h"
+#include "dac_if.h"
 
 // For doing "double" reads the 2nd read should be from this register
 #define SAFE_READ_ADDRESS 0x0
+
+int dummy_mode = 0;
 
 struct fnet_ctrl_client* fnet_client;
 FILE* debug_file;
@@ -39,6 +42,10 @@ int setup_udp() {
     const char* fnet_hname = "192.168.1.192";
     int reliable = 0; // wtf does this do?
     const char* err_string = NULL;
+    if(dummy_mode) {
+        return 0;
+    }
+
     fnet_client = fnet_ctrl_connect(fnet_hname, reliable, &err_string, debug_file);
     if(!fnet_client) {
         printf("ERROR Connecting!\n");
@@ -61,6 +68,10 @@ void sig_handler(int dummy) {
 uint32_t read_addr(uint32_t base, uint32_t addr) {
       fakernet_reg_acc_item *send;
       fakernet_reg_acc_item *recv;
+
+      if(dummy_mode) {
+          return 0xDEADBEEF;
+      }
 
       fnet_ctrl_get_send_recv_bufs(fnet_client, &send, &recv);
 
@@ -99,6 +110,10 @@ uint32_t double_read_addr(uint32_t base, uint32_t addr) {
 int write_addr(uint32_t base, uint32_t addr, uint32_t data) {
       fakernet_reg_acc_item *send;
       fakernet_reg_acc_item *recv;
+
+      if(dummy_mode) {
+          return 0;
+      }
 
       addr = addr+base;
       fnet_ctrl_get_send_recv_bufs(fnet_client, &send, &recv);
@@ -165,6 +180,11 @@ static ServerCommand commandTable[] = {
     {"write_lmk_spi", write_lmk_spi_command, 3},
     {"lmk_spi_data_available", lmk_spi_data_available_command, 0},
     {"lmk_spi_data_pop", lmk_spi_data_pop_command, 0},
+    {"read_dac_if", read_dac_if_command, 1},
+    {"write_dac_if", write_dac_if_command, 2},
+    {"write_dac_spi", write_dac_spi_command, 3},
+    {"toggle_dac_ldac", toggle_dac_ldac_command, 0},
+    {"toggle_dac_reset", toggle_dac_reset_command, 0},
     {"sleep", sleep_command, 1},
     {"", NULL, 0} // Must be last
 };
@@ -224,13 +244,23 @@ int handle_line(const char* line) {
     return 0;
 }
 
-int main() {
+int main(int argc, char** argv) {
+
+    if(argc > 1) {
+        if(strcmp(argv[1], "--dry") == 0 || strcmp(argv[1], "--dummy") == 0) {
+            printf("DUMMY MODE ENGAGED\n");
+            dummy_mode = 1;
+        }
+    }
+
     // First connect to FPGA
     if(setup_udp()) {
         printf("error ocurred connecting to fpga\n");
         //return 1;
     }
 
+    memset(resp_buffer, 0, BUFFER_SIZE);
+    memset(command_buffer, 0, BUFFER_SIZE);
     signal(SIGINT , sig_handler);
 
     // Open up pipes to receive and respond to commands
@@ -265,16 +295,38 @@ int main() {
     }
 
     
+    printf("Starting main loop\n");
     while(!end_main_loop) {
+        // TODO this assumes data is sent with a \0 terminator....
+        // I should fix that.
         int nbytes = read(_recv_fd, command_buffer, BUFFER_SIZE);
         if(nbytes == 0) {
             continue;
         }
-        printf("%s", command_buffer);
+        if(nbytes >= BUFFER_SIZE-1) {
+            printf("Large command recieved...I can't handle this\n");
+            end_main_loop = 1;
+            break;
+        }
+
+
+        // Make sure the command ends in a null terminator
+        command_buffer[nbytes] = '\0';
+
+        if(command_buffer[nbytes-1] != '\n'){
+            printf("%s\n", command_buffer);
+
+        } else {
+            printf("%s", command_buffer);
+        }
+
         // handle_line should always write it's results to the resp_buffer,
-        // don't need to check iff it returns 0 or not.
+        // don't need to check if it returns 0 or not.
         handle_line(command_buffer);
-        write(_resp_fd, &resp_buffer, strlen(resp_buffer)+1);
+
+        // resp_buffer should have a null terminator...don't need to send it though?
+        write(_resp_fd, &resp_buffer, strlen(resp_buffer));
+        usleep(1000);
     }
 
     printf("Cntrl-C found, quitting\n");

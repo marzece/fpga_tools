@@ -52,6 +52,11 @@ static ServerCommand commandTable[] = {
     {"write_lmk_spi", 3},
     {"lmk_spi_data_available", 0},
     {"lmk_spi_data_pop", 0},
+    {"read_dac_if", 1},
+    {"write_dac_if", 2},
+    {"write_dac_spi", 3},
+    {"toggle_dac_ldac", 0},
+    {"toggle_dac_reset", 0},
     {"sleep", 1},
     {"", 0} // Must be last
 };
@@ -110,7 +115,7 @@ int handle_line(const char* line) {
 
     read(response_fd, response_buffer, BUFFER_SIZE),
 
-    printf("%s\n", response_buffer);
+    printf("%s", response_buffer);
     return 0;
 }
 

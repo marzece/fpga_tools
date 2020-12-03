@@ -7,13 +7,13 @@ CFLAGS += -std=gnu99 -Wall -W -Wshadow -Wwrite-strings \
 
 LDLIBS += -lm
 
-all: fnetctrl kintex_client_server kintex_client
+all: fnetctrl kintex_client_server kintex_cli
 
 fnetctrl: fnetctrl.o fnet_client.o
 
 fnetctrl.o fnet_client.o: fakernet.h fnet_client.h
 
-kintex_client_server: kintex_client_server.o gpio.o lmk_if.o ads_if.o iic.o fnet_client.o
+kintex_client_server: kintex_client_server.o gpio.o lmk_if.o ads_if.o iic.o fnet_client.o dac_if.o
 	$(CC) -o $@ $(CFLAGS) $^
 
 kintex_cli: kintex_cli.o

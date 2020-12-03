@@ -1,5 +1,6 @@
 import json
 import socket
+from fpga_spi import connect_to_local_client
 
 def grab_bits(word, first_bit, last_bit):
     mask = 0
@@ -137,7 +138,8 @@ def translate_link_error_status(word):
 if __name__ == "__main__":
     host = "192.168.1.10"
     port = 4001
-    conn = socket.create_connection((host, port))
+    #conn = socket.create_connection((host, port))
+    conn = connect_to_local_client()
 
     jesd_info_fn = "xil_jesd_regs.json"
     regs = read_reg_info_file(jesd_info_fn)

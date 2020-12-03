@@ -14,4 +14,7 @@ uint32_t read_dac_if(uint32_t offset);
 
 uint32_t write_dac_if_command(uint32_t *args);
 uint32_t read_dac_if_command(uint32_t *args);
-uint32_t write_a_adc_spi_command(uint32_t *args);
+uint32_t write_dac_spi_command(uint32_t* args);
+uint32_t write_dac_ldac_command(uint32_t* args);
+uint32_t toggle_dac_ldac_command(uint32_t* args) ;
+uint32_t toggle_dac_reset_command(uint32_t* args) ;

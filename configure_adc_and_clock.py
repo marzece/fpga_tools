@@ -3,13 +3,8 @@ import socket
 import argparse
 from time import sleep
 from collections import defaultdict
-import matplotlib.pyplot as plt
+from fpga_spi import adc_spi, lmk_spi, decode_data, connect_to_local_client
 
-def decode_data(data):
-    data = data.decode("ascii")
-    data = data[:data.find("\n")]
-    data = int(data, 16) # assumes response is in hex
-    return data
 
 def parse_config_file(f):
     evm_devices = ["LMK", "ADS"]
@@ -32,25 +27,6 @@ def parse_config_file(f):
         instructions.append((current_device, int(addr, addr_base), int(val, val_base)))
     return instructions
 
-def spi_command(server, command):
-    command = command.encode('ascii')
-    print(command)
-    server.sendall(command)
-    # Get response
-    resp = server.recv(1024)
-    print(resp)
-    # Now read whatever was on the SPI in line
-    server.sendall(b"spi_pop\n")
-    data = server.recv(1024)
-    d1 = decode_data(data)
-    server.sendall(b"spi_pop\n")
-    data = server.recv(1024)
-    d2 = decode_data(data)
-    server.sendall(b"spi_pop\n")
-    data = server.recv(1024)
-    d3 = decode_data(data)
-    return d1, d2, d3
-
 def do_programming(server, instructions):
     for device, addr, value in instructions:
         if(addr == "sleep"):
@@ -66,8 +42,9 @@ def program_clock(server, addr, value):
     # First make sure instructions are in order
     # Remove anything that locks/unlocks stuff, this function handles that
 
-    print(addr, value)
-    resp = spi_command(server, "write_clk_spi 0x%x 0x%x 0x%x\n" % (0x0, addr, value))
+    print("0x%x, 0x%x" % (addr, value))
+    resp = lmk_spi(server, 0x0, addr, value);
+    #resp = spi_command(server, "write_clk_spi 0x%x 0x%x 0x%x\n" % (0x0, addr, value))
     print(resp)
 
 def program_adc(server, addr, value):
@@ -81,14 +58,17 @@ def program_adc(server, addr, value):
         else:
             wmpch = (addr & 0xF000)>>12
             addr = (addr & 0xFFF)
-        spi_command(server, "write_adc_spi 0x%x 0x%x 0x%x\n" % (wmpch, addr, value))
+        adc_spi(server, wmpch, addr, value);
+        #spi_command(server, "write_adc_spi 0x%x 0x%x 0x%x\n" % (wmpch, addr, value))
 
     elif(addr > 0x8000 and addr < 0xF000):
         # Analog registers
         page_addr = (addr & 0xFF00)>> 8
         reg_addr = (addr & 0x00FF)
-        spi_command(server, "write_adc_spi 0x%x 0x%x 0x%x\n" % (0x0, 0x11, page_addr)),
-        spi_command(server, "write_adc_spi 0x%x 0x%x 0x%x\n" % (0x0, reg_addr, value)),
+        adc_spi(server, 0x0, 0x11, page_addr)
+        adc_spi(server, 0x0, reg_addr, value)
+        #spi_command(server, "write_adc_spi 0x%x 0x%x 0x%x\n" % (0x0, 0x11, page_addr))
+        #spi_command(server, "write_adc_spi 0x%x 0x%x 0x%x\n" % (0x0, reg_addr, value))
     else:
         # Must be digital (TODO add more validation)
         page_addr = (addr & 0xFFFF00) >> 8
@@ -101,9 +81,13 @@ def program_adc(server, addr, value):
         page_addr2 = (page_addr2 & 0xEF)
 
         # Not sure about the wmpch values here
-        spi_command(server, "write_adc_spi 0x%x 0x%x 0x%x\n" % (0x4, 0x3, page_addr1))
-        spi_command(server, "write_adc_spi 0x%x 0x%x 0x%x\n" % (0x4, 0x4, page_addr2))
-        spi_command(server, "write_adc_spi 0x%x 0x%x 0x%x\n" % (wmpch, reg_addr, value))
+        adc_spi(server, 0x4, 0x3, page_addr1)
+        adc_spi(server, 0x4, 0x4, page_addr2)
+        adc_spi(server, wmpch, reg_addr, value)
+
+        #spi_command(server, "write_adc_spi 0x%x 0x%x 0x%x\n" % (0x4, 0x3, page_addr1))
+        #spi_command(server, "write_adc_spi 0x%x 0x%x 0x%x\n" % (0x4, 0x4, page_addr2))
+        #spi_command(server, "write_adc_spi 0x%x 0x%x 0x%x\n" % (wmpch, reg_addr, value))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -116,8 +100,9 @@ if __name__ == "__main__":
     with open(fn, 'r') as f:
         instructions = parse_config_file(f)
 
-    host = "192.168.1.10"
-    port = 4001
-    fpga_conn = socket.create_connection((host, port))
+    #host = "192.168.1.10"
+    #port = 4001
+    #fpga_conn = socket.create_connection((host, port))
+    fpga_conn = connect_to_local_client()
 
     do_programming(fpga_conn, instructions)
