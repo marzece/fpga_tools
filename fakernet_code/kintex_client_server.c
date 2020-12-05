@@ -183,6 +183,8 @@ static ServerCommand commandTable[] = {
     {"read_dac_if", read_dac_if_command, 1},
     {"write_dac_if", write_dac_if_command, 2},
     {"write_dac_spi", write_dac_spi_command, 3},
+    {"set_bias_for_channel", set_bias_for_channel_command, 2},
+    {"set_ocm_for_channel", set_ocm_for_channel_command, 2},
     {"toggle_dac_ldac", toggle_dac_ldac_command, 0},
     {"toggle_dac_reset", toggle_dac_reset_command, 0},
     {"sleep", sleep_command, 1},
