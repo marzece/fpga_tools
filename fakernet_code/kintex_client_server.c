@@ -18,7 +18,8 @@
 
 // For doing "double" reads the 2nd read should be from this register
 #define SAFE_READ_ADDRESS 0x0
-
+#define COMMAND_PIPE_NAME "kintex_command_pipe"
+#define RESPONSE_PIPE_NAME "kintex_response_pipe"
 int dummy_mode = 0;
 
 struct fnet_ctrl_client* fnet_client;
@@ -58,10 +59,12 @@ void sig_handler(int dummy) {
     (void) dummy;
     if(!end_main_loop) {
         end_main_loop = 1;
+        return;
     }
-    else {
-        exit(0);
-    }
+    // Want to make sure these pipes get cleaned up no matter what
+    unlink(RESPONSE_PIPE_NAME);
+    unlink(COMMAND_PIPE_NAME);
+    exit(0);
 }
 
 
@@ -266,8 +269,8 @@ int main(int argc, char** argv) {
     signal(SIGINT , sig_handler);
 
     // Open up pipes to receive and respond to commands
-    const char* command_fn = "kintex_command_pipe";
-    const char* resp_fn = "kintex_response_pipe";
+    const char* command_fn = COMMAND_PIPE_NAME;
+    const char* resp_fn = RESPONSE_PIPE_NAME;
 
     if(mkfifo(command_fn, 0666)) {
         printf("Error making command pipe\n");
@@ -299,8 +302,6 @@ int main(int argc, char** argv) {
     
     printf("Starting main loop\n");
     while(!end_main_loop) {
-        // TODO this assumes data is sent with a \0 terminator....
-        // I should fix that.
         int nbytes = read(_recv_fd, command_buffer, BUFFER_SIZE);
         if(nbytes == 0) {
             continue;
@@ -310,7 +311,6 @@ int main(int argc, char** argv) {
             end_main_loop = 1;
             break;
         }
-
 
         // Make sure the command ends in a null terminator
         command_buffer[nbytes] = '\0';
