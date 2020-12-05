@@ -1,14 +1,5 @@
 #include <inttypes.h>
 #include <stdlib.h>
-#define ADS_A_IF_BASE 0x2080
-#define ADS_B_IF_BASE 0x2100
-
-#define SPICR_OFFSET 0x60
-#define SPIDTR_OFFSET 0x68
-#define SPIDRR_OFFSET 0x6C
-#define SPISSR_OFFSET 0x70
-#define SPI_FIFO_OCC_OFFSET 0x78
-
 
 int write_ads_a_if(uint32_t offset, uint32_t data);
 uint32_t read_ads_a_if(uint32_t offset);

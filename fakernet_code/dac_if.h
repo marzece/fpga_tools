@@ -2,11 +2,6 @@
 #include <stdlib.h>
 #define DAC_IF_BASE 0x2180
 
-#define SPICR_OFFSET 0x60
-#define SPIDTR_OFFSET 0x68
-#define SPISSR_OFFSET 0x70
-#define SPI_FIFO_OCC_OFFSET 0x78
-#define SPIDRR_OFFSET 0x6C
 
 
 int write_dac_if(uint32_t offset, uint32_t data);

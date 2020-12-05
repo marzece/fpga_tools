@@ -13,7 +13,7 @@ fnetctrl: fnetctrl.o fnet_client.o
 
 fnetctrl.o fnet_client.o: fakernet.h fnet_client.h
 
-kintex_client_server: kintex_client_server.o gpio.o lmk_if.o ads_if.o iic.o fnet_client.o dac_if.o
+kintex_client_server: kintex_client_server.o gpio.o lmk_if.o ads_if.o iic.o fnet_client.o dac_if.o axi_qspi.o
 	$(CC) -o $@ $(CFLAGS) $^
 
 kintex_cli: kintex_cli.o
@@ -38,6 +38,9 @@ iic.o: iic.c
 	$(CC) -o $@ -c  $(CFLAGS) $^
 
 dac_if.o: dac_if.c
+	$(CC) -o $@ -c $(CFLAGS) $^
+
+axi_qspi.o: axi_qspi.c
 	$(CC) -o $@ -c $(CFLAGS) $^
 
 clean:
