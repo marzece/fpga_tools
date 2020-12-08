@@ -3,24 +3,20 @@
 #include "dac_if.h"
 #include "axi_qspi.h"
 
-//static AXI_QSPI* dac_axi_qspi = NULL;
-//static AXI_QSPI* get_spi_handle() {
-//    if(!dac_axi_qspi) {
-//        dac_axi_qspi = malloc(sizeof(AXI_QSPI));
-//        *dac_axi_qspi = new_axi_qspi("dac_if", DAC_IF_BASE);
-//
-//        // Initialize CR values. The DAC uses falling edges so set the CPOL
-//        dac_axi_qspi->spi_cr.cpol = 1;
-//        dac_axi_qspi->spi_cr.master = 1;
-//
-//        // Maybe I should do a "toggle reset" thing here?
-//        // For some reason the first spi I send after power up doesn't work.
-//        // I think it has something to do with switching to CPOL=1 or someting
-//        // like that...idk. But doing a dummy initial SPI transaction might be
-//        // a solution to that.
-//    }
-//    return dac_axi_qspi;
-//}
+AXI_QSPI* new_dac_spi(const char* name, uint32_t axi_addr) {
+    AXI_QSPI* dac_axi_qspi = new_axi_qspi(name, axi_addr);
+
+    // Initialize CR values. The DAC uses falling edges so set the CPOL
+    dac_axi_qspi->spi_cr.cpol = 1;
+    dac_axi_qspi->spi_cr.master = 1;
+
+    // Maybe I should do a "toggle reset" thing here?
+    // For some reason the first spi I send after power up doesn't work.
+    // I think it has something to do with switching to CPOL=1 or someting
+    // like that...idk. But doing a dummy initial SPI transaction might be
+    // a solution to that.
+    return dac_axi_qspi;
+}
 
 int write_dac_if(AXI_QSPI* qspi, uint32_t offset, uint32_t data) {
     return write_qspi_addr(qspi, offset, data);

@@ -8,6 +8,10 @@
 #include "iic.h"
 
 
+// TODO I need some way to link between IIC Addresses and R/W sizes for each chip
+
+extern ServerCommand hermes_commands[];
+
 uint32_t read_iic_block_command(uint32_t* args);
 uint32_t write_iic_block_command(uint32_t* args);
 uint32_t read_iic_bus_command(uint32_t* args);
@@ -45,21 +49,4 @@ uint32_t set_bias_for_channel_command(uint32_t* args);
 uint32_t set_ocm_for_channel_command(uint32_t* args);
 uint32_t toggle_dac_ldac_command(uint32_t* args);
 uint32_t toggle_dac_reset_command(uint32_t* args);
-
-struct HERMES_IF {
-    AXI_QSPI* lmk;
-    AXI_QSPI* adc_a;
-    AXI_QSPI* adc_b;
-    AXI_QSPI* dac;
-    AXI_GPIO* gpio0;
-    AXI_GPIO* gpio1;
-    AXI_GPIO* gpio2;
-    AXI_IIC* iic_main;
-};
-struct HERMES_IF* hermes;
-
-// TODO I need some way to link between IIC Addresses and R/W sizes for each chip
-
-
-extern ServerCommand hermes_commands[];
 #endif

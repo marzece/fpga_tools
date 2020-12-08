@@ -15,10 +15,36 @@
 #define IIC_AXI_ADDR -1 // TODO!
 const uint32_t SAFE_READ_ADDRESS = GPIO0_AXI_ADDR;
 
+struct HERMES_IF {
+    AXI_QSPI* lmk;
+    AXI_QSPI* adc_a;
+    AXI_QSPI* adc_b;
+    AXI_QSPI* dac;
+    AXI_GPIO* gpio0;
+    AXI_GPIO* gpio1;
+    AXI_GPIO* gpio2;
+    AXI_IIC* iic_main;
+};
+static struct HERMES_IF* hermes = NULL;
+
 // HERMES DAC channel to PMT channel mapping
 static uint32_t OCM_CHANNELS[8] = {0, 1, 2, 3, 8, 9, 10, 11};
 static uint32_t BIAS_CHANNELS[8] = {7, 6, 5, 4, 12, 13, 14, 15};
 
+
+static struct HERMES_IF* get_hermes_handle() {
+    if(hermes == NULL) {
+        hermes = malloc(sizeof(struct HERMES_IF));
+        hermes->lmk = new_lmk_spi("lmk", LMK_AXI_ADDR);
+        hermes->adc_a = new_ads_spi("adc_a", ADC_A_AXI_ADDR);
+        hermes->adc_b = new_ads_spi("adc_b", ADC_B_AXI_ADDR);
+        hermes->dac = new_dac_spi("dac", DAC_AXI_ADDR);
+        hermes->gpio0 = new_gpio("power_up_cntrl", GPIO0_AXI_ADDR);
+        hermes->gpio1 = new_gpio("gpio_xtra", GPIO1_AXI_ADDR);
+        hermes->iic_main = new_iic("iic_main", IIC_AXI_ADDR, 0);
+    }
+    return hermes;
+}
 
 ServerCommand hermes_commands[]=  {
     {"read_iic_reg", read_iic_block_command, 1},
@@ -60,42 +86,32 @@ ServerCommand hermes_commands[]=  {
     {"", NULL, 0} // Must be last
 };
 
-void initialize(struct HERMES_IF* _hermes) {
-    _hermes->lmk = new_axi_qspi("lmk", LMK_AXI_ADDR);
-    _hermes->adc_a = new_axi_qspi("adc_a", ADC_A_AXI_ADDR);
-    _hermes->adc_b = new_axi_qspi("adc_b", ADC_B_AXI_ADDR);
-    _hermes->dac = new_axi_qspi("dac", DAC_AXI_ADDR);
-    _hermes->gpio0 = new_gpio("power_up_cntrl", GPIO0_AXI_ADDR);
-    _hermes->gpio1 = new_gpio("gpio_xtra", GPIO1_AXI_ADDR);
-    _hermes->iic_main = new_iic("iic_main", IIC_AXI_ADDR, 0);
-}
-
 uint32_t write_gpio_0_command(uint32_t *args) {
-    return write_gpio_value(hermes->gpio0, args[0], args[1]);
+    return write_gpio_value(get_hermes_handle()->gpio0, args[0], args[1]);
 }
 
 uint32_t read_gpio_0_command(uint32_t *args) {
-    return read_gpio_value(hermes->gpio0, args[0]);
+    return read_gpio_value(get_hermes_handle()->gpio0, args[0]);
 }
 
 uint32_t write_gpio_1_command(uint32_t *args) {
-    return write_gpio_value(hermes->gpio1, args[0], args[1]);
+    return write_gpio_value(get_hermes_handle()->gpio1, args[0], args[1]);
 }
 
 uint32_t read_gpio_1_command(uint32_t *args) {
-    return read_gpio_value(hermes->gpio1, args[0]);
+    return read_gpio_value(get_hermes_handle()->gpio1, args[0]);
 }
 
 //uint32_t write_gpio_2_command(uint32_t *args) {
-//    return write_addr(hermes->gpio2, args[0], args[1]);
+//    return write_addr(get_hermes_handle()->gpio2, args[0], args[1]);
 //}
 //
 //uint32_t read_gpio_2_command(uint32_t *args) {
-//    return double_read_addr(hermes->gpio2, args[0]);
+//    return double_read_addr(get_hermes_handle()->gpio2, args[0]);
 //}
 
 uint32_t set_adc_power_command(uint32_t *args) {
-    uint32_t current_val = read_gpio_value(hermes->gpio0, 0);
+    uint32_t current_val = read_gpio_value(get_hermes_handle()->gpio0, 0);
 
     // ADC power is bit 0
     if(args[0]) {
@@ -104,12 +120,12 @@ uint32_t set_adc_power_command(uint32_t *args) {
     else {
         current_val = current_val & 0b10;
     }
-    write_gpio_value(hermes->gpio0, 0x0, current_val);
+    write_gpio_value(get_hermes_handle()->gpio0, 0x0, current_val);
     return 0;
 }
 
 uint32_t set_preamp_power_command(uint32_t *args) {
-    uint32_t current_val = read_gpio_value(hermes->gpio0, 0);
+    uint32_t current_val = read_gpio_value(get_hermes_handle()->gpio0, 0);
 
     // pre-amp power is bit 1
     if(args[0]) {
@@ -118,101 +134,101 @@ uint32_t set_preamp_power_command(uint32_t *args) {
     else {
         current_val = current_val & 0b01;
     }
-    write_gpio_value(hermes->gpio0, 0, current_val);
+    write_gpio_value(get_hermes_handle()->gpio0, 0, current_val);
     return 0;
 }
 
 // IIC commands
 uint32_t read_iic_block_command(uint32_t* args) {
     uint32_t offset = args[0];
-    return iic_read(hermes->iic_main, offset);
+    return iic_read(get_hermes_handle()->iic_main, offset);
 }
 
 uint32_t write_iic_block_command(uint32_t* args) {
     uint32_t offset = args[0];
     uint32_t data = args[1];
-    int err = iic_write(hermes->iic_main, offset, data);
+    int err = iic_write(get_hermes_handle()->iic_main, offset, data);
     return err;
 }
 
 uint32_t read_iic_bus_command(uint32_t* args) {
-    return read_iic_bus(hermes->iic_main, args[0]);
+    return read_iic_bus(get_hermes_handle()->iic_main, args[0]);
 }
 
 uint32_t write_iic_bus_command(uint32_t* args) {
     uint32_t iic_addr = args[0];
     uint32_t iic_value = args[1];
-    return write_iic_bus(hermes->iic_main, iic_addr, iic_value);
+    return write_iic_bus(get_hermes_handle()->iic_main, iic_addr, iic_value);
 }
 
 uint32_t read_iic_bus_with_reg_command(uint32_t* args) {
     uint32_t iic_addr = args[0];
     uint32_t reg_addr = args[1];
-    return read_iic_bus_with_reg(hermes->iic_main, iic_addr, reg_addr);
+    return read_iic_bus_with_reg(get_hermes_handle()->iic_main, iic_addr, reg_addr);
 }
 
 uint32_t write_iic_bus_with_reg_command(uint32_t* args) {
     uint32_t iic_addr = args[0];
     uint32_t reg_addr = args[1];
     uint32_t reg_value = args[2];
-    return write_iic_bus_with_reg(hermes->iic_main, iic_addr, reg_addr, reg_value); 
+    return write_iic_bus_with_reg(get_hermes_handle()->iic_main, iic_addr, reg_addr, reg_value); 
 }
 
 uint32_t write_ads_a_if_command(uint32_t *args) {
     uint32_t offset = args[0];
     uint32_t data = args[1];
-    return write_qspi_addr(hermes->adc_a, offset, data);
+    return write_qspi_addr(get_hermes_handle()->adc_a, offset, data);
 }
 
 uint32_t read_ads_a_if_command(uint32_t *args) {
     uint32_t offset = args[0];
-    return read_qspi_addr(hermes->adc_a, offset);
+    return read_qspi_addr(get_hermes_handle()->adc_a, offset);
 }
 
 uint32_t write_ads_b_if_command(uint32_t *args) {
     uint32_t offset = args[0];
     uint32_t data = args[1];
-    return write_qspi_addr(hermes->adc_b, offset, data);
+    return write_qspi_addr(get_hermes_handle()->adc_b, offset, data);
 }
 
 uint32_t read_ads_b_if_command(uint32_t *args) {
     uint32_t offset = args[0];
-    return read_qspi_addr(hermes->adc_b, offset);
+    return read_qspi_addr(get_hermes_handle()->adc_b, offset);
 }
 
 uint32_t write_a_adc_spi_command(uint32_t* args) {
-    return write_adc_spi(hermes->adc_a, args);
+    return write_adc_spi(get_hermes_handle()->adc_a, args);
 }
 uint32_t write_b_adc_spi_command(uint32_t* args) {
-    return write_adc_spi(hermes->adc_b, args);
+    return write_adc_spi(get_hermes_handle()->adc_b, args);
 }
 
 uint32_t ads_a_spi_data_available_command(uint32_t* args) {
     (void) args;
-    return spi_drr_data_available(hermes->adc_a);
+    return spi_drr_data_available(get_hermes_handle()->adc_a);
 }
 
 uint32_t ads_a_spi_data_pop_command(uint32_t* args) {
     (void) args;
-    return spi_drr_pop(hermes->adc_a);
+    return spi_drr_pop(get_hermes_handle()->adc_a);
 }
 
 uint32_t ads_b_spi_data_available_command(uint32_t* args) {
     (void) args;
-    return spi_drr_data_available(hermes->adc_b);
+    return spi_drr_data_available(get_hermes_handle()->adc_b);
 }
 
 uint32_t ads_b_spi_data_pop_command(uint32_t* args) {
     (void) args;
-    return spi_drr_pop(hermes->adc_b);
+    return spi_drr_pop(get_hermes_handle()->adc_b);
 }
 
 uint32_t write_lmk_if_command(uint32_t* args) {
-    return write_lmk_if(hermes->lmk, args[0], args[1]);
+    return write_lmk_if(get_hermes_handle()->lmk, args[0], args[1]);
 }
 
 uint32_t read_lmk_if_command(uint32_t* args) {
-    return read_lmk_if(hermes->lmk, args[0]);
+    return read_lmk_if(get_hermes_handle()->lmk, args[0]);
 }
 
 uint32_t write_lmk_spi_command(uint32_t* args) {
@@ -233,25 +249,25 @@ uint32_t write_lmk_spi_command(uint32_t* args) {
     uint8_t word_buf[3] = {word1, word2, word3};
     // Bit 0 of the SSR is the LMK select line, pull it low to start SPI data transfer
     uint32_t ssr = 0x0;
-    return write_spi(hermes->lmk, ssr, word_buf, 3);
+    return write_spi(get_hermes_handle()->lmk, ssr, word_buf, 3);
 }
 
 uint32_t lmk_spi_data_available_command(uint32_t* args) {
     (void) args;
-    return spi_drr_data_available(hermes->lmk);
+    return spi_drr_data_available(get_hermes_handle()->lmk);
 }
 
 uint32_t lmk_spi_data_pop_command(uint32_t* args) {
     (void) args;
-    return spi_drr_pop(hermes->lmk);
+    return spi_drr_pop(get_hermes_handle()->lmk);
 }
 
 uint32_t write_dac_if_command(uint32_t *args) {
-    return write_dac_if(hermes->dac, args[0], args[1]);
+    return write_dac_if(get_hermes_handle()->dac, args[0], args[1]);
 }
 
 uint32_t read_dac_if_command(uint32_t *args) {
-    return read_dac_if(hermes->dac, args[0]);
+    return read_dac_if(get_hermes_handle()->dac, args[0]);
 }
 
 
@@ -266,7 +282,7 @@ uint32_t write_dac_spi_command(uint32_t* args) {
     command &= 0xF;
     channels &= 0xF;
     data &= 0xFFFF;
-    return write_dac_spi(hermes->dac, command, channels, data);
+    return write_dac_spi(get_hermes_handle()->dac, command, channels, data);
 }
 
 uint32_t toggle_dac_ldac_command(uint32_t* args) {
@@ -278,7 +294,7 @@ uint32_t toggle_dac_ldac_command(uint32_t* args) {
     uint8_t ssr = 0x05;
     uint8_t word_buf = 0x0;
 
-    return write_spi(hermes->dac, ssr, &word_buf, 1);
+    return write_spi(get_hermes_handle()->dac, ssr, &word_buf, 1);
 }
 
 uint32_t toggle_dac_reset_command(uint32_t* args) {
@@ -289,7 +305,7 @@ uint32_t toggle_dac_reset_command(uint32_t* args) {
 
     uint8_t ssr = 0x3;
     uint8_t word_buf = 0x0;
-    return write_spi(hermes->dac, ssr, &word_buf, 1);
+    return write_spi(get_hermes_handle()->dac, ssr, &word_buf, 1);
 }
 
 uint32_t set_ocm_for_channel_command(uint32_t* args) {
@@ -304,7 +320,7 @@ uint32_t set_ocm_for_channel_command(uint32_t* args) {
         return (uint32_t) -1;
     }
     uint8_t dac_channel = OCM_CHANNELS[channel];
-    return write_dac_spi(hermes->dac, UPDATE_INPUT_AND_DAC_REG, dac_channel, value);
+    return write_dac_spi(get_hermes_handle()->dac, UPDATE_INPUT_AND_DAC_REG, dac_channel, value);
 }
 
 uint32_t set_bias_for_channel_command(uint32_t* args) {
@@ -319,5 +335,5 @@ uint32_t set_bias_for_channel_command(uint32_t* args) {
         return (uint32_t) -1;
     }
     uint8_t dac_channel = BIAS_CHANNELS[channel];
-    return write_dac_spi(hermes->dac, UPDATE_INPUT_AND_DAC_REG, dac_channel, value);
+    return write_dac_spi(get_hermes_handle()->dac, UPDATE_INPUT_AND_DAC_REG, dac_channel, value);
 }

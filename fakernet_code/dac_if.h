@@ -20,6 +20,7 @@ typedef enum DAC_COMMAND {
     DC_NO_OP =  0xF,
 } DAC_COMMAND;
 
+AXI_QSPI* new_dac_spi(const char* name, uint32_t axi_addr);
 int write_dac_if(AXI_QSPI* qspi, uint32_t offset, uint32_t data);
 uint32_t read_dac_if(AXI_QSPI* qspi, uint32_t offset);
 uint32_t write_dac_spi(AXI_QSPI* qspi, uint8_t command, uint8_t channels, uint16_t data);

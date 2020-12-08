@@ -28,6 +28,7 @@ const int BUFFER_SIZE = 1024;
 char command_buffer[BUFFER_SIZE];
 char resp_buffer[BUFFER_SIZE];
 static volatile int end_main_loop = 0;
+ServerCommand* board_specific_command_table = NULL;
 
 int setup_udp() {
     debug_file = fopen("fakernet_debug_log.txt", "r");
@@ -148,6 +149,16 @@ static ServerCommand commandTable[] = {
     {"sleep", sleep_command, 1},
     {"", NULL, 0} // Must be last
 };
+ServerCommand* search_for_command(ServerCommand* table, const char* command_name) {
+    int cmd_index = 0;
+    while(table[cmd_index].func != NULL) {
+        if(strcmp(table[cmd_index].name, command_name) == 0) {
+            break;
+        }
+        cmd_index +=1;
+    }
+    return &(table[cmd_index]);
+}
 
 int handle_line(const char* line) {
     // first check if the first char is a '#' or the line is empty
@@ -173,12 +184,11 @@ int handle_line(const char* line) {
 
     int cmd_index =0;
     ServerCommand* command = NULL;
-    while(commandTable[cmd_index].func != NULL) {
-        if(strcmp(commandTable[cmd_index].name, command_name) == 0) {
-            command = &(commandTable[cmd_index]);
-            break;
-        }
-        cmd_index +=1;
+    // First search the board specific commands
+    command = search_for_command(board_specific_command_table, command_name);
+    if(commandTable[cmd_index].func == NULL) {
+        // Then search the "standard" commands
+        command = search_for_command(commandTable, command_name);
     }
     if(commandTable[cmd_index].func == NULL) {
         snprintf(resp_buffer, BUFFER_SIZE,"Invalid/Unknown command given\n");
@@ -222,6 +232,10 @@ int main(int argc, char** argv) {
     memset(resp_buffer, 0, BUFFER_SIZE);
     memset(command_buffer, 0, BUFFER_SIZE);
     signal(SIGINT , sig_handler);
+
+
+    // Set up command_tables
+    board_specific_command_table = hermes_commands;
 
     // Open up pipes to receive and respond to commands
     const char* command_fn = COMMAND_PIPE_NAME;
