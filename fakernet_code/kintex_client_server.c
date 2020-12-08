@@ -10,17 +10,15 @@
 #include <string.h>
 #include <errno.h>
 #include "fnet_client.h"
-#include "iic.h"
-#include "gpio.h"
-#include "ads_if.h"
-#include "lmk_if.h"
-#include "dac_if.h"
+#include "server_common.h"
+#include "hermes_if.h"
 
 // For doing "double" reads the 2nd read should be from this register
-#define SAFE_READ_ADDRESS 0x0
 #define COMMAND_PIPE_NAME "kintex_command_pipe"
 #define RESPONSE_PIPE_NAME "kintex_response_pipe"
+
 int dummy_mode = 0;
+extern const uint32_t SAFE_READ_ADDRESS;
 
 struct fnet_ctrl_client* fnet_client;
 FILE* debug_file;
@@ -30,13 +28,6 @@ const int BUFFER_SIZE = 1024;
 char command_buffer[BUFFER_SIZE];
 char resp_buffer[BUFFER_SIZE];
 static volatile int end_main_loop = 0;
-typedef uint32_t (*CLIFunc)(uint32_t* args);
-
-typedef struct ServerCommand {
-    const char* name;
-    CLIFunc func;
-    int nargs;
-} ServerCommand;
 
 int setup_udp() {
     debug_file = fopen("fakernet_debug_log.txt", "r");
@@ -154,42 +145,6 @@ uint32_t sleep_command(uint32_t* args) {
 static ServerCommand commandTable[] = {
     {"write_addr", write_addr_command, 2},
     {"read_addr", read_addr_command, 1},
-    {"read_iic_reg", read_iic_block_command, 1},
-    {"write_iic_reg", write_iic_block_command, 2},
-    {"read_iic_bus", read_iic_bus_command, 1},
-    {"write_iic_bus", write_iic_bus_command, 2},
-    {"read_iic_bus_with_reg", read_iic_bus_with_reg_command, 2},
-    {"write_iic_bus_with_reg", write_iic_bus_with_reg_command, 3},
-    {"read_gpio0", read_gpio_0_command, 1},
-    {"write_gpio0", write_gpio_0_command, 2},
-    {"read_gpio1", read_gpio_1_command, 1},
-    {"write_gpio1", write_gpio_1_command, 2},
-    {"read_gpio2", read_gpio_2_command, 1},
-    {"write_gpio2", write_gpio_2_command, 2},
-    {"set_preamp_power", set_preamp_power_command, 1},
-    {"set_adc_power", set_adc_power_command, 1},
-    {"read_ads_a", read_ads_a_if_command, 1},
-    {"write_ads_a", write_ads_a_if_command, 2},
-    {"read_ads_b", read_ads_b_if_command, 1},
-    {"write_ads_b", write_ads_b_if_command, 2},
-    {"write_a_adc_spi", write_a_adc_spi_command, 3},
-    {"write_b_adc_spi", write_b_adc_spi_command, 3},
-    {"ads_a_spi_data_available", ads_a_spi_data_available_command, 0},
-    {"ads_b_spi_data_available", ads_b_spi_data_available_command, 0},
-    {"ads_a_spi_pop", ads_a_spi_data_pop_command, 0},
-    {"ads_b_spi_pop", ads_b_spi_data_pop_command, 0},
-    {"write_lmk_if", write_lmk_if_command, 2},
-    {"read_lmk_if", read_lmk_if_command, 1},
-    {"write_lmk_spi", write_lmk_spi_command, 3},
-    {"lmk_spi_data_available", lmk_spi_data_available_command, 0},
-    {"lmk_spi_data_pop", lmk_spi_data_pop_command, 0},
-    {"read_dac_if", read_dac_if_command, 1},
-    {"write_dac_if", write_dac_if_command, 2},
-    {"write_dac_spi", write_dac_spi_command, 3},
-    {"set_bias_for_channel", set_bias_for_channel_command, 2},
-    {"set_ocm_for_channel", set_ocm_for_channel_command, 2},
-    {"toggle_dac_ldac", toggle_dac_ldac_command, 0},
-    {"toggle_dac_reset", toggle_dac_reset_command, 0},
     {"sleep", sleep_command, 1},
     {"", NULL, 0} // Must be last
 };

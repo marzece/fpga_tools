@@ -57,6 +57,8 @@ static ServerCommand commandTable[] = {
     {"write_dac_spi", 3},
     {"toggle_dac_ldac", 0},
     {"toggle_dac_reset", 0},
+    {"set_bias_for_channel", 2},
+    {"set_ocm_for_channel", 2},
     {"sleep", 1},
     {"", 0} // Must be last
 };
@@ -103,8 +105,6 @@ char *hints(const char *buf, int *color, int *bold) {
 }
 
 int handle_line(const char* line) {
-    size_t bytes_sent = 0;
-    int bytes_recvd;
     // first check if the first char is a '#' or the line is empty
     // if it is, treat this as a comment
     if(strlen(line) == 0 || line[0] == '#') {

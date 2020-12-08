@@ -1,5 +1,3 @@
-
-
 CC = cc
 
 CFLAGS += -std=gnu99 -Wall -W -Wshadow -Wwrite-strings \
@@ -13,7 +11,7 @@ fnetctrl: fnetctrl.o fnet_client.o
 
 fnetctrl.o fnet_client.o: fakernet.h fnet_client.h
 
-kintex_client_server: kintex_client_server.o gpio.o lmk_if.o ads_if.o iic.o fnet_client.o dac_if.o axi_qspi.o
+kintex_client_server: kintex_client_server.o hermes_if.o gpio.o lmk_if.o ads_if.o iic.o fnet_client.o dac_if.o axi_qspi.o
 	$(CC) -o $@ $(CFLAGS) $^
 
 kintex_cli: kintex_cli.o
@@ -24,6 +22,9 @@ kintex_client_server.o: kintex_client_server.c
 
 kintex_cli.o:kintex_cli.c
 	$(CC) -o $@ -c $(CFLAGS) -Ilinenoise/ $^
+
+hermes_if.o: hermes_if.c
+	$(CC) -o $@ -c $(CFLAGS) $^
 
 gpio.o: gpio.c
 	$(CC) -o $@ -c $(CFLAGS) $^
