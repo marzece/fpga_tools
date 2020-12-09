@@ -110,12 +110,23 @@ int handle_line(const char* line) {
     if(strlen(line) == 0 || line[0] == '#') {
         return 0;
     }
-    // Write the given line + NUL terminator
-    write(command_fd, line, strlen(line)+1);
+    // Write the given line (without NULL terminator)
+    write(command_fd, line, strlen(line));
 
-    read(response_fd, response_buffer, BUFFER_SIZE),
+    int nbytes_read = read(response_fd, response_buffer, BUFFER_SIZE);
+    if(nbytes_read == BUFFER_SIZE-1) {
+        printf("Response too long...can't handle this\n");
+        exit(1);
+    }
 
-    printf("%s", response_buffer);
+    // Can't expect the response to have a NULL terminator
+    response_buffer[nbytes_read] = '\0';
+    if(response_buffer[nbytes_read-1] != '\n') {
+        printf("%s\n", response_buffer);
+    }
+    else {
+        printf("%s", response_buffer);
+    }
     return 0;
 }
 
