@@ -17,6 +17,7 @@
 // For doing "double" reads the 2nd read should be from this register
 #define COMMAND_PIPE_NAME "kintex_command_pipe"
 #define RESPONSE_PIPE_NAME "kintex_response_pipe"
+#define BUFFER_SIZE 1024
 
 int dummy_mode = 0;
 uint32_t SAFE_READ_ADDRESS;
@@ -25,7 +26,6 @@ struct fnet_ctrl_client* fnet_client;
 FILE* debug_file;
 char* fpga_cli_hint_str = NULL;
 
-const int BUFFER_SIZE = 1024;
 char command_buffer[BUFFER_SIZE];
 char resp_buffer[BUFFER_SIZE];
 static volatile int end_main_loop = 0;

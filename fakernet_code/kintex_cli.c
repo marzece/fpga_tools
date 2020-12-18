@@ -6,12 +6,13 @@
 #include <errno.h>
 #include <linenoise.h>
 
+#define BUFFER_SIZE 1024
+
 FILE* debug_file;
 char* fpga_cli_hint_str = NULL;
 
 static int command_fd = 0;
 static int response_fd = 0;
-static const int BUFFER_SIZE = 1024;
 char response_buffer[BUFFER_SIZE];
 void linenoiseSetFreeHintsCallback(linenoiseFreeHintsCallback *fn);
 
