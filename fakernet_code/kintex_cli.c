@@ -20,6 +20,7 @@ typedef struct ServerCommand {
     int nargs;
 } ServerCommand;
 
+// TODO need a way to read this from the server
 static ServerCommand commandTable[] = {
     {"write_addr", 2},
     {"read_addr", 1},
@@ -60,6 +61,26 @@ static ServerCommand commandTable[] = {
     {"set_bias_for_channel", 2},
     {"set_ocm_for_channel", 2},
     {"sleep", 1},
+    {"read_ads", 1},
+    {"write_ads", 2},
+    {"write_adc_spi", 3},
+    {"ads_spi_data_available", 0},
+    {"ads_spi_pop", 0},
+    {"jesd_a_read", 1},
+    {"jesd_a_write", 2},
+    {"jesd_b_read", 1},
+    {"jesd_b_write", 2},
+    {"jesd_a_error_rate", 1},
+    {"jesd_b_error_rate", 1},
+    {"jesd_a_reset", 0},
+    {"jesd_b_reset", 0},
+    {"jesd_sys_reset", 0},
+    {"jesd_a_sync_rate", 0},
+    {"jesd_b_sync_rate", 0},
+    {"jesd_a_is_synced", 0},
+    {"jesd_b_is_synced", 0},
+    {"jesd_a_set_sync_error_reporting", 1},
+    {"jesd_b_set_sync_error_reporting", 1},
     {"", 0} // Must be last
 };
 

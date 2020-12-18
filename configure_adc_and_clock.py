@@ -3,7 +3,7 @@ import socket
 import argparse
 from time import sleep
 from collections import defaultdict
-from fpga_spi import adc_spi, lmk_spi, decode_data, connect_to_local_client
+from fpga_spi import adc_spi, lmk_spi, decode_data, connect_to_local_client, SPI_Device
 
 
 def parse_config_file(f):
@@ -27,7 +27,7 @@ def parse_config_file(f):
         instructions.append((current_device, int(addr, addr_base), int(val, val_base)))
     return instructions
 
-def do_programming(server, instructions):
+def do_programming(server, adcs, instructions):
     for device, addr, value in instructions:
         if(addr == "sleep"):
             print("SLEEPING %f seconds" % value)
@@ -36,7 +36,10 @@ def do_programming(server, instructions):
         if(device == "LMK"):
             program_clock(server, addr, value)
         if(device == "ADS"):
-            program_adc(server, addr, value)
+            if(adcs[0]):
+                program_adc(server, SPI_Device.ADC_A, addr, value)
+            if(adcs[1]):
+                program_adc(server, SPI_Device.ADC_B, addr, value)
 
 def program_clock(server, addr, value):
     # First make sure instructions are in order
@@ -47,7 +50,7 @@ def program_clock(server, addr, value):
     #resp = spi_command(server, "write_clk_spi 0x%x 0x%x 0x%x\n" % (0x0, addr, value))
     print(resp)
 
-def program_adc(server, addr, value):
+def program_adc(server, which_adc, addr, value):
     # First, need to identify if this is a analog or digital or neither address
     if(addr < 0x4FFF):
         # General registers
@@ -58,17 +61,15 @@ def program_adc(server, addr, value):
         else:
             wmpch = (addr & 0xF000)>>12
             addr = (addr & 0xFFF)
-        adc_spi(server, wmpch, addr, value);
+        adc_spi(server, which_adc, wmpch, addr, value);
         #spi_command(server, "write_adc_spi 0x%x 0x%x 0x%x\n" % (wmpch, addr, value))
 
     elif(addr > 0x8000 and addr < 0xF000):
         # Analog registers
         page_addr = (addr & 0xFF00)>> 8
         reg_addr = (addr & 0x00FF)
-        adc_spi(server, 0x0, 0x11, page_addr)
-        adc_spi(server, 0x0, reg_addr, value)
-        #spi_command(server, "write_adc_spi 0x%x 0x%x 0x%x\n" % (0x0, 0x11, page_addr))
-        #spi_command(server, "write_adc_spi 0x%x 0x%x 0x%x\n" % (0x0, reg_addr, value))
+        adc_spi(server, which_adc, 0x0, 0x11, page_addr)
+        adc_spi(server, which_adc, 0x0, reg_addr, value)
     else:
         # Must be digital (TODO add more validation)
         page_addr = (addr & 0xFFFF00) >> 8
@@ -81,17 +82,16 @@ def program_adc(server, addr, value):
         page_addr2 = (page_addr2 & 0xEF)
 
         # Not sure about the wmpch values here
-        adc_spi(server, 0x4, 0x3, page_addr1)
-        adc_spi(server, 0x4, 0x4, page_addr2)
-        adc_spi(server, wmpch, reg_addr, value)
+        adc_spi(server, which_adc, 0x4, 0x3, page_addr1)
+        adc_spi(server, which_adc, 0x4, 0x4, page_addr2)
+        adc_spi(server, which_adc, wmpch, reg_addr, value)
 
-        #spi_command(server, "write_adc_spi 0x%x 0x%x 0x%x\n" % (0x4, 0x3, page_addr1))
-        #spi_command(server, "write_adc_spi 0x%x 0x%x 0x%x\n" % (0x4, 0x4, page_addr2))
-        #spi_command(server, "write_adc_spi 0x%x 0x%x 0x%x\n" % (wmpch, reg_addr, value))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("filename", type=str, help="file that contains Eval board addresses and data")
+    parser.add_argument("--adc_a", action="store_true", help="send commands to ADC A")
+    parser.add_argument("--adc_b", action="store_true", help="send commands to ADC B")
 
     args = parser.parse_args()
 
@@ -100,9 +100,9 @@ if __name__ == "__main__":
     with open(fn, 'r') as f:
         instructions = parse_config_file(f)
 
-    #host = "192.168.1.10"
-    #port = 4001
-    #fpga_conn = socket.create_connection((host, port))
     fpga_conn = connect_to_local_client()
 
-    do_programming(fpga_conn, instructions)
+    do_programming(fpga_conn, [args.adc_a, args.adc_b], instructions)
+
+    #fpga_conn[0].write("jesd_sys_reset\n".encode("ascii"))
+    #_ = fpga_conn[1].readline()

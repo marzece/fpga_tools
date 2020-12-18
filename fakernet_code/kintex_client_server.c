@@ -12,13 +12,14 @@
 #include "fnet_client.h"
 #include "server_common.h"
 #include "hermes_if.h"
+#include "ti_board_if.h"
 
 // For doing "double" reads the 2nd read should be from this register
 #define COMMAND_PIPE_NAME "kintex_command_pipe"
 #define RESPONSE_PIPE_NAME "kintex_response_pipe"
 
 int dummy_mode = 0;
-extern const uint32_t SAFE_READ_ADDRESS;
+uint32_t SAFE_READ_ADDRESS;
 
 struct fnet_ctrl_client* fnet_client;
 FILE* debug_file;
@@ -170,27 +171,26 @@ int handle_line(const char* line) {
     char* arg_buff[11]= {command_name, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
     char* line_copy = malloc(sizeof(char)*(strlen(line)+1));
     strcpy(line_copy, line);
-    command_name = strtok(line_copy, " \t\r\n"); // TODO include all WS characters
+    command_name = strtok(line_copy, " \t\r\n");
     arg_buff[0] = command_name;
     int nargs = 0;
     while(nargs-1 < 10) {
         arg_buff[nargs+1] = strtok(NULL, " \t\r\n");
         // TODO add empty string check
-        if( arg_buff[nargs+1] == NULL) {
+        if(arg_buff[nargs+1] == NULL) {
             break;
         }
         nargs +=1;
     }
 
-    int cmd_index =0;
     ServerCommand* command = NULL;
     // First search the board specific commands
     command = search_for_command(board_specific_command_table, command_name);
-    if(commandTable[cmd_index].func == NULL) {
+    if(command->func == NULL) {
         // Then search the "standard" commands
         command = search_for_command(commandTable, command_name);
     }
-    if(commandTable[cmd_index].func == NULL) {
+    if(command->func == NULL) {
         snprintf(resp_buffer, BUFFER_SIZE,"Invalid/Unknown command given\n");
         return 0;
     }
@@ -216,10 +216,15 @@ int handle_line(const char* line) {
 
 int main(int argc, char** argv) {
 
+    int ti_board=0;
     if(argc > 1) {
         if(strcmp(argv[1], "--dry") == 0 || strcmp(argv[1], "--dummy") == 0) {
             printf("DUMMY MODE ENGAGED\n");
             dummy_mode = 1;
+        }
+        else if(strcmp(argv[1], "--ti") == 0 || strcmp(argv[1], "--TI") ==0) {
+            printf("Using TI board commands\n");
+            ti_board = 1;
         }
     }
 
@@ -231,11 +236,16 @@ int main(int argc, char** argv) {
 
     memset(resp_buffer, 0, BUFFER_SIZE);
     memset(command_buffer, 0, BUFFER_SIZE);
-    signal(SIGINT , sig_handler);
+    signal(SIGINT, sig_handler);
 
 
     // Set up command_tables
     board_specific_command_table = hermes_commands;
+    SAFE_READ_ADDRESS = HERMES_SAFE_READ_ADDRESS;
+    if(ti_board) {
+        SAFE_READ_ADDRESS = TI_SAFE_READ_ADDRESS;
+        board_specific_command_table = ti_commands;
+    }
 
     // Open up pipes to receive and respond to commands
     const char* command_fn = COMMAND_PIPE_NAME;
@@ -297,7 +307,7 @@ int main(int argc, char** argv) {
 
         // resp_buffer should have a null terminator...don't need to send it though?
         write(_resp_fd, &resp_buffer, strlen(resp_buffer));
-        usleep(1000);
+        usleep(10000);
     }
 
     printf("Cntrl-C found, quitting\n");

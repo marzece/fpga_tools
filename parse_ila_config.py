@@ -1,6 +1,6 @@
 import json
 import socket
-from fpga_spi import connect_to_local_client
+from fpga_spi import connect_to_local_client, decode_data
 
 def grab_bits(word, first_bit, last_bit):
     mask = 0
@@ -69,19 +69,13 @@ class JESDReg:
 
 def write_to_fpga(conn, addr, value):
     command = "jesd_write 0x%x 0x%x\n" % (addr, value)
-    conn.sendall(command.encode("ascii"))
-    data = conn.recv(1024)
-    data = data.decode("ascii")
-    data = data[:data.find("\n")]
-    data = int(data, 16) # assumes response is in hex
+    conn[0].write(command.encode("ascii"))
+    data = decode_data(conn[1].read_line())
     return data
 def read_from_fpga(conn, addr):
     command = "jesd_read 0x%x\n" % addr
     conn.sendall(command.encode("ascii"))
-    data = conn.recv(1024)
-    data = data.decode("ascii")
-    data = data[:data.find("\n")]
-    data = int(data, 16) # assumes response is in hex
+    data = decode_data(conn[1].read_line())
     return data
 
 def read_reg(conn, reg):
