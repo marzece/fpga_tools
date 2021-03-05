@@ -61,6 +61,8 @@ static ServerCommand commandTable[] = {
     {"toggle_dac_reset", 0},
     {"set_bias_for_channel", 2},
     {"set_ocm_for_channel", 2},
+    {"set_bias_for_all_channels", 1},
+    {"set_ocm_for_all_channels", 1},
     {"sleep", 1},
     {"read_ads", 1},
     {"write_ads", 2},
@@ -71,8 +73,8 @@ static ServerCommand commandTable[] = {
     {"jesd_a_write", 2},
     {"jesd_b_read", 1},
     {"jesd_b_write", 2},
-    {"jesd_a_error_rate", 1},
-    {"jesd_b_error_rate", 1},
+    {"jesd_a_error_rate", 0},
+    {"jesd_b_error_rate", 0},
     {"jesd_a_reset", 0},
     {"jesd_b_reset", 0},
     {"jesd_sys_reset", 0},
@@ -82,6 +84,14 @@ static ServerCommand commandTable[] = {
     {"jesd_b_is_synced", 0},
     {"jesd_a_set_sync_error_reporting", 1},
     {"jesd_b_set_sync_error_reporting", 1},
+    {"read_all_error_rates", 0},
+    {"turn_on_data_pipe", 0},
+    {"set_threshold_for_channel", 2},
+    {"read_threshold_for_channel", 1},
+    {"set_trigger_mode", 1},
+    {"read_trigger_mode", 0},
+    {"set_activate_trigger", 1},
+    {"read_pipe_valid_status", 0},
     {"", 0} // Must be last
 };
 
@@ -91,7 +101,7 @@ void completion(const char *buf, linenoiseCompletions *lc) {
     ServerCommand* command = &(commandTable[0]);
     int buf_nchars = strlen(buf);
     while(strlen(command->name) > 0) {
-        if(strnstr(command->name, buf, buf_nchars) != 0) {
+        if(strstr(command->name, buf) != 0) {
             linenoiseAddCompletion(lc, command->name);
         }
         command = &(commandTable[++i]);

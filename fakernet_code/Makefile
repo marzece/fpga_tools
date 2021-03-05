@@ -5,17 +5,21 @@ CFLAGS += -std=gnu99 -Wall -W -Wshadow -Wwrite-strings \
 
 LDLIBS += -lm
 
-all: fnetctrl kintex_client_server kintex_cli
+all: fnetctrl kintex_client_server kintex_cli fakernet_data_builder
 
 fnetctrl: fnetctrl.o fnet_client.o
 
 fnetctrl.o fnet_client.o: fakernet.h fnet_client.h
 
-kintex_client_server: kintex_client_server.o hermes_if.o gpio.o lmk_if.o ads_if.o iic.o fnet_client.o dac_if.o axi_qspi.o ti_board_if.o jesd.o
+kintex_client_server: kintex_client_server.o hermes_if.o gpio.o lmk_if.o ads_if.o iic.o fnet_client.o dac_if.o axi_qspi.o ti_board_if.o jesd.o adc_sample_fanout.o channel_trigger.o
 	$(CC) -o $@ $(CFLAGS) $^
 
 kintex_cli: kintex_cli.o
 	$(CC) -o $@ $(CFLAGS) -Ilinenoise/ linenoise/linenoise.c $^
+
+fakernet_data_builder: fakernet_data_builder.c
+	$(CC) -Wall -pedantic -O -g -o $@ $^ fnet_client.o hiredis/libhiredis.a
+#$(CC) -Wall -pedantic -O -g -o $@ $^ 
 
 kintex_client_server.o: kintex_client_server.c
 	$(CC) -o $@ -c $(CFLAGS) $^
@@ -48,6 +52,12 @@ axi_qspi.o: axi_qspi.c
 	$(CC) -o $@ -c $(CFLAGS) $^
 
 jesd.o: jesd.c
+	$(CC) -o $@ -c $(CFLAGS) $^
+
+adc_sample_fanout.o: adc_sample_fanout.c
+	$(CC) -o $@ -c $(CFLAGS) $^
+
+channel_trigger.o: channel_trigger.c
 	$(CC) -o $@ -c $(CFLAGS) $^
 
 clean:

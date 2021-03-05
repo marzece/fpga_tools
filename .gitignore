@@ -6,4 +6,8 @@
 .DS_Store
 *.txt
 *.dat
-
+*.pdf
+*.log
+*.npz
+*.gif
+*.yml

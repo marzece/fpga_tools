@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include "jesd.h"
 
+#define NUM_CHANNELS                         4
 #define JESD_VERSION_OFFSET                  0x0
 #define JESD_RESET_OFFSET                    0x4
 #define JESD_ILA_SUPPORT_OFFSET              0x8
@@ -34,7 +35,7 @@ uint32_t double_read_addr(uint32_t, uint32_t);
 int write_addr(uint32_t, uint32_t, uint32_t);
 
 static uint32_t jesd_ila_offset(unsigned int channel) {
-    if(channel > 7) {
+    if(channel >= NUM_CHANNELS) {
         printf("Bad channel given to jesd_ila_offset: %u\n", channel);
         return 0;
     }
@@ -59,7 +60,7 @@ struct ILA_Config_Data {
 
 
 AXI_JESD* new_jesd(const char* name, uint32_t axi_addr) {
-    AXI_JESD* ret = malloc(sizeof(AXI_JESD*));
+    AXI_JESD* ret = malloc(sizeof(AXI_JESD));
     ret->name = name;
     ret->axi_addr = axi_addr;
     return ret;
@@ -89,35 +90,40 @@ uint32_t set_sync_error_reporting(AXI_JESD* jesd, uint32_t state) {
     return write_jesd(jesd, JESD_ERROR_REPORTING_OFFSET, error_reporting);
 }
 
-uint32_t jesd_read_error_rate(AXI_JESD* jesd, int channel) {
+uint32_t read_error_register(AXI_JESD* jesd, unsigned int channel) {
+        uint32_t ila_base = jesd_ila_offset(channel);
+        return read_jesd(jesd, ila_base + JESD_ILA_ERROR_COUNT_OFFSET);
+}
+
+uint32_t jesd_read_error_rate(AXI_JESD* jesd, uint32_t *resp) {
+    int i;
     const int ERROR_COUNTING_ENABLE = 0x1;
+    uint32_t first[4];
+    uint32_t second[4];
     //const int ERROR_SYNC_REPORT_ENABLE = 0x100;
     uint32_t error_reporting = read_jesd(jesd, JESD_ERROR_REPORTING_OFFSET);
     if(!(error_reporting & ERROR_COUNTING_ENABLE)) {
         write_jesd(jesd, JESD_ERROR_REPORTING_OFFSET, error_reporting | ERROR_COUNTING_ENABLE);
     }
-    uint32_t ila_base = jesd_ila_offset(channel);
-    if(!ila_base) {
-        return 0;
+    for(i=0; i < NUM_CHANNELS; i++) {
+        first[i] = read_error_register(jesd, i);
     }
-    uint32_t first = read_jesd(jesd, ila_base + JESD_ILA_ERROR_COUNT_OFFSET);
     usleep(500e3);
-    uint32_t second = read_jesd(jesd, ila_base + JESD_ILA_ERROR_COUNT_OFFSET);
-
-    if(first < second) {
-        // TODO handle rollover
+    for(i=0; i < NUM_CHANNELS; i++) {
+        second[i] = read_error_register(jesd, i);
     }
-    return second - first;
+
+    for(i=0; i < NUM_CHANNELS; i++) {
+        // Don't need to worry aobut rollover, since everything here is a 32-bit
+        // unsigned int the subtraction will work even across a rolloever
+        resp[i] = second[i] - first[i];
+    }
+    return 0;
 }
 
 uint32_t jesd_is_synced(AXI_JESD* jesd) {
     uint32_t val = read_jesd(jesd, JESD_SYNC_STATUS_OFFSET);
-    return val & JESD_SYNC_STATUS_SYNC_BIT;
-}
-
-uint32_t jesd_(AXI_JESD* jesd) {
-    uint32_t val = 1;
-    return 0;
+    return (val & JESD_SYNC_STATUS_SYNC_BIT);
 }
 
 struct ILA_Config_Data read_ila_config(AXI_JESD* jesd, unsigned int channel) {

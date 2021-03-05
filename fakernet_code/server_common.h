@@ -7,5 +7,6 @@ typedef struct ServerCommand {
     const char* name;
     CLIFunc func;
     int nargs;
+    int nresp;
 } ServerCommand;
 #endif

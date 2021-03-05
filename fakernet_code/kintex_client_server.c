@@ -13,6 +13,7 @@
 #include "server_common.h"
 #include "hermes_if.h"
 #include "ti_board_if.h"
+#include "resp.h"
 
 // For doing "double" reads the 2nd read should be from this register
 #define COMMAND_PIPE_NAME "kintex_command_pipe"
@@ -145,10 +146,10 @@ uint32_t sleep_command(uint32_t* args) {
 }
 
 static ServerCommand commandTable[] = {
-    {"write_addr", write_addr_command, 2},
-    {"read_addr", read_addr_command, 1},
-    {"sleep", sleep_command, 1},
-    {"", NULL, 0} // Must be last
+    {"write_addr", write_addr_command, 2, 1},
+    {"read_addr", read_addr_command, 1, 1},
+    {"sleep", sleep_command, 1, 1},
+    {"", NULL, 0, 0} // Must be last
 };
 ServerCommand* search_for_command(ServerCommand* table, const char* command_name) {
     int cmd_index = 0;
@@ -167,6 +168,7 @@ int handle_line(const char* line) {
     if(strlen(line) == 0 || line[0] == '#') {
         return 0;
     }
+    int i;
     char* command_name = NULL;
     char* arg_buff[11]= {command_name, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
     char* line_copy = malloc(sizeof(char)*(strlen(line)+1));
@@ -191,25 +193,38 @@ int handle_line(const char* line) {
         command = search_for_command(commandTable, command_name);
     }
     if(command->func == NULL) {
-        snprintf(resp_buffer, BUFFER_SIZE,"Invalid/Unknown command given\n");
+        snprintf(resp_buffer, BUFFER_SIZE,"-Invalid/Unknown command given\r\n");
         return 0;
     }
 
     if(command->nargs != nargs) {
         // Too few arguments
         // TODO send back error message
-        snprintf(resp_buffer, BUFFER_SIZE, "Err: Command \"%s\" requires %i arguments, %i given.\n",command_name, command->nargs, nargs);
+        snprintf(resp_buffer, BUFFER_SIZE, "-Err: Command \"%s\" requires %i arguments, %i given.\r\n",command_name, command->nargs, nargs);
         return 0;
     }
 
-    int i;
-    uint32_t *args = malloc(sizeof(uint32_t)*nargs);
+    int array_size = nargs > command->nresp ? nargs : command->nresp;
+    uint32_t *args = malloc(sizeof(uint32_t)*array_size);
     for(i=0; i< nargs; i++) {
         args[i] = strtoul(arg_buff[i+1], NULL, 0);
     }
 
     uint32_t ret = command->func(args);
-    snprintf(resp_buffer, BUFFER_SIZE, "0x%x\n", ret);
+    int bytes_written = 0;
+    if(command->nresp <= 0) {
+        bytes_written = snprintf(resp_buffer, BUFFER_SIZE, "+OK\r\n");
+    }
+    else if(command->nresp == 1) {
+        bytes_written = resp_uint32(resp_buffer, BUFFER_SIZE, ret);
+        //snprintf(resp_buffer, BUFFER_SIZE, "0x%x\n", ret);
+    } else {
+        bytes_written = resp_array(resp_buffer, BUFFER_SIZE, args, command->nresp);
+    }
+    if(bytes_written >= BUFFER_SIZE) {
+        snprintf(resp_buffer, BUFFER_SIZE, "-Resp Buffer overflow!\r\n");
+    }
+
     free(args);
     return 0;
 }
@@ -307,7 +322,7 @@ int main(int argc, char** argv) {
 
         // resp_buffer should have a null terminator...don't need to send it though?
         write(_resp_fd, &resp_buffer, strlen(resp_buffer));
-        usleep(10000);
+        usleep(1000);
     }
 
     printf("Cntrl-C found, quitting\n");
