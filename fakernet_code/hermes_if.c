@@ -234,23 +234,23 @@ static uint32_t write_b_adc_spi_command(uint32_t* args) {
 }
 
 static uint32_t ads_a_spi_data_available_command(uint32_t* args) {
-    (void) args;
+    UNUSED(args);
     return spi_drr_data_available(get_hermes_handle()->adc_a);
 }
 
 static uint32_t ads_a_spi_data_pop_command(uint32_t* args) {
-    (void) args;
+    UNUSED(args);
     return spi_drr_pop(get_hermes_handle()->adc_a);
 }
 
 
 static uint32_t ads_b_spi_data_available_command(uint32_t* args) {
-    (void) args;
+    UNUSED(args);
     return spi_drr_data_available(get_hermes_handle()->adc_b);
 }
 
 static uint32_t ads_b_spi_data_pop_command(uint32_t* args) {
-    (void) args;
+    UNUSED(args);
     return spi_drr_pop(get_hermes_handle()->adc_b);
 }
 
@@ -284,12 +284,12 @@ static uint32_t write_lmk_spi_command(uint32_t* args) {
 }
 
 static uint32_t lmk_spi_data_available_command(uint32_t* args) {
-    (void) args;
+    UNUSED(args);
     return spi_drr_data_available(get_hermes_handle()->lmk);
 }
 
 static uint32_t lmk_spi_data_pop_command(uint32_t* args) {
-    (void) args;
+    UNUSED(args);
     return spi_drr_pop(get_hermes_handle()->lmk);
 }
 
@@ -317,7 +317,7 @@ static uint32_t write_dac_spi_command(uint32_t* args) {
 }
 
 static uint32_t toggle_dac_ldac_command(uint32_t* args) {
-    (void)args; // Not used
+    UNUSED(args);
     // This is a bit of hack. But basically I do an 8-bit SPI transaction, but
     // set the SSR reg to toggle it's 2nd bit and not any other bits
     // LDAC is the second bit of the SS (i.e. bit 1)
@@ -329,7 +329,7 @@ static uint32_t toggle_dac_ldac_command(uint32_t* args) {
 }
 
 static uint32_t toggle_dac_reset_command(uint32_t* args) {
-    (void)args; // Not used
+    UNUSED(args);
     // This is a bit of hack. But basically I do an 8-bit SPI transaction, but
     // set the SSR reg to toggle it's third bit and not any other bits
     // RESET is the third bit of the SS (i.e. bit 2)
@@ -420,17 +420,17 @@ static uint32_t jesd_b_error_rate_command(uint32_t* args) {
 }
 
 static uint32_t jesd_a_reset_command(uint32_t* args) {
-    (void) args;
+    UNUSED(args);
     return jesd_reset(get_hermes_handle()->jesd_a);
 }
 
 static uint32_t jesd_b_reset_command(uint32_t* args) {
-    (void) args;
+    UNUSED(args);
     return jesd_reset(get_hermes_handle()->jesd_b);
 }
 
 static uint32_t jesd_sys_reset_command(uint32_t* args) {
-    (void)args;
+    UNUSED(args);
     uint32_t GPIO_DATA_OFFSET = 0x0;
     // Just toggle the signal up then down...should do a reset
     write_gpio_value(get_hermes_handle()->gpio2, GPIO_DATA_OFFSET, 0x1);
@@ -444,7 +444,7 @@ static uint32_t jesd_sys_reset_command(uint32_t* args) {
 // Count is reset by JESD SYS Reset
 // TODO, copy/pasted the code for A & B...dry it out!
 static uint32_t jesd_a_sync_rate_command(uint32_t *args) {
-    (void)args;
+    UNUSED(args);
     uint32_t GPIO_DATA1_ADDR = 0x0;
     uint32_t first = read_gpio_value(get_hermes_handle()->gpio1, GPIO_DATA1_ADDR);
     usleep(500e3);
@@ -487,7 +487,7 @@ static uint32_t read_all_error_rates_command(uint32_t* resp) {
 // binary counter that counts clock ticks while SYNC is low. 
 // Count is reset by JESD SYS Reset
 static uint32_t jesd_b_sync_rate_command(uint32_t *args) {
-    (void)args;
+    UNUSED(args);
     uint32_t GPIO_DATA2_ADDR = 0x4;
     uint32_t first = read_gpio_value(get_hermes_handle()->gpio1, GPIO_DATA2_ADDR);
     usleep(500e3);
@@ -498,12 +498,12 @@ static uint32_t jesd_b_sync_rate_command(uint32_t *args) {
 }
 
 static uint32_t jesd_a_is_synced_command(uint32_t *args) {
-    (void) args;
+    UNUSED(args);
     return jesd_is_synced(get_hermes_handle()->jesd_a);
 }
 
 static uint32_t jesd_b_is_synced_command(uint32_t *args) {
-    (void) args;
+    UNUSED(args);
     return jesd_is_synced(get_hermes_handle()->jesd_b);
 }
 
@@ -518,7 +518,7 @@ static uint32_t jesd_b_set_sync_error_reporting_command(uint32_t* args) {
 }
 
 static uint32_t turn_on_data_pipe_command(uint32_t* args) {
-    (void) args; // Args are unused
+    UNUSED(args);
     write_fanout_value( get_hermes_handle()->fanout_a, 0xF);
     write_fanout_value( get_hermes_handle()->fanout_b, 0xF);
     return 0;
@@ -551,7 +551,7 @@ static uint32_t set_activate_trigger_command(uint32_t* args) {
 }
 
 static uint32_t read_pipe_valid_status_command(uint32_t* args) {
-    (void)args;
+    UNUSED(args);
     return read_gpio_value(get_hermes_handle()->gpio3, 0);
 }
 

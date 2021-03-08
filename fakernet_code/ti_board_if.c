@@ -113,12 +113,12 @@ static uint32_t write_adc_spi_command(uint32_t* args) {
 }
 
 static uint32_t ads_spi_data_available_command(uint32_t* args) {
-    (void) args;
+    UNUSED(args);
     return spi_drr_data_available(get_ti_handle()->adc);
 }
 
 static uint32_t ads_spi_data_pop_command(uint32_t* args) {
-    (void) args;
+    UNUSED(args);
     return spi_drr_pop(get_ti_handle()->adc);
 }
 
@@ -153,17 +153,17 @@ static uint32_t write_lmk_spi_command(uint32_t* args) {
 }
 
  static uint32_t lmk_spi_data_available_command(uint32_t* args) {
-    (void) args;
+     UNUSED(args);
     return spi_drr_data_available(get_ti_handle()->lmk);
 }
 
 static uint32_t lmk_spi_data_pop_command(uint32_t* args) {
-    (void) args;
+    UNUSED(args);
     return spi_drr_pop(get_ti_handle()->lmk);
 }
 
 static uint32_t turn_on_data_pipe_command(uint32_t* args) {
-    (void) args; // Args are unused
+    UNUSED(args);
     write_fanout_value( get_ti_handle()->fanout, 0xF);
     return 0;
 }
@@ -186,7 +186,7 @@ static uint32_t set_trigger_mode_command(uint32_t* args) {
 }
 
 static uint32_t read_trigger_mode_command(uint32_t* args) {
-    (void) args;
+    UNUSED(args);
     return read_gpio_value(get_ti_handle()->gpio0, 1);
 }
 
@@ -259,12 +259,12 @@ static uint32_t jesd_write_command(uint32_t *args) {
 
 
 static uint32_t jesd_is_synced_command(uint32_t *args) {
-    (void) args;
+    UNUSED(args);
     return jesd_is_synced(get_ti_handle()->jesd);
 }
 
 static uint32_t jesd_sys_reset_command(uint32_t* args) {
-    (void)args;
+    UNUSED(args);
     uint32_t GPIO_DATA_OFFSET = 0x0;
     // Just toggle the signal up then down...should do a reset
     write_gpio_value(get_ti_handle()->gpio2, GPIO_DATA_OFFSET, 0x1);
