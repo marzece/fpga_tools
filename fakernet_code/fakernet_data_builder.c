@@ -58,7 +58,13 @@ typedef struct TripleBuffer {
     int state;
 } TripleBuffer;
 
-TripleBuffer rw_buffers;
+//TripleBuffer rw_buffers;
+
+typedef struct FPGA_IF {
+    int fd; // File descriptor
+    TripleBuffer rw_buffers;
+} FPGA_IF;
+FPGA_IF fpga_if;
 
 #define MAGIC_VALUE 0xFFFFFFFF
 typedef struct TrigHeader{
@@ -112,18 +118,18 @@ int connect_to_fpga() {
 }
 
 // This is the function that eeads data from the FPGA ethernet connection
-size_t pull_from_fpga() {
+size_t pull_from_fpga(FPGA_IF* fpga_if) {
     ssize_t bytes_recvd = 0;
     size_t space_left;
-    int bufnum = rw_buffers.state;
+    int bufnum = fpga_if->rw_buffers.state;
 
-    int w_buffer_idx = rw_buffers.buff_idxs[bufnum];
+    int w_buffer_idx = fpga_if->rw_buffers.buff_idxs[bufnum];
 
-    char* w_buffer = rw_buffers.buffers[bufnum];
+    char* w_buffer = fpga_if->rw_buffers.buffers[bufnum];
     space_left = BUFFER_SIZE - w_buffer_idx;
     if(space_left > 0) {
         // TODO this should perhaps be a non-blocking read
-        bytes_recvd = recv(fpga_fd, w_buffer + w_buffer_idx, space_left, 0);
+        bytes_recvd = recv(fpga_if->fd, w_buffer + w_buffer_idx, space_left, 0);
         if(bytes_recvd < 0) {
             printf("Error retrieving data from socket: %s\n", strerror(errno));
             return 0;
@@ -131,14 +137,14 @@ size_t pull_from_fpga() {
         w_buffer_idx += bytes_recvd;
         space_left -= bytes_recvd;
     } else {
-        rw_buffers.write_finished = 1;
+        fpga_if->rw_buffers.write_finished = 1;
     }
-    rw_buffers.buff_idxs[bufnum] += bytes_recvd;
-    rw_buffers.buff_lens[bufnum] += bytes_recvd;
+    fpga_if->rw_buffers.buff_idxs[bufnum] += bytes_recvd;
+    fpga_if->rw_buffers.buff_lens[bufnum] += bytes_recvd;
     return bytes_recvd;
 }
 
-void shift_buffers() {
+void shift_buffers(FPGA_IF* fpga) {
     // This function does the buffer swap where it moves the oldest read buffer
     // to become the write buffer. The old write buffer becomes the new read buffer,
     // and the previously "young" read buffer becomes the oldest read buffer.
@@ -146,61 +152,61 @@ void shift_buffers() {
     // ends on a even multiple of 4 bytes. This makes parcelling into 32-bit words
     // easier.
     // Any dangling bytes are moved to the start of the new write buffer
-    int buf_state = rw_buffers.state;
+    int buf_state = fpga->rw_buffers.state;
     int w_bufnum = buf_state;
-    char* w_buffer = rw_buffers.buffers[w_bufnum];
-    int w_length = rw_buffers.buff_lens[w_bufnum];
+    char* w_buffer = fpga->rw_buffers.buffers[w_bufnum];
+    int w_length = fpga->rw_buffers.buff_lens[w_bufnum];
     int off_by;
 
     int new_w_bufnum = (buf_state + 1) % 3;
-    char* new_write_buffer = rw_buffers.buffers[new_w_bufnum];
+    char* new_write_buffer = fpga->rw_buffers.buffers[new_w_bufnum];
 
     // First clear out the "top" read buffer, it will be the new write buffer
-    rw_buffers.buff_lens[new_w_bufnum] = 0;
+    fpga->rw_buffers.buff_lens[new_w_bufnum] = 0;
 
     // Move the index for the new read buffer and the new write buffer to zero
     // for the 'old' read buffer the index doesn't move
-    rw_buffers.buff_idxs[w_bufnum] = 0;
-    rw_buffers.buff_idxs[new_w_bufnum] = 0;
+    fpga->rw_buffers.buff_idxs[w_bufnum] = 0;
+    fpga->rw_buffers.buff_idxs[new_w_bufnum] = 0;
 
     // Now move any dangling bytes at the end of the (old) write_buffer
     // to the start of the new write buffer
     off_by = w_length % 4;
     while(off_by > 0) {
-        new_write_buffer[rw_buffers.buff_idxs[new_w_bufnum]] = w_buffer[w_length -1 - off_by];
+        new_write_buffer[fpga->rw_buffers.buff_idxs[new_w_bufnum]] = w_buffer[w_length -1 - off_by];
         
         // Move the new write buffer indices up
-        rw_buffers.buff_idxs[new_w_bufnum] += 1;
-        rw_buffers.buff_lens[new_w_bufnum] += 1;
+        fpga->rw_buffers.buff_idxs[new_w_bufnum] += 1;
+        fpga->rw_buffers.buff_lens[new_w_bufnum] += 1;
 
         // Move the old write_buffer length back
-        rw_buffers.buff_lens[w_bufnum] -= 1;
+        fpga->rw_buffers.buff_lens[w_bufnum] -= 1;
 
         off_by -=1;
     }
 
 
     // And finally update the buffer state
-    rw_buffers.state = (rw_buffers.state + 1) % 3;
-    rw_buffers.read_finished=0;
-    rw_buffers.write_finished=0;
+    fpga->rw_buffers.state = (fpga->rw_buffers.state + 1) % 3;
+    fpga->rw_buffers.read_finished=0;
+    fpga->rw_buffers.write_finished=0;
 }
 
-void initialize_buffers() {
+void initialize_buffers(TripleBuffer* rw_buffers) {
     int i;
     for(i=0; i < 3; i++) {
-        rw_buffers.buff_lens[i] = 0;
-        rw_buffers.buff_idxs[i] = 0;
-        rw_buffers.buffers[i] = malloc(BUFFER_SIZE);
-        if(!rw_buffers.buffers[i]) {
+        rw_buffers->buff_lens[i] = 0;
+        rw_buffers->buff_idxs[i] = 0;
+        rw_buffers->buffers[i] = malloc(BUFFER_SIZE);
+        if(!rw_buffers->buffers[i]) {
             printf("Could not allocate enough memory!\n");
             exit(1);
         }
     }
-    rw_buffers.state = 0;
-    rw_buffers.write_finished = 0;
+    rw_buffers->state = 0;
+    rw_buffers->write_finished = 0;
     // Since read buffer is empty to start, we're already done reading
-    rw_buffers.read_finished = 1;
+    rw_buffers->read_finished = 1;
 }
 
 EventInProgress start_event() {
@@ -226,7 +232,7 @@ EventInProgress start_event() {
 void display_event(Event* ev) {
     printf("Event trig number =  %u\n", ev->header.trig_number);
     printf("Event length = %u\n", ev->header.length);
-    printf("Event time = %u\n", ev->header.clock);
+    printf("Event time = %llu\n", ev->header.clock);
     printf("Channel id = %u\n", ev->header.device_number);
 }
 
@@ -308,14 +314,14 @@ void write_to_disk(Event* ev) {
 }
 
 // Find the position to start reading from in read buffers
-int find_read_position(int *bufnum, int *idx, int *len) {
-    int _bufnum = (rw_buffers.state + 2) % 3;
-    int r_queue_idx = rw_buffers.buff_idxs[_bufnum];
-    int r_queue_len = rw_buffers.buff_lens[_bufnum];
+int find_read_position(TripleBuffer* rw_buffers, int *bufnum, int *idx, int *len) {
+    int _bufnum = (rw_buffers->state + 2) % 3;
+    int r_queue_idx = rw_buffers->buff_idxs[_bufnum];
+    int r_queue_len = rw_buffers->buff_lens[_bufnum];
     if(r_queue_len == r_queue_idx) {
-        _bufnum = (rw_buffers.state + 1) % 3;
-        r_queue_idx = rw_buffers.buff_idxs[_bufnum];
-        r_queue_len = rw_buffers.buff_lens[_bufnum];
+        _bufnum = (rw_buffers->state + 1) % 3;
+        r_queue_idx = rw_buffers->buff_idxs[_bufnum];
+        r_queue_len = rw_buffers->buff_lens[_bufnum];
     }
 
     if(bufnum) {
@@ -331,7 +337,7 @@ int find_read_position(int *bufnum, int *idx, int *len) {
 }
 
 // Read 32 bits from read buffer
-int pop32(uint32_t* val) {
+int pop32(TripleBuffer* rw_buffers, uint32_t* val) {
     int bufnum, r_queue_idx, r_queue_len;
     char* r_buffer = NULL;
     uint32_t* pntr = NULL;
@@ -343,15 +349,15 @@ int pop32(uint32_t* val) {
 
     // Find our current read_position in the read_buffer.
     // If we're at the end of the buffer, just return;
-    if(find_read_position(&bufnum, &r_queue_idx, &r_queue_len)) {
+    if(find_read_position(rw_buffers, &bufnum, &r_queue_idx, &r_queue_len)) {
         // Should only return non-zero if at the end of the read buffer
         return -1;
     }
 
-    r_buffer = rw_buffers.buffers[bufnum];
+    r_buffer = rw_buffers->buffers[bufnum];
     pntr = (uint32_t*)(r_buffer + r_queue_idx);
     *val = ntohl(*pntr); // TODO fakernet doesn't actually do endian-ness....
-    rw_buffers.buff_idxs[bufnum] += sizeof(uint32_t);
+    rw_buffers->buff_idxs[bufnum] += sizeof(uint32_t);
     return 0;
 }
 
@@ -380,7 +386,7 @@ void interpret_header_word(TrigHeader* header, const uint32_t word, const int wh
         }
 }
 // Read events from read buffer. Returns 0 if a full event is read.
-int read_proc(Event* ret) {
+int read_proc(FPGA_IF* fpga, Event* ret) {
     static EventInProgress event;
     static int first = 1;
     uint32_t val;
@@ -393,10 +399,10 @@ int read_proc(Event* ret) {
         int word = event.header_bytes_read/4;
         TrigHeader* header = &(event.event.header);
 
-        if(pop32(&val)) {
+        if(pop32(&(fpga->rw_buffers), &val)) {
             // should only happen if we're at the end of the younger read buffer,
             // should flag that we're done reading.
-            rw_buffers.read_finished = 1;
+            fpga->rw_buffers.read_finished = 1;
             return -1;
         }
         interpret_header_word(header, val, word);
@@ -426,9 +432,9 @@ int read_proc(Event* ret) {
     int bufnum;
     int r_queue_idx;
     int r_queue_len;
-    if(find_read_position(&bufnum, &r_queue_idx, &r_queue_len)) {
+    if(find_read_position(&(fpga->rw_buffers), &bufnum, &r_queue_idx, &r_queue_len)) {
         // no more to read
-        rw_buffers.read_finished = 1;
+        fpga->rw_buffers.read_finished = 1;
         return 0;
     }
 
@@ -442,7 +448,7 @@ int read_proc(Event* ret) {
     //samples_to_read += NUM_CHANNELS;
 
     int samples_remaining = samples_to_read - event.samples_read;
-    uint32_t* read_location = (uint32_t*)(rw_buffers.buffers[bufnum] + r_queue_idx);
+    uint32_t* read_location = (uint32_t*)(fpga->rw_buffers.buffers[bufnum] + r_queue_idx);
 
     // This should be guranateed to be evenly divisible by 4 aka sizeof(uin32t)
     int samples_in_buffer = (r_queue_len - r_queue_idx)/sizeof(uint32_t);
@@ -463,7 +469,7 @@ int read_proc(Event* ret) {
         // The rest of this event is available in the current read buffer
         event.event.lengths[i] = samples_remaining; // TODO this length is is units of samples (should be bytes?)
         event.samples_read += samples_remaining;
-        rw_buffers.buff_idxs[bufnum] += samples_remaining*sizeof(uint32_t);
+        fpga->rw_buffers.buff_idxs[bufnum] += samples_remaining*sizeof(uint32_t);
         // Now that the event is finished I need to tell someone!
         *ret = event.event;
         event = start_event();
@@ -472,7 +478,7 @@ int read_proc(Event* ret) {
 
     event.event.lengths[i] = samples_in_buffer; // TODO this length is is units of samples (should be bytes?)
     event.samples_read += samples_in_buffer;
-    rw_buffers.buff_idxs[bufnum] += samples_in_buffer*sizeof(uint32_t);
+    fpga->rw_buffers.buff_idxs[bufnum] += samples_in_buffer*sizeof(uint32_t);
     return 0;
 }
 
@@ -582,25 +588,6 @@ int send_tcp_reset(struct fnet_ctrl_client* client) {
     return 0;
 }
 
-// This swaps the 16 bit values wihtin a 32-bit value i.e 0xDEADBEEF->0xBEEFDEAD
-// this is cause currently fakernet reads out pairs of 16bit samples in the wrong
-// order
-void do_short_swap(Event* event) {
-    uint32_t swap_var;
-    uint32_t* pntr;
-    int i, j;
-    for(i=0;i < MAX_SPLITS; i++) {
-        if(!event->locations[i]) {
-            break;
-        }
-        for(j=0; j<event->lengths[i]; j++) {
-            pntr = (event->locations[i] + j);
-            swap_var = ((*pntr) << 16) | ((*pntr) >> 16);
-            *pntr = swap_var;
-        }
-    }
-}
-
 int main(int argc, char **argv) {
 
     int num_events = 0;
@@ -621,7 +608,7 @@ int main(int argc, char **argv) {
     }
 
     // initialize memory locations
-    initialize_buffers();
+    initialize_buffers(&(fpga_if.rw_buffers));
 
     struct fnet_ctrl_client* udp_client = connect_fakernet_udp_client();
     if(!udp_client) {
@@ -661,16 +648,16 @@ int main(int argc, char **argv) {
         // a single loop, not both.
 
         event_ready = 0;
-        int write_buf_fullness = rw_buffers.buff_lens[rw_buffers.state];
+        int write_buf_fullness = fpga_if.rw_buffers.buff_lens[fpga_if.rw_buffers.state];
 
-        if(!rw_buffers.write_finished) {
-            pull_from_fpga();
+        if(!fpga_if.rw_buffers.write_finished) {
+            pull_from_fpga(&fpga_if);
         }
-        if(!rw_buffers.read_finished) {
-            event_ready = read_proc(&event);
+        if(!fpga_if.rw_buffers.read_finished) {
+            event_ready = read_proc(&fpga_if, &event);
         }
 
-        if(write_buf_fullness >= SWAP_THRESHOLD && rw_buffers.read_finished) {
+        if(write_buf_fullness >= SWAP_THRESHOLD && fpga_if.rw_buffers.read_finished) {
 
             // If we're done reading, do a swap...TODO in principle this could
             // be done before reading is "finished" we just need to complete
@@ -680,17 +667,17 @@ int main(int argc, char **argv) {
             //
             // (Shower thought) maybe I should implement a refence counter type
             // system for each buffer so when an event uses memory it keeps a reference
-            // count, but when that event gets read out it removes a count...
-            shift_buffers();
+            // count, but when that event gets fully read out it removes a count...
+            shift_buffers(&fpga_if);
         }
 
         if(event_ready) {
             // TODO add more fun things
-            //do_short_swap(&event);
             redis_publish_event(redis, event);
             display_event(&event);
             write_to_disk(&event);
             event_count++;
+
             if(num_events != 0 && event_count >= num_events) {
                 printf("Collected %i events...exiting\n", event_count);
                 end_loop();
