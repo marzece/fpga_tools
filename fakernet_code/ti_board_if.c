@@ -13,15 +13,15 @@
 #include "channel_trigger.h"
 #include "dac_if.h"
 
-#define LMK_AXI_ADDR 0x1000
-#define ADC_AXI_ADDR 0x1000
+#define LMK_AXI_ADDR 0x3000
+#define ADC_AXI_ADDR 0x3000
 //#define ADC_AXI_ADDR 0x2000
 #define DAC_AXI_ADDR 0x2080
-#define IIC_AXI_ADDR 0x10000
+#define IIC_AXI_ADDR 0x2000
 #define GPIO0_AXI_ADDR 0x0000
-#define GPIO1_AXI_ADDR 0x6000
-#define GPIO2_AXI_ADDR 0x3000
-#define JESD_A_AXI_ADDR 0x5000
+#define GPIO1_AXI_ADDR 0x10000
+#define GPIO2_AXI_ADDR 0x1000
+#define JESD_A_AXI_ADDR 0x6000
 #define ADC_A_FANOUT_ADDR 0x30000
 #define CHANNEL_TRIGGER_0_ADDR 0x40000
 #define CHANNEL_TRIGGER_1_ADDR 0x50000
