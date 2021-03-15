@@ -18,10 +18,9 @@ void crc8(unsigned char *crc, unsigned char m);
 // Now lets be real....an event that size ever happening is an error. But
 // it means we're guranteed an event can always fit in 1MB of memory
 
-// File descriptor for FPGA ethernet comms
-static int fpga_fd;
 // FILE handle for writing to disk
 static FILE* fdisk = NULL; 
+const char* FOUT_FILENAME = "fpga_data.dat"; // TODO make this not global
 
 // Variable for deciding to stay in the main loop or not.
 // When loop is zero program should exit soon after.
@@ -106,8 +105,7 @@ typedef struct EventInProgress {
 } EventInProgress;
 
 // Open socket to FPGA returns 0 if successful
-int connect_to_fpga() {
-    const char* fpga_ip = "192.168.1.192";
+int connect_to_fpga(const char* fpga_ip) {
     const int port = 1;
     struct sockaddr_in fpga_addr;
     fpga_addr.sin_family = AF_INET;
@@ -116,11 +114,12 @@ int connect_to_fpga() {
 
     int fd = socket(AF_INET, SOCK_STREAM, 0); 
     if(fd < 0) {
-        // TODO check errno and give a proper error message
+        printf("Error creating TCP socket: %s\n", strerror(errno));
         return fd;
     }
-    // TODO...add a timeout to this
+    // TODO...add a timeout to this or something
     if(connect(fd, (struct sockaddr*)&fpga_addr, sizeof(fpga_addr))) {
+        printf("Error connecting TCP socket: %s\n", strerror(errno));
         return -1;
     }
     return fd;
@@ -137,7 +136,8 @@ size_t pull_from_fpga(FPGA_IF* fpga_if) {
     char* w_buffer = fpga_if->rw_buffers.buffers[bufnum];
     space_left = BUFFER_SIZE - w_buffer_idx;
     if(space_left > 0) {
-        // TODO this should perhaps be a non-blocking read
+        // TODO this should perhaps be a non-blocking read (don't want to let a single FPGA
+        // frig things up)
         bytes_recvd = recv(fpga_if->fd, w_buffer + w_buffer_idx, space_left, 0);
         if(bytes_recvd < 0) {
             printf("Error retrieving data from socket: %s\n", strerror(errno));
@@ -219,7 +219,6 @@ void initialize_buffers(TripleBuffer* rw_buffers) {
 }
 
 EventInProgress start_event() {
-    int i;
     EventInProgress ev;
 
     ev.header_bytes_read = 0;
@@ -228,13 +227,10 @@ EventInProgress start_event() {
     ev.event.header.magic_number = 0xFEEDBEEF;
     ev.event.header.trig_number = 0XDEADBEEF;
     ev.event.header.length = 0xAABB;
-    ev.event.header.clock = 0xFACEBEEF;
+    ev.event.header.clock = 0xBEEFBABE;
     ev.event.header.device_number =  0x71;
-    // TODO use memset
-    for(i=0; i<MAX_SPLITS; i++ ) {
-        ev.event.locations[i] = NULL;
-        ev.event.lengths[i] = 0;
-    }
+    memset(ev.event.locations, 0, sizeof(uint32_t*)*MAX_SPLITS);
+    memset(ev.event.lengths, 0, sizeof(uint32_t)*MAX_SPLITS);
     return ev;
 }
 
@@ -302,34 +298,26 @@ void sig_handler(int signum) {
 }
 
 void write_to_disk(Event* ev) {
-    const char* FILE_NAME = "fpga_data.dat";
     int nwritten, i;
-
     // TODO move this shit to a seperate function and call it before the main
     // loop is entered
     if(!fdisk) {
-        printf("Opening %s for saving data\n", FILE_NAME);
-        fdisk = fopen(FILE_NAME, "wb");
+        printf("Opening %s for saving data\n", FOUT_FILENAME);
+        fdisk = fopen(FOUT_FILENAME, "wb");
 
         if(!fdisk) {
-            // TODO check errno
-            printf("error opening file\n");
+            printf("error opening file: %s\n", strerror(errno));
             return;
         }
     }
     // Write header
-    // TODO technichally writing the TrigHeader here as a struct is not a
-    // good idea, should replace with writing the header components
-    // 
-    // write header
-    //nwritten = fwrite(&(ev->header), sizeof(TrigHeader), 1, fdisk);
     {
         nwritten = fwrite(&(ev->header.magic_number), sizeof(uint32_t), 1, fdisk);
         nwritten += fwrite(&(ev->header.trig_number), sizeof(uint32_t), 1, fdisk);
         nwritten += fwrite(&(ev->header.clock), sizeof(uint64_t), 1, fdisk);
         nwritten += fwrite(&(ev->header.length), sizeof(uint16_t), 1, fdisk);
         nwritten += fwrite(&(ev->header.device_number), sizeof(uint8_t), 1, fdisk);
-        nwritten += fwrite(&(ev->header.reserved), sizeof(uint8_t), 1, fdisk);
+        nwritten += fwrite(&(ev->header.crc), sizeof(uint8_t), 1, fdisk);
     }
     if(nwritten != 6) {
         // TODO check errno (does fwrite set errno?)
@@ -598,8 +586,7 @@ void redis_publish_event(redisContext*c, const Event event) {
 
 }
 
-struct fnet_ctrl_client* connect_fakernet_udp_client() {
-    const char* fnet_hname = "192.168.1.192";
+struct fnet_ctrl_client* connect_fakernet_udp_client(const char* fnet_hname) {
     int reliable = 0; // wtf does this do?
     const char* err_string = NULL;
     struct fnet_ctrl_client* fnet_client = NULL;
@@ -639,6 +626,8 @@ void print_help_message() {
 }
 
 int calculate_channel_crcs(Event* event, uint32_t *calculated_crcs, uint32_t* given_crcs) {
+    // TODO this function is a bit of a mess....should re-think things about
+    // how this is dones or how data from events is laid out in memory
 
     int num_samples = event->header.length;
     int num_consumed = 0;
@@ -740,23 +729,64 @@ int main(int argc, char **argv) {
     int i;
     int num_events = 0;
     int event_count = 0;
+    const char* ip = "192.168.1.192";
+    enum ArgIDs expecting_value;
 
     if(argc > 1 ) {
-        if(argc != 3) {
-            printf("Idk how to handle these arguments\n");
-            return 0;
+        expecting_value = 0;
+        for(i=1; i < argc; i++) {
+            if(!expecting_value) {
+                if((strcmp(argv[i], "--num") == 0) || (strcmp(argv[i], "-n") == 0)) {
+                    expecting_value = ARG_NUM_EVENTS;
+                }
+                else if((strcmp(argv[i], "--out") == 0) || (strcmp(argv[i], "-o") == 0)) {
+                    expecting_value = ARG_FILENAME;
+                }
+                else if((strcmp(argv[i], "--ip") == 0)) {
+                    expecting_value = ARG_IP;
+                }
+                else if((strcmp(argv[i], "--help") == 0) || (strcmp(argv[i], "-h") == 0)) {
+                    // TODO should scan the whole argv for help before setting any other values
+                    print_help_message();
+                    return 0;
+                }
+                else {
+                    printf("Unrechognized option \"%s\"\n", argv[i]);
+                    return 0;
+                }
+            } else {
+                switch(expecting_value) {
+                    case ARG_NUM_EVENTS:
+                        num_events = atoi(argv[i]);
+                        printf("Will be exiting after %i events\n", num_events);
+                        break;
+                    case ARG_FILENAME:
+                        FOUT_FILENAME = argv[i];
+                        printf("Will be writing to \"%s\"\n", FOUT_FILENAME);
+                        break;
+                    case ARG_IP:
+                        ip = argv[i];
+                        printf("FPGA IP set to %s\n", ip);
+                        break;
+                    case ARG_NONE:
+                    default:
+                        break;
+                }
+                expecting_value = 0;
+            }
         }
 
-        if(strcmp(argv[1], "--num") == 0 || strcmp(argv[1], "-n") == 0) {
-            num_events = atoi(argv[2]);
-            printf("Will be exiting after %i events\n", num_events);
+        if(expecting_value) {
+            printf("Did find value for last argument...exiting\n");
+            return 1;
         }
     }
 
+    FPGA_IF fpga_if;
     // initialize memory locations
     initialize_buffers(&(fpga_if.rw_buffers));
 
-    struct fnet_ctrl_client* udp_client = connect_fakernet_udp_client();
+    struct fnet_ctrl_client* udp_client = connect_fakernet_udp_client(ip);
     if(!udp_client) {
         printf("couldn't make UDP client\n");
         return 1;
@@ -765,9 +795,10 @@ int main(int argc, char **argv) {
     if(send_tcp_reset(udp_client)) {
         return 1;
     }
+
     // connect to FPGA
-    fpga_fd = connect_to_fpga();
-    if(fpga_fd < 0) {
+    fpga_if.fd = connect_to_fpga(ip);
+    if(fpga_if.fd < 0) {
         printf("error ocurred connecting to fpga\n");
         return 0;
     }
