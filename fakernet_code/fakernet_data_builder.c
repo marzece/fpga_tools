@@ -10,6 +10,9 @@
 #include "hiredis/hiredis.h"
 #include "fnet_client.h"
 
+uint32_t crc32(uint32_t crc, uint32_t * buf, unsigned int len);
+void crc8(unsigned char *crc, unsigned char m);
+
 // Absolute maximum event size is 2^14*16*4 + 16 == 2^20  +16== 1MB +16
 // This limit comes from the FIFO depth on the FPGA.
 // Now lets be real....an event that size ever happening is an error. But
@@ -61,22 +64,28 @@ typedef struct TripleBuffer {
 //TripleBuffer rw_buffers;
 
 typedef struct FPGA_IF {
-    int fd; // File descriptor
+    int fd; // File descriptor for tcp connection
+    struct fnet_ctrl_client* udp_client; // UDP connection
     TripleBuffer rw_buffers;
 } FPGA_IF;
-FPGA_IF fpga_if;
 
 #define MAGIC_VALUE 0xFFFFFFFF
+// Re-read Beej's guide on data packaing to try and split clock into a union or
+// something like that
 typedef struct TrigHeader{
     uint32_t magic_number;
     uint32_t trig_number;
     uint64_t clock;
     uint16_t length;
     uint8_t device_number;
-    uint8_t reserved;
+    uint8_t crc;
 } TrigHeader;
+
 typedef struct ChannelHeader {
-    uint8_t channel_id;
+    uint8_t reserved1;
+    uint8_t channel_id1;
+    uint8_t reserved2;
+    uint8_t channel_id2;
 } ChannelHeader;
 
 // What I plan for this is to assume sample are laid out contiguously
@@ -229,11 +238,41 @@ EventInProgress start_event() {
     return ev;
 }
 
+
+uint8_t crc_from_bytes(unsigned char* bytes, int length, unsigned char init) {
+    static int is_swapped = htonl(1) != 1;
+    int i;
+    unsigned char crc = init;
+    // TODO the swap choice could be done at compile time.
+    // Redo this with #ifdef's and such
+    if(is_swapped) {
+        for(i =length-1; i >= 0; i--) {
+            crc8(&crc, bytes[i]);
+        }
+    }
+    else {
+        for(i = 0; i < length; i++) {
+            crc8(&crc, bytes[i]);
+        }
+    }
+    return crc;
+}
+
+uint8_t calc_trig_header_crc(TrigHeader* header) {
+    unsigned char crc = 0;
+    crc = crc_from_bytes((unsigned char*)&header->trig_number, 4, crc);
+    crc = crc_from_bytes((unsigned char*)&header->clock, 8, crc);
+    crc = crc_from_bytes((unsigned char*)&header->length, 2, crc);
+    crc8(&crc, header->device_number);
+    return crc ^ 0x55; // The 0x55 here makes it the ITU CRC8 implemenation
+}
+
 void display_event(Event* ev) {
     printf("Event trig number =  %u\n", ev->header.trig_number);
     printf("Event length = %u\n", ev->header.length);
     printf("Event time = %llu\n", ev->header.clock);
-    printf("Channel id = %u\n", ev->header.device_number);
+    printf("device id = %u\n", ev->header.device_number);
+    printf("CRC  = 0x%x\n", ev->header.crc);
 }
 
 void clean_up() {
@@ -370,15 +409,18 @@ void interpret_header_word(TrigHeader* header, const uint32_t word, const int wh
                 header->trig_number = word;
                 break;
             case 2:
+                header->clock &= 0x00000000FFFFFFFF;
                 header->clock |= (uint64_t)((uint64_t)word << 32);
                 break;
             case 3:
+                header->clock &= 0xFFFFFFFF00000000;
                 header->clock |= word;
                 break;
             case 4:
                 header->length = (word & 0xFFFF0000) >> 16;
                 header->device_number = (word & 0xFF00) >> 8;
-                //header->reserved = (word & 0xF);
+                header->crc = (word & 0xFF);
+                //header->length += 1;
                 break;
             default:
                 // Should never get here...should flag an error. TODO
@@ -409,14 +451,7 @@ int read_proc(FPGA_IF* fpga, Event* ret) {
         event.header_bytes_read += sizeof(uint32_t);
     } // Done reading header
 
-    printf("Got header\n 0x%x\n0x%x\n0x%x\n0x%x\n0x%x\n", event.event.header.trig_number,
-                                                    (uint32_t)(event.event.header.clock & 0xFFFFFFFF),
-                                                    (uint32_t)(event.event.header.clock >> 32),
-                                                    event.event.header.device_number,
-                                                    event.event.header.length);
-
-    if(event.event.header.length > 2000 || event.event.header.length < 10 ||
-       event.event.header.magic_number != MAGIC_VALUE) {
+    if(event.event.header.crc != calc_trig_header_crc(&event.event.header)) {
         printf("Likely error found\n");
         printf("Bad magic  =  0x%x\n", event.event.header.magic_number);
         printf("Bad trig # =  %i\n", event.event.header.trig_number);
@@ -439,7 +474,10 @@ int read_proc(FPGA_IF* fpga, Event* ret) {
     }
 
 
-    int event_length = event.event.header.length + 1;
+    // The plus two is b/c there's one extra 32-bit word for the channel header,
+    // than another extra from the channel CRC32.
+    // TODO make this less dumb
+    int event_length = event.event.header.length + 2;
     //int samples_to_read = event_length;
     int samples_to_read = event_length*NUM_CHANNELS;
 
@@ -521,7 +559,7 @@ char* copy_event(const Event* event) {
     byte_count += 2;
     memcpy(mem + byte_count, &(event->header.device_number), sizeof(uint8_t));
     byte_count += 1;
-    memcpy(mem + byte_count, &(event->header.reserved), sizeof(uint8_t));
+    memcpy(mem + byte_count, &(event->header.crc), sizeof(uint8_t));
     byte_count += 1;
     for(i=0;i < MAX_SPLITS; i++) {
         if(!event->locations[i]) {
@@ -550,7 +588,7 @@ void redis_publish_event(redisContext*c, const Event event) {
     args[1] = "event_stream";
     arglens[1] = strlen(args[1]);
     args[2] = copy_event(&event);
-    arglens[2] = HEADER_SIZE + sizeof(uint32_t)*(event.header.length+1)*NUM_CHANNELS;
+    arglens[2] = HEADER_SIZE + sizeof(uint32_t)*(event.header.length+2)*NUM_CHANNELS;
     //arglens[2] = sizeof(TrigHeader) + sizeof(uint32_t)*NUM_CHANNELS*event.header.length;
 
     r = redisCommandArgv(c, 3,  args,  arglens);
@@ -588,8 +626,118 @@ int send_tcp_reset(struct fnet_ctrl_client* client) {
     return 0;
 }
 
-int main(int argc, char **argv) {
+enum ArgIDs {
+    ARG_NONE=0,
+    ARG_NUM_EVENTS,
+    ARG_FILENAME,
+    ARG_IP
+};
 
+void print_help_message() {
+    printf("fakernet_data_builder\n"
+            "   usage:  fakernet_data_builder [--ip ip] [--out filename] [--num num_events]\n");
+}
+
+int calculate_channel_crcs(Event* event, uint32_t *calculated_crcs, uint32_t* given_crcs) {
+
+    int num_samples = event->header.length;
+    int num_consumed = 0;
+
+    int header_is_next = 1;
+    int i = 0;
+
+    uint32_t current_crc = 0;
+    int go_to_next_split = 0;
+    int go_to_next_channel = 0;
+    int ichan = 0;
+
+    uint32_t *current = event->locations[0];
+    uint32_t* end_of_split = event->locations[0] + event->lengths[0];
+    uint32_t* end_of_channel = event->locations[0] + num_samples + 2;
+
+    memset(calculated_crcs, 0, sizeof(uint32_t)*NUM_CHANNELS);
+    memset(given_crcs, 0, sizeof(uint32_t)*NUM_CHANNELS);
+
+    while(i < MAX_SPLITS) {
+        if(go_to_next_channel) {
+            ichan += 1;
+            header_is_next = 1;
+            num_consumed = 0;
+            current_crc = 0;
+            go_to_next_channel = 0;
+            if(ichan >= NUM_CHANNELS) {
+                break;
+            }
+        }
+
+        if(go_to_next_split) {
+            i += 1;
+            if(i >= MAX_SPLITS) {
+                printf("Reached the end of memory before finding all CRCs!\n");
+                break;
+            }
+            go_to_next_split = 0;
+            current = event->locations[i];
+            end_of_split = event->locations[i] + event->lengths[i];
+        }
+
+        end_of_channel = current + num_samples + 2 - num_consumed;
+        // Which will end sooner, the "split" or the channel's samples
+        int split_ends_first = end_of_split < end_of_channel;
+        //printf("split_ends_first = %i\n", split_ends_first);
+        uint32_t* end = split_ends_first ? end_of_split : end_of_channel;
+        int num_to_read = end - current;
+        //printf("Num to read = %i\n", num_to_read);
+
+        if(header_is_next) {
+            if(num_to_read > 1) {
+                //printf("Header = 0x%x\n", *current);
+                current += 1;
+                num_to_read -= 1;
+                num_consumed += 1;
+                header_is_next = 0;
+            } else if(num_to_read == 1) {
+                header_is_next = 0;
+                go_to_next_split = 1;
+                num_consumed += 1;
+                // Need to move to next split
+                // (shouldn't be possible for "end" to be the end of the channel
+                // unless the trigger length is 0 (which might happen?? hopefully not))
+                continue;
+            } else {
+                // Need to move to next split
+                // (shouldn't be possible for "end" to be the end of the channel
+                // unless the trigger length is 0 (which might happen?? hopefully not))
+                go_to_next_split = 1;
+                continue;
+            }
+        }
+
+        // Compute CRCs
+        if(!split_ends_first) {
+            num_to_read -= 1; // Don't want to calculate the CRC on the CRC
+        }
+
+        current_crc = crc32(current_crc, current, num_to_read*sizeof(uint32_t));
+
+        num_consumed += num_to_read;
+        current += num_to_read;
+
+        if(!split_ends_first) {
+            given_crcs[ichan] = ntohl(*current);
+            calculated_crcs[ichan] = current_crc;
+            current += 1;
+            current_crc = 0;
+            go_to_next_channel = 1;
+            continue;
+        }
+        go_to_next_split = 1;
+    }
+
+    return 0;
+}
+int main(int argc, char **argv) {
+    int i;
     int num_events = 0;
     int event_count = 0;
 
@@ -603,8 +751,6 @@ int main(int argc, char **argv) {
             num_events = atoi(argv[2]);
             printf("Will be exiting after %i events\n", num_events);
         }
-
-
     }
 
     // initialize memory locations
@@ -639,6 +785,8 @@ int main(int argc, char **argv) {
     signal(SIGKILL, sig_handler);
     // Main readout loop
     printf("Entering main loop\n");
+    uint32_t calculated_crcs[NUM_CHANNELS];
+    uint32_t given_crcs[NUM_CHANNELS];
     while(loop) {
         // Would like to ensure that no more than one read proc or write proc
         // happens in each loop. I.e. you can read once and write once but if you
@@ -673,6 +821,12 @@ int main(int argc, char **argv) {
 
         if(event_ready) {
             // TODO add more fun things
+            calculate_channel_crcs(&event, calculated_crcs, given_crcs);
+            for(i=0; i < NUM_CHANNELS; i++) {
+                if(calculated_crcs[i] != given_crcs[i]) {
+                    printf("Event %i Channel %i CRC does not match\n", event.header.trig_number, i);
+                }
+            }
             redis_publish_event(redis, event);
             display_event(&event);
             write_to_disk(&event);

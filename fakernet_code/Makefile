@@ -17,7 +17,7 @@ kintex_client_server: kintex_client_server.o hermes_if.o gpio.o lmk_if.o ads_if.
 kintex_cli: kintex_cli.o
 	$(CC) -o $@ $(CFLAGS) -Ilinenoise/ linenoise/linenoise.c $^
 
-fakernet_data_builder: fakernet_data_builder.c
+fakernet_data_builder: fakernet_data_builder.c crc32.o crc8.o
 	$(CC) -Wall -pedantic -O -g -o $@ $^ fnet_client.o hiredis/libhiredis.a
 #$(CC) -Wall -pedantic -O -g -o $@ $^ 
 
@@ -58,6 +58,12 @@ adc_sample_fanout.o: adc_sample_fanout.c
 	$(CC) -o $@ -c $(CFLAGS) $^
 
 channel_trigger.o: channel_trigger.c
+	$(CC) -o $@ -c $(CFLAGS) $^
+
+crc32.o: crc32.c
+	$(CC) -o $@ -c $(CFLAGS) $^
+
+crc8.o: crc8.c
 	$(CC) -o $@ -c $(CFLAGS) $^
 
 clean:
