@@ -54,7 +54,7 @@ static struct HERMES_IF* hermes = NULL;
 static uint32_t OCM_CHANNELS[8] = {0, 1, 2, 3, 8, 9, 10, 11};
 static uint32_t BIAS_CHANNELS[8] = {7, 6, 5, 4, 12, 13, 14, 15};
 
-char* debug_bits[] = {
+const char* debug_bits[] = {
 "JESD-A TVALID",
 "BIG_AXIS_COPY_0 IN TREADY",
 "BIG_AXIS_COPY_0 OUT_A TVALID",

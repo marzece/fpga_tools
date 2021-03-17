@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <signal.h>
 #include "hiredis/hiredis.h"
 #include "fnet_client.h"
 

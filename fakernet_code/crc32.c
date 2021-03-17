@@ -19,7 +19,7 @@
 // -- Changed "local" #defined keyword to static
 // -- Removed OF() #define uses
 // -- ULong type -> unsighed long
-// -- off64_t -> __int64_t
+// -- off64_t -> int64_t
 // -- z_size_t -> size_t
 // -- Z_NULL -> NULL
 // -- uInt -> unsigned int
@@ -27,8 +27,7 @@
 
 
 
-#include <sys/types.h>
-#include <unistd.h>
+#include <stdint.h>
 
 /* Definitions for doing the crc four data bytes at a time. */
 #if !defined(NOBYFOUR) && defined(Z_U4)
@@ -45,7 +44,7 @@ static  crc32_big(uint32_t, const unsigned char *, size_t);
 /* Local functions for crc concatenation */
 static  uint32_t gf2_matrix_times(uint32_t *mat, uint32_t vec);
 static void gf2_matrix_square(uint32_t *square, uint32_t *mat);
-static  uint32_t crc32_combine_(uint32_t crc1, uint32_t crc2, __int64_t len2);
+static  uint32_t crc32_combine_(uint32_t crc1, uint32_t crc2, int64_t len2);
 
 
 /* ========================================================================
@@ -217,7 +216,7 @@ static void gf2_matrix_square(uint32_t *square, uint32_t *mat)
 }
 
 /* ========================================================================= */
-static uint32_t  crc32_combine_(uint32_t crc1, uint32_t crc2, __int64_t len2)
+static uint32_t  crc32_combine_(uint32_t crc1, uint32_t crc2, int64_t len2)
 {
     int n;
      uint32_t row;
@@ -270,12 +269,12 @@ static uint32_t  crc32_combine_(uint32_t crc1, uint32_t crc2, __int64_t len2)
 }
 
 /* ========================================================================= */
-uint32_t  crc32_combine(uint32_t crc1, uint32_t crc2, __int64_t len2)
+uint32_t  crc32_combine(uint32_t crc1, uint32_t crc2, int64_t len2)
  {
     return crc32_combine_(crc1, crc2, len2);
 }
 
-uint32_t  crc32_combine64( uint32_t crc1, uint32_t crc2, __int64_t len2)
+uint32_t  crc32_combine64( uint32_t crc1, uint32_t crc2, int64_t len2)
 {
     return crc32_combine_(crc1, crc2, len2);
 }

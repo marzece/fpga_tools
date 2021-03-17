@@ -108,7 +108,8 @@ void completion(const char *buf, linenoiseCompletions *lc) {
     }
 }
 
-void free_malloced_hint() {
+void free_malloced_hint(void* data) {
+    (void) data; // UNUSED
     free(fpga_cli_hint_str);
     fpga_cli_hint_str = NULL;
 }
