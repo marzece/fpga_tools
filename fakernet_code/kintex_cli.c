@@ -6,7 +6,8 @@
 #include <errno.h>
 #include <linenoise.h>
 
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 2048
+#define SEND_COMMAND_TABLE_COMMAND "send_command_table"
 
 FILE* debug_file;
 char* fpga_cli_hint_str = NULL;
@@ -17,90 +18,33 @@ char response_buffer[BUFFER_SIZE];
 void linenoiseSetFreeHintsCallback(linenoiseFreeHintsCallback *fn);
 
 typedef struct ServerCommand {
-    const char* name;
+    char* name;
     int nargs;
 } ServerCommand;
+static ServerCommand* commandTable = NULL;
 
-// TODO need a way to read this from the server
-static ServerCommand commandTable[] = {
-    {"write_addr", 2},
-    {"read_addr", 1},
-    {"read_iic_reg", 1},
-    {"write_iic_reg", 2},
-    {"read_iic_bus", 1},
-    {"write_iic_bus", 2},
-    {"read_iic_bus_with_reg", 2},
-    {"write_iic_bus_with_reg", 3},
-    {"read_gpio0", 1},
-    {"write_gpio0", 2},
-    {"read_gpio1", 1},
-    {"write_gpio1", 2},
-    {"read_gpio2", 1},
-    {"write_gpio2", 2},
-    {"set_preamp_power", 1},
-    {"set_adc_power", 1},
-    {"read_ads_a", 1},
-    {"write_ads_a", 2},
-    {"read_ads_b", 1},
-    {"write_ads_b", 2},
-    {"write_a_adc_spi", 3},
-    {"write_b_adc_spi", 3},
-    {"ads_a_spi_data_available", 0},
-    {"ads_b_spi_data_available", 0},
-    {"ads_a_spi_pop", 0},
-    {"ads_b_spi_pop", 0},
-    {"write_lmk_if", 2},
-    {"read_lmk_if", 1},
-    {"write_lmk_spi", 3},
-    {"lmk_spi_data_available", 0},
-    {"lmk_spi_data_pop", 0},
-    {"read_dac_if", 1},
-    {"write_dac_if", 2},
-    {"write_dac_spi", 3},
-    {"toggle_dac_ldac", 0},
-    {"toggle_dac_reset", 0},
-    {"set_bias_for_channel", 2},
-    {"set_ocm_for_channel", 2},
-    {"set_bias_for_all_channels", 1},
-    {"set_ocm_for_all_channels", 1},
-    {"sleep", 1},
-    {"read_ads", 1},
-    {"write_ads", 2},
-    {"write_adc_spi", 3},
-    {"ads_spi_data_available", 0},
-    {"ads_spi_pop", 0},
-    {"jesd_a_read", 1},
-    {"jesd_a_write", 2},
-    {"jesd_b_read", 1},
-    {"jesd_b_write", 2},
-    {"jesd_a_error_rate", 0},
-    {"jesd_b_error_rate", 0},
-    {"jesd_a_reset", 0},
-    {"jesd_b_reset", 0},
-    {"jesd_sys_reset", 0},
-    {"jesd_a_sync_rate", 0},
-    {"jesd_b_sync_rate", 0},
-    {"jesd_a_is_synced", 0},
-    {"jesd_b_is_synced", 0},
-    {"jesd_a_set_sync_error_reporting", 1},
-    {"jesd_b_set_sync_error_reporting", 1},
-    {"read_all_error_rates", 0},
-    {"turn_on_data_pipe", 0},
-    {"set_threshold_for_channel", 2},
-    {"read_threshold_for_channel", 1},
-    {"set_trigger_mode", 1},
-    {"read_trigger_mode", 0},
-    {"set_activate_trigger", 1},
-    {"read_pipe_valid_status", 0},
-    {"", 0} // Must be last
-};
+int grab_response(void) {
+    int nbytes_read = read(response_fd, response_buffer, BUFFER_SIZE);
+    if(nbytes_read >= BUFFER_SIZE-1) {
+        printf("Response too long...can't handle this\n");
+        exit(1);
+    }
+
+    // Can't expect the response to have a NULL terminator
+    response_buffer[nbytes_read] = '\0';
+    return nbytes_read;
+
+}
 
 void completion(const char *buf, linenoiseCompletions *lc) {
     // does buf have a null terminator? lets assume so lol
     int i = 0;
+    if(!commandTable) {
+        return;
+    }
+
     ServerCommand* command = &(commandTable[0]);
-    int buf_nchars = strlen(buf);
-    while(strlen(command->name) > 0) {
+    while(command->name && strlen(command->name) > 0) {
         if(strstr(command->name, buf) != 0) {
             linenoiseAddCompletion(lc, command->name);
         }
@@ -120,8 +64,11 @@ char *hints(const char *buf, int *color, int *bold) {
     int i = 0;
     int j;
     unsigned int chars_added = 0;
+    if(!commandTable) {
+        return NULL;
+    }
     ServerCommand* command = &(commandTable[0]);
-    while(strlen(command->name) > 0) {
+    while(command->name != NULL && strlen(command->name) > 0) {
         if (!strcasecmp(buf,command->name)) {
             fpga_cli_hint_str = (char*) malloc(sizeof(char)*BUF_LEN);
             *color = 35;
@@ -137,6 +84,53 @@ char *hints(const char *buf, int *color, int *bold) {
     return NULL;
 }
 
+void produce_command_table(char* table_string) {
+    // TODO should just use hiredis to parse
+    int i;
+    char* tok = strtok(table_string, "\r\n");
+    // The first token should be *xx\r\n where xx is the number of items in the command table
+    if(tok[0] != '*') {
+        printf("Error reading command table, tab-complete won't work\n");
+        return;
+    }
+    int ncommands = atoi(tok+1);
+    commandTable = malloc(sizeof(ServerCommand)*(ncommands +1));
+    memset(commandTable, 0, sizeof(ServerCommand)*(ncommands + 1));
+
+    char* location;
+    for(i=0; i<ncommands; i++) {
+        tok = strtok(NULL, "\r\n");
+        if(tok[0] != '+') {
+            printf("Command without a '+' found. Tab-completion won't work\n");
+            goto CLEAR_COMMAND_TABLE;
+        }
+        tok = tok+1; //Skip past the '+'
+
+        location = strstr(tok, " ");
+        if(location==NULL) {
+            printf("Command ill-formed. Tab-completion won't work\n");
+            goto CLEAR_COMMAND_TABLE;
+        }
+
+        int nargs = atoi(location);
+        int command_nbytes = (location - tok);
+        commandTable[i].nargs = nargs;
+        commandTable[i].name = malloc(command_nbytes + 1);
+        memcpy(commandTable[i].name, tok, command_nbytes);
+        commandTable[i].name[command_nbytes] = '\0';
+    }
+    commandTable[ncommands].name=NULL;
+    commandTable[ncommands].nargs=0;
+    return;
+CLEAR_COMMAND_TABLE:;
+    ServerCommand* command = commandTable;
+    while(command->name != NULL) {
+        free(command->name);
+    }
+    free(commandTable);
+    commandTable = NULL;
+}
+
 int handle_line(const char* line) {
     // first check if the first char is a '#' or the line is empty
     // if it is, treat this as a comment
@@ -146,14 +140,9 @@ int handle_line(const char* line) {
     // Write the given line (without NULL terminator)
     write(command_fd, line, strlen(line));
 
-    int nbytes_read = read(response_fd, response_buffer, BUFFER_SIZE);
-    if(nbytes_read == BUFFER_SIZE-1) {
-        printf("Response too long...can't handle this\n");
-        exit(1);
-    }
+    // Fills result into response_buffer
+    int nbytes_read = grab_response();
 
-    // Can't expect the response to have a NULL terminator
-    response_buffer[nbytes_read] = '\0';
     if(response_buffer[nbytes_read-1] != '\n') {
         printf("%s\n", response_buffer);
     }
@@ -210,6 +199,11 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    // First get the command table
+    write(command_fd, SEND_COMMAND_TABLE_COMMAND, strlen(SEND_COMMAND_TABLE_COMMAND));
+    grab_response();
+    produce_command_table(response_buffer);
+
     /* Now this is the main loop of the typical linenoise-based application.
      * The call to linenoise() will block as long as the user types something
      * and presses enter.
@@ -231,5 +225,7 @@ int main(int argc, char **argv) {
         }
         free(line);
     }
+
+    // TODO should clean up command table
     return 0;
 }

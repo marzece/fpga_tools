@@ -213,8 +213,8 @@ char* handle_line(const char* line) {
                 // TODO I guess I should check the return value of snprintf...but whatevs
                 snprintf(buf, BUF_SIZE, "+%s %i\r\n", command->name, command->nargs);
                 bytes = strlen(buf);
-                commands_buf[command_count-1] = malloc(sizeof(char)*bytes);
-                memcpy(commands_buf[command_count-1], buf, bytes);
+                commands_buf[command_count-1] = malloc(sizeof(char)*(bytes + 1));
+                memcpy(commands_buf[command_count-1], buf, bytes+1);
 
                 bytes_count += bytes;
                 command += 1;
