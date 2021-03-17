@@ -1,4 +1,3 @@
-
 #include <stdlib.h>
 #include <assert.h>
 #include "server_common.h"
@@ -12,21 +11,25 @@
 #include "adc_sample_fanout.h"
 #include "channel_trigger.h"
 #include "dac_if.h"
+#include "data_pipeline.h"
 
-#define LMK_AXI_ADDR 0x3000
-#define ADC_AXI_ADDR 0x3000
-//#define ADC_AXI_ADDR 0x2000
-#define DAC_AXI_ADDR 0x2080
-#define IIC_AXI_ADDR 0x2000
-#define GPIO0_AXI_ADDR 0x0000
-#define GPIO1_AXI_ADDR 0x10000
-#define GPIO2_AXI_ADDR 0x1000
-#define JESD_A_AXI_ADDR 0x6000
-#define ADC_A_FANOUT_ADDR 0x30000
-#define CHANNEL_TRIGGER_0_ADDR 0x40000
-#define CHANNEL_TRIGGER_1_ADDR 0x50000
-#define CHANNEL_TRIGGER_2_ADDR 0x60000
-#define CHANNEL_TRIGGER_3_ADDR 0x70000
+#define    LMK_AXI_ADDR            0x3000
+#define    ADC_AXI_ADDR            0x3000
+//#define  ADC_AXI_ADDR            0x2000
+#define    DAC_AXI_ADDR            0x2080
+#define    IIC_AXI_ADDR            0x2000
+#define    GPIO0_AXI_ADDR          0x0000
+#define    GPIO1_AXI_ADDR          0x10000
+#define    GPIO2_AXI_ADDR          0x1000
+#define    JESD_A_AXI_ADDR         0x6000
+#define    ADC_A_FANOUT_ADDR       0x30000
+#define    CHANNEL_TRIGGER_0_ADDR  0x40000
+#define    CHANNEL_TRIGGER_1_ADDR  0x50000
+#define    CHANNEL_TRIGGER_2_ADDR  0x60000
+#define    CHANNEL_TRIGGER_3_ADDR  0x70000
+#define    DATA_PIPELINE_0_ADDR    0x4000
+#define    DATA_PIPELINE_1_ADDR    0x5000
+
 
 struct TI_IF {
     AXI_QSPI* lmk;
@@ -37,6 +40,8 @@ struct TI_IF {
     AXI_IIC* iic_main;
     AXI_JESD* jesd;
     AXI_ADC_SAMPLE_FANOUT* fanout;
+    AXI_DATA_PIPELINE* dp_0;
+    AXI_DATA_PIPELINE* dp_1;
     AXI_CHANNEL_TRIGGER* channel_triggers[4];
     AXI_QSPI* dac;
 };
@@ -71,6 +76,8 @@ struct TI_IF* get_ti_handle() {
         ti_board->iic_main = new_iic("iic_main", IIC_AXI_ADDR, 0);
         ti_board->jesd = new_jesd("jesd", JESD_A_AXI_ADDR);
         ti_board->fanout = new_adc_sample_fanout("fanout", ADC_A_FANOUT_ADDR);
+        ti_board->dp_0 = new_data_pipeline_if("data_pipeline_0", DATA_PIPELINE_0_ADDR);
+        ti_board->dp_1 = new_data_pipeline_if("data_pipeline_1", DATA_PIPELINE_1_ADDR);
         ti_board->dac = new_dac_spi("dac", DAC_AXI_ADDR);
         ti_board->channel_triggers[0] = new_channel_trigger("channel_trigger_0", CHANNEL_TRIGGER_0_ADDR);
         ti_board->channel_triggers[1] = new_channel_trigger("channel_trigger_1", CHANNEL_TRIGGER_1_ADDR);
@@ -297,6 +304,39 @@ static uint32_t read_all_error_rates_command(uint32_t* resp) {
     return 0;
 }
 
+static uint32_t read_data_pipeline_0_threshold_command(uint32_t* args) {
+    UNUSED(args);
+    return read_threshold(get_ti_handle()->dp_0);
+}
+
+static uint32_t write_data_pipeline_0_threshold_command(uint32_t* args) {
+    uint32_t val = args[0];
+    return write_threshold(get_ti_handle()->dp_0, val);
+}
+
+static uint32_t read_data_pipeline_0_channel_mask_command(uint32_t* args) {
+    UNUSED(args);
+    return read_channel_mask(get_ti_handle()->dp_0);
+}
+
+static uint32_t write_data_pipeline_0_channeL_mask_command(uint32_t* args) {
+    uint32_t val = args[0];
+    return write_channel_mask(get_ti_handle()->dp_0, val);
+}
+
+static uint32_t read_data_pipeline_0_depth_command(uint32_t* args) {
+    int channel = args[0];
+    return read_channel_depth(get_ti_handle()->dp_0, channel);
+
+}
+
+static uint32_t write_data_pipeline_0_depth_command(uint32_t* args) {
+    int channel = args[0];
+    int value = args[1];
+    return write_channel_depth(get_ti_handle()->dp_0, channel, value);
+
+}
+
 ServerCommand ti_commands[]=  {
     {"read_ads", read_ads_if_command, 1, 1},
     {"write_ads", write_ads_if_command, 2, 1},
@@ -323,5 +363,11 @@ ServerCommand ti_commands[]=  {
     {"jesd_sys_reset", jesd_sys_reset_command, 0, 1},
     {"jesd_is_synced", jesd_is_synced_command, 0, 1},
     {"read_all_error_rates", read_all_error_rates_command, 0, 5},
+    {"read_data_pipeline_0_threshold", read_data_pipeline_0_threshold_command, 0, 1},
+    {"write_data_pipeline_0_threshold", write_data_pipeline_0_threshold_command, 1, 1},
+    {"read_data_pipeline_0_channel_mask", read_data_pipeline_0_channel_mask_command, 0, 1},
+    {"write_data_pipeline_0_channeL_mask", write_data_pipeline_0_channeL_mask_command, 1, 1},
+    {"read_data_pipeline_0_depth", read_data_pipeline_0_depth_command, 1, 1},
+    {"write_data_pipeline_0_depth", write_data_pipeline_0_depth_command, 2, 1},
     {"", NULL, 0, 0} // Must be last
 };

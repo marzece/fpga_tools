@@ -19,6 +19,7 @@
 #define COMMAND_PIPE_NAME "kintex_command_pipe"
 #define RESPONSE_PIPE_NAME "kintex_response_pipe"
 #define BUFFER_SIZE 1024
+#define SEND_COMMAND_TABLE_COMMAND "send_command_table"
 
 int dummy_mode = 0;
 uint32_t SAFE_READ_ADDRESS;
@@ -151,6 +152,7 @@ static ServerCommand commandTable[] = {
     {"sleep", sleep_command, 1, 1},
     {"", NULL, 0, 0} // Must be last
 };
+
 ServerCommand* search_for_command(ServerCommand* table, const char* command_name) {
     int cmd_index = 0;
     while(table[cmd_index].func != NULL) {
@@ -162,7 +164,12 @@ ServerCommand* search_for_command(ServerCommand* table, const char* command_name
     return &(table[cmd_index]);
 }
 
-int handle_line(const char* line) {
+// This function is a little hacked together, if it returns NULL then
+// the calling function assumes the response was stuffed in to the "resp_buffer"
+// data buffer.
+// If it returns non-NULL then the calling function assumes the given char*
+// is the response (and it's NULL terminated)
+char* handle_line(const char* line) {
     // first check if the first char is a '#' or the line is empty
     // if it is, treat this as a comment
     if(strlen(line) == 0 || line[0] == '#') {
@@ -186,6 +193,49 @@ int handle_line(const char* line) {
     }
 
     ServerCommand* command = NULL;
+    if(strcmp(command_name, SEND_COMMAND_TABLE_COMMAND) == 0) {
+        // send command table is special!
+        char* return_string = NULL;
+        char** commands_buf = NULL;
+        // TODO BUF_SIZE is basically already used....should I just use the standard resp_buffer?
+        const int BUF_SIZE = 1024;
+        char buf[BUF_SIZE];
+        int bytes_count = 0;
+        int bytes;
+        char* write_location;
+        int command_count = 0;
+
+        for(i=0; i<2; i++) {
+            command = i==0 ? commandTable : board_specific_command_table;
+            while(command->func != NULL) {
+                command_count += 1;
+                commands_buf = realloc(commands_buf, sizeof(char*)*command_count);
+                // TODO I guess I should check the return value of snprintf...but whatevs
+                snprintf(buf, BUF_SIZE, "+%s %i\r\n", command->name, command->nargs);
+                bytes = strlen(buf);
+                commands_buf[command_count-1] = malloc(sizeof(char)*bytes);
+                memcpy(commands_buf[command_count-1], buf, bytes);
+
+                bytes_count += bytes;
+                command += 1;
+            }
+        }
+        snprintf(buf, BUF_SIZE, "*%i\r\n", command_count);
+        return_string = malloc(strlen(buf) + bytes_count + 1); // The +1 is for the null terminator
+        write_location = return_string;
+        memcpy(write_location, buf, strlen(buf));
+        write_location += strlen(buf);
+
+        for(i=0; i<command_count; i++) {
+            bytes = strlen(commands_buf[i]);
+            memcpy(write_location, commands_buf[i], bytes);
+            write_location += bytes;
+            free(commands_buf[i]);
+        }
+        free(commands_buf);
+        return return_string;
+    }
+
     // First search the board specific commands
     command = search_for_command(board_specific_command_table, command_name);
     if(command->func == NULL) {
@@ -201,7 +251,7 @@ int handle_line(const char* line) {
         // Too few arguments
         // TODO send back error message
         snprintf(resp_buffer, BUFFER_SIZE, "-Err: Command \"%s\" requires %i arguments, %i given.\r\n",command_name, command->nargs, nargs);
-        return 0;
+        return NULL;
     }
 
     int array_size = nargs > command->nresp ? nargs : command->nresp;
@@ -221,12 +271,13 @@ int handle_line(const char* line) {
     } else {
         bytes_written = resp_array(resp_buffer, BUFFER_SIZE, args, command->nresp);
     }
+
     if(bytes_written >= BUFFER_SIZE) {
         snprintf(resp_buffer, BUFFER_SIZE, "-Resp Buffer overflow!\r\n");
     }
 
     free(args);
-    return 0;
+    return NULL;
 }
 
 int main(int argc, char** argv) {
@@ -318,10 +369,16 @@ int main(int argc, char** argv) {
 
         // handle_line should always write it's results to the resp_buffer,
         // don't need to check if it returns 0 or not.
-        handle_line(command_buffer);
+        char* resp = handle_line(command_buffer);
 
         // resp_buffer should have a null terminator...don't need to send it though?
-        write(_resp_fd, &resp_buffer, strlen(resp_buffer));
+        if(!resp) {
+            write(_resp_fd, &resp_buffer, strlen(resp_buffer));
+        } else {
+            write(_resp_fd, resp, strlen(resp));
+            free(resp);
+        }
+
         usleep(1000);
     }
 

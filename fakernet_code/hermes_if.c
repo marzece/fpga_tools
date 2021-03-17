@@ -9,25 +9,25 @@
 #include "adc_sample_fanout.h"
 #include "channel_trigger.h"
 
-#define ADC_A_AXI_ADDR 0x2080
-#define ADC_B_AXI_ADDR 0x2100
-#define GPIO0_AXI_ADDR 0x0000
-#define GPIO1_AXI_ADDR 0x6000
-#define GPIO2_AXI_ADDR 0x3000
-#define GPIO3_AXI_ADDR 0x7000
-#define LMK_AXI_ADDR 0x4000
-#define DAC_AXI_ADDR 0x2180
-#define IIC_AXI_ADDR 0x10000
-#define JESD_A_AXI_ADDR 0x5000
-#define JESD_B_AXI_ADDR 0x1000
-#define JESD_A_PHY_AXI_ADDR 0x7000
-#define JESD_B_PHY_AXI_ADDR 0x8000
-#define ADC_A_FANOUT_ADDR 0x30000
-#define ADC_B_FANOUT_ADDR 0x20000
-#define CHANNEL_TRIGGER_0_ADDR 0x40000
-#define CHANNEL_TRIGGER_1_ADDR 0x50000
-#define CHANNEL_TRIGGER_2_ADDR 0x60000
-#define CHANNEL_TRIGGER_3_ADDR 0x70000
+#define  ADC_A_AXI_ADDR          0x2080
+#define  ADC_B_AXI_ADDR          0x2100
+#define  GPIO0_AXI_ADDR          0x0000
+#define  GPIO1_AXI_ADDR          0x6000
+#define  GPIO2_AXI_ADDR          0x3000
+#define  GPIO3_AXI_ADDR          0x7000
+#define  LMK_AXI_ADDR            0x4000
+#define  DAC_AXI_ADDR            0x2180
+#define  IIC_AXI_ADDR            0x10000
+#define  JESD_A_AXI_ADDR         0x5000
+#define  JESD_B_AXI_ADDR         0x1000
+#define  JESD_A_PHY_AXI_ADDR     0x7000
+#define  JESD_B_PHY_AXI_ADDR     0x8000
+#define  ADC_A_FANOUT_ADDR       0x30000
+#define  ADC_B_FANOUT_ADDR       0x20000
+#define  CHANNEL_TRIGGER_0_ADDR  0x40000
+#define  CHANNEL_TRIGGER_1_ADDR  0x50000
+#define  CHANNEL_TRIGGER_2_ADDR  0x60000
+#define  CHANNEL_TRIGGER_3_ADDR  0x70000
 
 const uint32_t HERMES_SAFE_READ_ADDRESS = GPIO0_AXI_ADDR;
 
