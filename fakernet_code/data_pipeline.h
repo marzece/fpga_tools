@@ -17,4 +17,7 @@ uint32_t read_channel_depth(AXI_DATA_PIPELINE* dp_axi, int channel);
 uint32_t write_channel_depth(AXI_DATA_PIPELINE* dp_axi, int channel, uint32_t val);
 uint32_t write_channel_mask(AXI_DATA_PIPELINE* dp_axi, uint32_t mask);
 uint32_t read_channel_mask(AXI_DATA_PIPELINE* dp_axi);
+uint32_t read_invalid_count(AXI_DATA_PIPELINE* dp_axi);
+uint32_t read_fifo_status_reg(AXI_DATA_PIPELINE* dp_axi);
+uint32_t write_reset_reg(AXI_DATA_PIPELINE* dp_axi, int reset_mask);
 #endif

@@ -15,7 +15,6 @@
 
 #define    LMK_AXI_ADDR            0x3000
 #define    ADC_AXI_ADDR            0x3000
-//#define  ADC_AXI_ADDR            0x2000
 #define    DAC_AXI_ADDR            0x2080
 #define    IIC_AXI_ADDR            0x2000
 #define    GPIO0_AXI_ADDR          0x0000
@@ -51,17 +50,6 @@ struct TI_IF* ti_board = NULL;
 // HERMES DAC channel to PMT channel mapping
 static uint32_t OCM_CHANNELS[8] = {0, 1, 2, 3, 8, 9, 10, 11};
 static uint32_t BIAS_CHANNELS[8] = {7, 6, 5, 4, 12, 13, 14, 15};
-
-//uint32_t read_ads_if_command(uint32_t* args);
-//uint32_t write_ads_if_command(uint32_t* args);
-//uint32_t write_adc_spi_command(uint32_t* args);
-//uint32_t ads_spi_data_available_command(uint32_t* args);
-//uint32_t ads_spi_data_pop_command(uint32_t* args);
-//uint32_t write_lmk_if_command(uint32_t* args);
-//uint32_t read_lmk_if_command(uint32_t* args);
-//uint32_t write_lmk_spi_command(uint32_t* args);
-//uint32_t lmk_spi_data_available_command(uint32_t* args);
-//uint32_t lmk_spi_data_pop_command(uint32_t* args);
 
 const uint32_t TI_SAFE_READ_ADDRESS = IIC_AXI_ADDR + 0x104; // Should be the status register for the iic core
 
@@ -264,7 +252,6 @@ static uint32_t jesd_write_command(uint32_t *args) {
     return write_jesd(get_ti_handle()->jesd, offset, data);
 }
 
-
 static uint32_t jesd_is_synced_command(uint32_t *args) {
     UNUSED(args);
     return jesd_is_synced(get_ti_handle()->jesd);
@@ -304,6 +291,18 @@ static uint32_t read_all_error_rates_command(uint32_t* resp) {
     return 0;
 }
 
+static uint32_t read_data_pipeline_0_command(uint32_t* args) {
+    uint32_t offset =  args[0];
+    return read_data_pipeline_value(get_ti_handle()->dp_0, offset);
+
+}
+
+static uint32_t write_data_pipeline_0_command(uint32_t* args) {
+    uint32_t offset = args[0];
+    uint32_t value = args[1];
+    return write_data_pipeline_value(get_ti_handle()->dp_0, offset, value);
+}
+
 static uint32_t read_data_pipeline_0_threshold_command(uint32_t* args) {
     UNUSED(args);
     return read_threshold(get_ti_handle()->dp_0);
@@ -337,7 +336,22 @@ static uint32_t write_data_pipeline_0_depth_command(uint32_t* args) {
 
 }
 
-ServerCommand ti_commands[]=  {
+uint32_t read_data_pipeline_0_invalid_count_command(uint32_t* args) {
+    UNUSED(args);
+    return read_invalid_count(get_ti_handle()->dp_0);
+}
+
+uint32_t read_data_pipeline_0_status_command(uint32_t* args) {
+    UNUSED(args);
+    return read_fifo_status_reg(get_ti_handle()->dp_0);
+}
+
+uint32_t write_data_pipeline_0_reset_command(uint32_t* args) {
+    uint32_t mask = args[0];
+    return write_reset_reg(get_ti_handle()->dp_0, mask);
+}
+
+ServerCommand ti_commands[] = {
     {"read_ads", read_ads_if_command, 1, 1},
     {"write_ads", write_ads_if_command, 2, 1},
     {"write_adc_spi", write_adc_spi_command, 3, 1},
@@ -369,5 +383,11 @@ ServerCommand ti_commands[]=  {
     {"write_data_pipeline_0_channeL_mask", write_data_pipeline_0_channeL_mask_command, 1, 1},
     {"read_data_pipeline_0_depth", read_data_pipeline_0_depth_command, 1, 1},
     {"write_data_pipeline_0_depth", write_data_pipeline_0_depth_command, 2, 1},
+    {"write_data_pipeline_0_depth", write_data_pipeline_0_depth_command, 2, 1},
+    {"write_data_pipeline_0", write_data_pipeline_0_command, 2, 1},
+    {"read_data_pipeline_0", read_data_pipeline_0_command, 1, 1},
+    {"read_data_pipeline_0_invalid_count", read_data_pipeline_0_invalid_count_command, 0, 1},
+    {"read_data_pipeline_0_status", read_data_pipeline_0_status_command, 0, 1},
+    {"write_data_pipeline_0_reset", write_data_pipeline_0_reset_command, 1, 1},
     {"", NULL, 0, 0} // Must be last
 };
