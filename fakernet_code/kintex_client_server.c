@@ -18,7 +18,7 @@
 // For doing "double" reads the 2nd read should be from this register
 #define COMMAND_PIPE_NAME "kintex_command_pipe"
 #define RESPONSE_PIPE_NAME "kintex_response_pipe"
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 2048
 #define SEND_COMMAND_TABLE_COMMAND "send_command_table"
 
 int dummy_mode = 0;

@@ -121,6 +121,7 @@ void produce_command_table(char* table_string) {
     }
     commandTable[ncommands].name=NULL;
     commandTable[ncommands].nargs=0;
+    printf("%i commands loaded from server\n", ncommands);
     return;
 CLEAR_COMMAND_TABLE:;
     ServerCommand* command = commandTable;
