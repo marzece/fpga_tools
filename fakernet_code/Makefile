@@ -15,7 +15,7 @@ kintex_client_server: kintex_client_server.o hermes_if.o gpio.o lmk_if.o ads_if.
 	$(CC) -g -o $@ $(CFLAGS) $^
 
 kintex_cli: kintex_cli.o
-	$(CC) -g -o $@ $(CFLAGS) -Ilinenoise/ linenoise/linenoise.c $^
+	$(CC) -g -o $@ $(CFLAGS) -Ilinenoise/ linenoise/linenoise.c hiredis/libhiredis.a $^
 
 fakernet_data_builder: fakernet_data_builder.c crc32.o crc8.o
 	$(CC) -Wall -pedantic -O -g -o $@ $^ fnet_client.o hiredis/libhiredis.a

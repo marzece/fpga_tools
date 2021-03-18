@@ -5,6 +5,7 @@
 #include <string.h>
 #include <errno.h>
 #include <linenoise.h>
+#include "hiredis/hiredis.h"
 
 #define BUFFER_SIZE 2048
 #define SEND_COMMAND_TABLE_COMMAND "send_command_table"
@@ -23,12 +24,57 @@ typedef struct ServerCommand {
 } ServerCommand;
 static ServerCommand* commandTable = NULL;
 
+void handle_redis_reponse(redisReply* reply) {
+    size_t i;
+    switch(reply->type) {
+        case REDIS_REPLY_ARRAY:
+            for(i=0; i<reply->elements; i++) {
+                handle_redis_reponse(reply->element[i]);
+            }
+            break;
+        case REDIS_REPLY_INTEGER:
+            printf("%lli\n", reply->integer);
+            break;
+        case REDIS_REPLY_STRING:
+        case REDIS_REPLY_STATUS:
+            // TODO are redis strings NUL terminated?
+            break;
+        case REDIS_REPLY_NIL:
+            printf("NULL\n");
+            break;
+        default:
+            printf("Unhandled RESP types given: %i\n" ,reply->type);
+            break;
+    }
+}
+
 int grab_response(void) {
+    static redisReader* redis_reader = NULL;
+    if(!redis_reader) {
+        redis_reader = redisReaderCreate();
+    }
+
+    redisReply* reply;
+    int err;
     int nbytes_read = read(response_fd, response_buffer, BUFFER_SIZE);
     if(nbytes_read >= BUFFER_SIZE-1) {
         printf("Response too long...can't handle this\n");
         exit(1);
     }
+    // TODO should check to make sure response_fd has no more data available!!
+    err = redisReaderFeed(redis_reader, response_buffer, nbytes_read);
+    if(err != REDIS_OK) {
+        //TODO!
+        return 0;
+    }
+    if(redisReaderGetReply(redis_reader, (void**)&reply) != REDIS_OK && reply !=NULL) {
+        // Parsing error! TODO
+        return 0;
+    }
+
+
+    handle_redis_reponse(reply);
+    freeReplyObject(reply);
 
     // Can't expect the response to have a NULL terminator
     response_buffer[nbytes_read] = '\0';
