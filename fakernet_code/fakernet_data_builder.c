@@ -625,6 +625,9 @@ char* copy_event(const Event* event) {
 // Send event to redis database
 void redis_publish_event(redisContext*c, const Event event) {
 
+    if(!c) {
+        return;
+    }
     redisReply* r;
     size_t arglens[3];
     const char* args[3];
