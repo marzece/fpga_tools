@@ -463,7 +463,7 @@ int read_proc(FPGA_IF* fpga, Event* ret) {
     // The plus two is b/c there's one extra 32-bit word for the channel header,
     // than another extra from the channel CRC32.
     int event_length = event.event.header.length + 2; // Units = Num samples
-    int event_total_data_bytes = event_length*NUM_CHANNELS;
+    int event_total_data_bytes = event_length*NUM_CHANNELS*sizeof(uint32_t);
 
     // There's one 32-bit 'header' for each channel, b/c I'm lazy I'm just
     // gonna treat them like extra samples and try to make sure they get ignored later
