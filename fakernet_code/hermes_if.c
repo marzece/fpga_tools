@@ -542,6 +542,7 @@ static uint32_t set_trigger_mode_command(uint32_t* args) {
 }
 
 static uint32_t read_trigger_mode_command(uint32_t* args) {
+    UNUSED(args);
     return read_gpio_value(get_hermes_handle()->gpio0, 1);
 }
 

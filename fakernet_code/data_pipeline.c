@@ -8,14 +8,14 @@ uint32_t read_addr(uint32_t, uint32_t);
 uint32_t double_read_addr(uint32_t, uint32_t);
 int write_addr(uint32_t, uint32_t, uint32_t);
 
-#define RESET_REG_OFFSET 0x0
-#define THRESHOLD_REG_OFFSET 0x4
-#define CHANNEL_MASK_OFFSET 0x8
-#define DEPTH_ADDR_OFFSET 0xC
-#define DEPTH_ADDR_WIDTH 0x4
-#define DEVICE_NUMBER_REG_OFFSET 0x80
-#define FIFO_STATUS_REG_OFFSET 0x84
-#define INVALID_COUNT_REG_OFFSET 0x88
+#define  RESET_REG_OFFSET          0x0
+#define  THRESHOLD_REG_OFFSET      0x4
+#define  CHANNEL_MASK_OFFSET       0x8
+#define  DEPTH_ADDR_OFFSET         0xC
+#define  DEPTH_ADDR_WIDTH          0x4
+#define  DEVICE_NUMBER_REG_OFFSET  0x80
+#define  FIFO_STATUS_REG_OFFSET    0x84
+#define  INVALID_COUNT_REG_OFFSET  0x88
 
 
 AXI_DATA_PIPELINE* new_data_pipeline_if(const char* name, uint32_t axi_addr) {
