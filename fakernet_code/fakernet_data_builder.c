@@ -91,7 +91,7 @@ typedef struct ChannelHeader {
 // What I plan for this is to assume sample are laid out contiguously
 // except for a few jumps between different buffers. So kinda "piece-wise
 // contiguous". The "locations" will point to the start of each contiguous
-// chunk, and the lengths indicate how many samples are in each chunk
+// chunk, and the lengths indicate how many bytes are in each chunk
 #define MAX_SPLITS 16
 typedef struct Event {
     TrigHeader header;
@@ -102,7 +102,7 @@ typedef struct Event {
 typedef struct EventInProgress {
     Event event;
     int header_bytes_read;
-    int samples_read;
+    int data_bytes_read;
 } EventInProgress;
 
 // Open socket to FPGA returns 0 if successful
@@ -223,7 +223,7 @@ EventInProgress start_event() {
     EventInProgress ev;
 
     ev.header_bytes_read = 0;
-    ev.samples_read = 0;
+    ev.data_bytes_read = 0;
     // Fill with magic words for debugging
     ev.event.header.magic_number = 0xFEEDBEEF;
     ev.event.header.trig_number = 0XDEADBEEF;
@@ -320,7 +320,7 @@ void write_to_disk(Event* ev) {
         if(!ev->locations[i]) {
             break;
         }
-        nwritten = fwrite(ev->locations[i], sizeof(uint32_t), ev->lengths[i], fdisk);
+        nwritten = fwrite(ev->locations[i], 1, ev->lengths[i], fdisk);
         if(nwritten != ev->lengths[i]) {
             // TODO check errno
             printf("Error writing event\n");
@@ -423,13 +423,15 @@ int read_proc(FPGA_IF* fpga, Event* ret) {
     static EventInProgress event;
     static int first = 1;
     uint32_t val;
+
     if(first) {
         event = start_event();
         first = 0;
     }
+
     // TODO move this header reading shit to its own function
     while(event.header_bytes_read < HEADER_SIZE) {
-        int word = event.header_bytes_read/4;
+        int word = event.header_bytes_read/sizeof(uint32_t);
         TrigHeader* header = &(event.event.header);
 
         if(pop32(&(fpga->rw_buffers), &val)) {
@@ -461,20 +463,19 @@ int read_proc(FPGA_IF* fpga, Event* ret) {
 
     // The plus two is b/c there's one extra 32-bit word for the channel header,
     // than another extra from the channel CRC32.
-    // TODO make this less dumb
-    int event_length = event.event.header.length + 2;
-    //int samples_to_read = event_length;
-    int samples_to_read = event_length*NUM_CHANNELS;
+    int event_length = event.event.header.length + 2; // Units = Num samples
+    int event_total_data_bytes = event_length*NUM_CHANNELS;
 
     // There's one 32-bit 'header' for each channel, b/c I'm lazy I'm just
     // gonna treat them like extra samples and try to make sure they get ignored later
     //samples_to_read += NUM_CHANNELS;
 
-    int samples_remaining = samples_to_read - event.samples_read;
+    int bytes_remaining = event_total_data_bytes - event.data_bytes_read;
     uint32_t* read_location = (uint32_t*)(fpga->rw_buffers.buffers[bufnum] + r_queue_idx);
 
     // This should be guranateed to be evenly divisible by 4 aka sizeof(uin32t)
-    int samples_in_buffer = (r_queue_len - r_queue_idx)/sizeof(uint32_t);
+    //int samples_in_buffer = (r_queue_len - r_queue_idx)/sizeof(uint32_t);
+    int bytes_in_buffer = (r_queue_len - r_queue_idx);
     int i;
 
     for(i=0; i<MAX_SPLITS; i++) {
@@ -488,20 +489,23 @@ int read_proc(FPGA_IF* fpga, Event* ret) {
     }
     event.event.locations[i] = read_location;
 
-    if(samples_remaining < samples_in_buffer) {
+    // If the space in the buffer is larger than the data required to finish the event
+    // then read enough bytes to finish the event.
+    if(bytes_remaining < bytes_in_buffer) {
         // The rest of this event is available in the current read buffer
-        event.event.lengths[i] = samples_remaining; // TODO this length is is units of samples (should be bytes?)
-        event.samples_read += samples_remaining;
-        fpga->rw_buffers.buff_idxs[bufnum] += samples_remaining*sizeof(uint32_t);
+        event.event.lengths[i] = bytes_remaining;
+        event.data_bytes_read += bytes_remaining;
+        fpga->rw_buffers.buff_idxs[bufnum] += bytes_remaining;
         // Now that the event is finished I need to tell someone!
         *ret = event.event;
         event = start_event();
         return 1;
     }
+    // else this buffer doesn't have enough data to finish the event
 
-    event.event.lengths[i] = samples_in_buffer; // TODO this length is is units of samples (should be bytes?)
-    event.samples_read += samples_in_buffer;
-    fpga->rw_buffers.buff_idxs[bufnum] += samples_in_buffer*sizeof(uint32_t);
+    event.event.lengths[i] = bytes_in_buffer;
+    event.data_bytes_read += bytes_in_buffer;
+    fpga->rw_buffers.buff_idxs[bufnum] += bytes_in_buffer;
     return 0;
 }
 
@@ -550,10 +554,10 @@ char* copy_event(const Event* event) {
         if(!event->locations[i]) {
             break;
         }
-        memcpy(mem+byte_count, event->locations[i], event->lengths[i]*sizeof(uint32_t));
+        memcpy(mem+byte_count, event->locations[i], event->lengths[i]);
 
 
-        byte_count += event->lengths[i]*sizeof(uint32_t);
+        byte_count += event->lengths[i];
     }
     return mem;
 }
@@ -562,9 +566,6 @@ char* copy_event(const Event* event) {
 void redis_publish_event(redisContext*c, const Event event) {
 
     redisReply* r;
-    // TrigHeader header;
-    // uint32_t* locations[MAX_SPLITS];
-    // uint32_t lengths[MAX_SPLITS];
     size_t arglens[3];
     const char* args[3];
 
@@ -574,7 +575,6 @@ void redis_publish_event(redisContext*c, const Event event) {
     arglens[1] = strlen(args[1]);
     args[2] = copy_event(&event);
     arglens[2] = HEADER_SIZE + sizeof(uint32_t)*(event.header.length+2)*NUM_CHANNELS;
-    //arglens[2] = sizeof(TrigHeader) + sizeof(uint32_t)*NUM_CHANNELS*event.header.length;
 
     r = redisCommandArgv(c, 3,  args,  arglens);
     if(!r) {
@@ -638,7 +638,7 @@ int calculate_channel_crcs(Event* event, uint32_t *calculated_crcs, uint32_t* gi
     int ichan = 0;
 
     uint32_t *current = event->locations[0];
-    uint32_t* end_of_split = event->locations[0] + event->lengths[0];
+    uint32_t* end_of_split = event->locations[0] + event->lengths[0]/sizeof(uint32_t);
     uint32_t* end_of_channel = event->locations[0] + num_samples + 2;
 
     memset(calculated_crcs, 0, sizeof(uint32_t)*NUM_CHANNELS);
@@ -664,7 +664,7 @@ int calculate_channel_crcs(Event* event, uint32_t *calculated_crcs, uint32_t* gi
             }
             go_to_next_split = 0;
             current = event->locations[i];
-            end_of_split = event->locations[i] + event->lengths[i];
+            end_of_split = event->locations[i] + event->lengths[i]/sizeof(uint32_t);
         }
 
         end_of_channel = current + num_samples + 2 - num_consumed;
