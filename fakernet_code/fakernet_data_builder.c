@@ -68,7 +68,6 @@ typedef struct FPGA_IF {
     TripleBuffer rw_buffers;
 } FPGA_IF;
 
-#define MAGIC_VALUE 0xFFFFFFFF
 // Re-read Beej's guide on data packaing to try and split clock into a union or
 // something like that
 typedef struct TrigHeader{
@@ -189,7 +188,7 @@ error:
     return -1;
 }
 
-// This is the function that eeads data from the FPGA ethernet connection
+// This is the function that reads data from the FPGA ethernet connection
 size_t pull_from_fpga(FPGA_IF* fpga_if) {
     ssize_t bytes_recvd = 0;
     size_t space_left;
@@ -581,7 +580,6 @@ redisContext* create_redis_conn() {
     c = redisConnect(redis_hostname, 6379);
     if(c == NULL || c->err) {
         printf("Redis connection error %s\n", c->errstr);
-        printf("Continuing\n");
         redisFree(c);
         return NULL;
     }
@@ -595,7 +593,6 @@ char* copy_event(const Event* event) {
     size_t byte_count = 0;
     int i;
 
-    // TODO should add a check to make sure the below NEVER happens twice
     if(!mem) {
         mem = malloc(MEM_SIZE);
     }
@@ -737,10 +734,8 @@ int calculate_channel_crcs(Event* event, uint32_t *calculated_crcs, uint32_t* gi
         end_of_channel = current + num_samples + 2 - num_consumed;
         // Which will end sooner, the "split" or the channel's samples
         int split_ends_first = end_of_split < end_of_channel;
-        //printf("split_ends_first = %i\n", split_ends_first);
         uint32_t* end = split_ends_first ? end_of_split : end_of_channel;
         int num_to_read = end - current;
-        //printf("Num to read = %i\n", num_to_read);
 
         if(header_is_next) {
             if(num_to_read > 1) {
@@ -822,7 +817,7 @@ int main(int argc, char **argv) {
                     return 0;
                 }
                 else {
-                    printf("Unrechognized option \"%s\"\n", argv[i]);
+                    printf("Unrecognized option \"%s\"\n", argv[i]);
                     return 0;
                 }
             } else {
