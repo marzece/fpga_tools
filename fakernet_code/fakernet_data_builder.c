@@ -107,22 +107,86 @@ typedef struct EventInProgress {
 // Open socket to FPGA returns 0 if successful
 int connect_to_fpga(const char* fpga_ip) {
     const int port = 1;
+    int args;
+    int res;
     struct sockaddr_in fpga_addr;
     fpga_addr.sin_family = AF_INET;
     fpga_addr.sin_addr.s_addr = inet_addr(fpga_ip);
     fpga_addr.sin_port = htons(port);
 
-    int fd = socket(AF_INET, SOCK_STREAM, 0); 
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
     if(fd < 0) {
         printf("Error creating TCP socket: %s\n", strerror(errno));
         return fd;
     }
-    // TODO...add a timeout to this or something
-    if(connect(fd, (struct sockaddr*)&fpga_addr, sizeof(fpga_addr))) {
-        printf("Error connecting TCP socket: %s\n", strerror(errno));
-        return -1;
+
+    // Set the socket to non-block before connecting
+    args  = fcntl(fd, F_GETFL, NULL);
+    if(args < 0) {
+        printf("Error getting socket opts\n");
+        goto error;
+
     }
+    args |= O_NONBLOCK;
+
+    // Idk if this is needed!
+    //int yes = 1;
+    //setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
+
+    if(fcntl(fd, F_SETFL, args) < 0) {
+        printf("Error setting socket opts\n");
+        goto error;
+    }
+    fd_set myset;
+
+    while(1) {
+        res = connect(fd, (struct sockaddr*)&fpga_addr, sizeof(fpga_addr));
+        if(res < 0) {
+            if(errno == EISCONN) {
+                break;
+            }
+            else if (errno == EINPROGRESS) {
+                struct timeval tv;
+                tv.tv_sec = 15;
+                tv.tv_usec = 0;
+                FD_ZERO(&myset);
+                FD_SET(fd, &myset);
+                res = 0;
+                res = select(fd+1, NULL, &myset, NULL, &tv);
+                if(res != 1) {
+                    goto error;
+                }
+                break;
+            }
+            printf("Error connecting TCP socket: %s\n", strerror(errno));
+            sleep(5);
+            continue;
+        }
+        break;
+    }
+
+    // Set it back to blocking mode
+    // Idk if it's necessary to get args again, but that's how it's done on stack overflow
+    args  = fcntl(fd, F_GETFL, NULL);
+    if(args < 0) {
+        printf("Error getting socket opts2\n");
+        goto error;
+
+    }
+    args &= (~O_NONBLOCK);
+
+    if(fcntl(fd, F_SETFL, args) < 0) {
+        printf("Error setting socket opts2\n");
+        goto error;
+
+    }
+
     return fd;
+
+error:
+    close(fd);
+    //reused adrss
+    return -1;
 }
 
 // This is the function that eeads data from the FPGA ethernet connection
@@ -183,7 +247,7 @@ void shift_buffers(FPGA_IF* fpga) {
     off_by = w_length % 4;
     while(off_by > 0) {
         new_write_buffer[fpga->rw_buffers.buff_idxs[new_w_bufnum]] = w_buffer[w_length -1 - off_by];
-        
+
         // Move the new write buffer indices up
         fpga->rw_buffers.buff_idxs[new_w_bufnum] += 1;
         fpga->rw_buffers.buff_lens[new_w_bufnum] += 1;
@@ -586,11 +650,15 @@ struct fnet_ctrl_client* connect_fakernet_udp_client(const char* fnet_hname) {
     int reliable = 0; // wtf does this do?
     const char* err_string = NULL;
     struct fnet_ctrl_client* fnet_client = NULL;
-    fnet_client = fnet_ctrl_connect(fnet_hname, reliable, &err_string, stderr);
-    if(!fnet_client) {
-        printf("ERROR Connecting!\n");
-        return NULL;
+
+    while(!fnet_client) {
+        fnet_client = fnet_ctrl_connect(fnet_hname, reliable, &err_string, NULL);
+        if(!fnet_client) {
+            printf("ERROR Connecting on UDP channel: %s.\nWill retry\n", err_string);
+            sleep(3);
+        }
     }
+    printf("UDP channel connected\n");
     return fnet_client;
 }
 
@@ -794,17 +862,28 @@ int main(int argc, char **argv) {
         printf("couldn't make UDP client\n");
         return 1;
     }
-    // Send a TCP reset_command
-    if(send_tcp_reset(udp_client)) {
-        return 1;
-    }
+
+
+
 
     // connect to FPGA
-    fpga_if.fd = connect_to_fpga(ip);
-    if(fpga_if.fd < 0) {
-        printf("error ocurred connecting to fpga\n");
-        return 0;
-    }
+    do {
+        // Send a TCP reset_command
+        if(send_tcp_reset(udp_client)) {
+            printf("Error sending TCP reset. Will retry.\n");
+            sleep(5);
+            continue;
+        }
+        fpga_if.fd = connect_to_fpga(ip);
+
+        if(fpga_if.fd < 0) {
+            printf("error ocurred connecting to FPGA. Will retry.\n");
+            sleep(5);
+        }
+
+    } while(fpga_if.fd < 0);
+
+    printf("FPGA TCP connection made\n");
 
     // Open file to write events to
     if(!do_not_save) {
@@ -887,5 +966,6 @@ int main(int argc, char **argv) {
         }
     }
     clean_up();
+    close(fpga_if.fd);
     return 0;
 }
