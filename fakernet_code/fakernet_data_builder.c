@@ -20,8 +20,7 @@ void crc8(unsigned char *crc, unsigned char m);
 // it means we're guranteed an event can always fit in 1MB of memory
 
 // FILE handle for writing to disk
-static FILE* fdisk = NULL; 
-const char* FOUT_FILENAME = "fpga_data.dat"; // TODO make this not global
+static FILE* fdisk = NULL;
 
 // Variable for deciding to stay in the main loop or not.
 // When loop is zero program should exit soon after.
@@ -730,6 +729,7 @@ int main(int argc, char **argv) {
     const char* ip = "192.168.1.192";
     enum ArgIDs expecting_value;
     int do_not_save = 0;
+    const char* FOUT_FILENAME = "fpga_data.dat";
 
     if(argc > 1 ) {
         expecting_value = 0;
