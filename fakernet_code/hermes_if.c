@@ -9,19 +9,17 @@
 #include "adc_sample_fanout.h"
 #include "channel_trigger.h"
 
-#define  ADC_A_AXI_ADDR          0x2080
-#define  ADC_B_AXI_ADDR          0x2100
-#define  GPIO0_AXI_ADDR          0x0000
-#define  GPIO1_AXI_ADDR          0x6000
+#define  ADC_A_AXI_ADDR          0x0000
+#define  ADC_B_AXI_ADDR          0x10000
+#define  GPIO0_AXI_ADDR          0x1000
+#define  GPIO1_AXI_ADDR          0x2000
 #define  GPIO2_AXI_ADDR          0x3000
-#define  GPIO3_AXI_ADDR          0x7000
-#define  LMK_AXI_ADDR            0x4000
-#define  DAC_AXI_ADDR            0x2180
-#define  IIC_AXI_ADDR            0x10000
-#define  JESD_A_AXI_ADDR         0x5000
-#define  JESD_B_AXI_ADDR         0x1000
-#define  JESD_A_PHY_AXI_ADDR     0x7000
-#define  JESD_B_PHY_AXI_ADDR     0x8000
+#define  GPIO3_AXI_ADDR          0x4000
+#define  LMK_AXI_ADDR            0x6000
+#define  DAC_AXI_ADDR            0x7000
+#define  IIC_AXI_ADDR            0x5000
+#define  JESD_A_AXI_ADDR         0x9000
+#define  JESD_B_AXI_ADDR         0xA000
 #define  ADC_A_FANOUT_ADDR       0x30000
 #define  ADC_B_FANOUT_ADDR       0x20000
 #define  CHANNEL_TRIGGER_0_ADDR  0x40000
@@ -45,7 +43,6 @@ struct HERMES_IF {
     AXI_JESD* jesd_b;
     AXI_ADC_SAMPLE_FANOUT* fanout_a;
     AXI_ADC_SAMPLE_FANOUT* fanout_b;
-    AXI_CHANNEL_TRIGGER* channel_triggers[4];
 };
 
 static struct HERMES_IF* hermes = NULL;
@@ -99,10 +96,6 @@ static struct HERMES_IF* get_hermes_handle() {
         hermes->jesd_b = new_jesd("jesd_b", JESD_B_AXI_ADDR);
         hermes->fanout_a = new_adc_sample_fanout("fanout_a", ADC_A_FANOUT_ADDR);
         hermes->fanout_b = new_adc_sample_fanout("fanout_b", ADC_B_FANOUT_ADDR);
-        hermes->channel_triggers[0] = new_channel_trigger("channel_trigger_0", CHANNEL_TRIGGER_0_ADDR);
-        hermes->channel_triggers[1] = new_channel_trigger("channel_trigger_1", CHANNEL_TRIGGER_1_ADDR);
-        hermes->channel_triggers[2] = new_channel_trigger("channel_trigger_2", CHANNEL_TRIGGER_2_ADDR);
-        hermes->channel_triggers[3] = new_channel_trigger("channel_trigger_3", CHANNEL_TRIGGER_3_ADDR);
     }
     return hermes;
 }
@@ -524,17 +517,6 @@ static uint32_t turn_on_data_pipe_command(uint32_t* args) {
     return 0;
 }
 
-static uint32_t set_threshold_for_channel_command(uint32_t *args) {
-    uint32_t channel = args[0];
-    uint32_t threshold = args[1];
-    assert(channel < 4);
-    return write_channel_trigger_value(get_hermes_handle()->channel_triggers[channel], threshold);
-}
-
-static uint32_t read_threshold_for_channel_command(uint32_t *args) {
-    uint32_t channel = args[0];
-    return read_channel_trigger_value(get_hermes_handle()->channel_triggers[channel]);
-}
 
 static uint32_t set_trigger_mode_command(uint32_t* args) {
     uint32_t value = args[0];
@@ -613,8 +595,6 @@ ServerCommand hermes_commands[] = {
     {"jesd_b_set_sync_error_reporting", jesd_b_set_sync_error_reporting_command, 1, 1},
     {"read_all_error_rates", read_all_error_rates_command, 0, 10},
     {"turn_on_data_pipe", turn_on_data_pipe_command, 0, 1},
-    {"set_threshold_for_channel", set_threshold_for_channel_command, 2, 1},
-    {"read_threshold_for_channel", read_threshold_for_channel_command, 1, 1},
     {"set_trigger_mode", set_trigger_mode_command, 1, 1},
     {"read_trigger_mode", read_trigger_mode_command, 0, 1},
     {"set_activate_trigger", set_activate_trigger_command, 1, 1},
