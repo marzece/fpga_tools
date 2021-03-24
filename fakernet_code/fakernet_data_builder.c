@@ -300,17 +300,6 @@ void sig_handler(int signum) {
 
 void write_to_disk(Event* ev) {
     int nwritten, i;
-    // TODO move this shit to a seperate function and call it before the main
-    // loop is entered
-    if(!fdisk) {
-        printf("Opening %s for saving data\n", FOUT_FILENAME);
-        fdisk = fopen(FOUT_FILENAME, "wb");
-
-        if(!fdisk) {
-            printf("error opening file: %s\n", strerror(errno));
-            return;
-        }
-    }
     // Write header
     {
         nwritten = fwrite(&(ev->header.magic_number), sizeof(uint32_t), 1, fdisk);
@@ -416,6 +405,19 @@ void interpret_header_word(TrigHeader* header, const uint32_t word, const int wh
                 printf("This should never happen, call Tony\n");
         }
 }
+
+void handle_bad_header(TrigHeader* header) {
+    // TODO...eventually this should change the state of the databuilder to go
+    // into a header "hunting" mode or something like that
+    printf("Likely error found\n");
+    printf("Bad magic  =  0x%x\n", header->magic_number);
+    printf("Bad trig # =  %i\n", header->trig_number);
+    printf("Bad length = %i\n", header->length);
+    printf("Bad time = %llu\n", (unsigned long long)header->clock);
+    printf("Bad channel id = %i\n", header->device_number);
+    end_loop();
+}
+
 // Read events from read buffer. Returns 0 if a full event is read.
 int read_proc(FPGA_IF* fpga, Event* ret) {
     static EventInProgress event;
@@ -440,17 +442,11 @@ int read_proc(FPGA_IF* fpga, Event* ret) {
         event.header_bytes_read += sizeof(uint32_t);
     } // Done reading header
 
+    // Check the CRC
     if(event.event.header.crc != calc_trig_header_crc(&event.event.header)) {
-        printf("Likely error found\n");
-        printf("Bad magic  =  0x%x\n", event.event.header.magic_number);
-        printf("Bad trig # =  %i\n", event.event.header.trig_number);
-        printf("Bad length = %i\n", event.event.header.length);
-        printf("Bad time = %llu\n", (unsigned long long)event.event.header.clock);
-        printf("Bad channel id = %i\n", event.event.header.device_number);
-        end_loop();
+        handle_bad_header(&(event.event.header));
         return 0;
     }
-
 
 
     int bufnum;
@@ -623,7 +619,7 @@ enum ArgIDs {
 
 void print_help_message() {
     printf("fakernet_data_builder\n"
-            "   usage:  fakernet_data_builder [--ip ip] [--out filename] [--num num_events]\n");
+            "   usage:  fakernet_data_builder [--ip ip] [--out filename] [--no-save] [--num num_events]\n");
 }
 
 int calculate_channel_crcs(Event* event, uint32_t *calculated_crcs, uint32_t* given_crcs) {
@@ -726,12 +722,14 @@ int calculate_channel_crcs(Event* event, uint32_t *calculated_crcs, uint32_t* gi
 
     return 0;
 }
+
 int main(int argc, char **argv) {
     int i;
     int num_events = 0;
     int event_count = 0;
     const char* ip = "192.168.1.192";
     enum ArgIDs expecting_value;
+    int do_not_save = 0;
 
     if(argc > 1 ) {
         expecting_value = 0;
@@ -743,8 +741,12 @@ int main(int argc, char **argv) {
                 else if((strcmp(argv[i], "--out") == 0) || (strcmp(argv[i], "-o") == 0)) {
                     expecting_value = ARG_FILENAME;
                 }
-                else if((strcmp(argv[i], "--ip") == 0)) {
+                else if(strcmp(argv[i], "--ip") == 0) {
                     expecting_value = ARG_IP;
+                }
+                else if(strcmp(argv[i], "--no-save") == 0) {
+                    do_not_save = 1;
+                    expecting_value = 0;
                 }
                 else if((strcmp(argv[i], "--help") == 0) || (strcmp(argv[i], "-h") == 0)) {
                     // TODO should scan the whole argv for help before setting any other values
@@ -804,6 +806,18 @@ int main(int argc, char **argv) {
         return 0;
     }
 
+    // Open file to write events to
+    if(!do_not_save) {
+        printf("Opening %s for saving data\n", FOUT_FILENAME);
+        fdisk = fopen(FOUT_FILENAME, "wb");
+
+        if(!fdisk) {
+            printf("error opening file: %s\n", strerror(errno));
+            return 0;
+        }
+    }
+
+
     Event event;
     int event_ready;
 
@@ -861,7 +875,9 @@ int main(int argc, char **argv) {
             }
             redis_publish_event(redis, event);
             display_event(&event);
-            write_to_disk(&event);
+            if(!do_not_save) {
+                write_to_disk(&event);
+            }
             event_count++;
 
             if(num_events != 0 && event_count >= num_events) {
@@ -869,7 +885,6 @@ int main(int argc, char **argv) {
                 end_loop();
             }
         }
-
     }
     clean_up();
     return 0;
