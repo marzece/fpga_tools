@@ -25,6 +25,7 @@ static FILE* fdisk = NULL;
 // Variable for deciding to stay in the main loop or not.
 // When loop is zero program should exit soon after.
 int loop = 1;
+int reeling = 0;
 
 /* okay here's basically what's going on here.
  * We have 3 buffers of some large size,
@@ -44,6 +45,7 @@ int loop = 1;
  * than a single memory buffer.
  */
 
+#define MAGIC_VALUE 0xFFFFFFFF
 #define HEADER_SIZE 20 // 128-bits aka 16 bytes
 #define NUM_CHANNELS 8
 #define BUFFER_SIZE (1024*1024) // 1 MB
@@ -477,7 +479,54 @@ void handle_bad_header(TrigHeader* header) {
     printf("Bad length = %i\n", header->length);
     printf("Bad time = %llu\n", (unsigned long long)header->clock);
     printf("Bad channel id = %i\n", header->device_number);
-    end_loop();
+    reeling = 1;
+    //end_loop();
+}
+
+int find_event_start(FPGA_IF* fpga) {
+    // This just searches through the readable memory buffer and tries to find the
+    // magic values (0xFFFFFFFF) that indicates the start of a header
+    // If found this function returns 1 otherwise returns 0. Since it searches through
+    // the rw_buffers it updates the read pointer as it goes.
+    // If the value is found the rw_buffer read pointer is left at the found starting position. 
+
+    int found = 0;
+    int bufnum, r_queue_idx, r_queue_len;
+    if(find_read_position(&(fpga->rw_buffers), &bufnum, &r_queue_idx, &r_queue_len)) {
+        fpga->rw_buffers.read_finished = 1;
+        return found;
+    }
+    
+    // It should never be possible for bytes_in_buffer to be less than 4 b/c all buffer reads/writes
+    // should occurr in chunks of 32-bits (4 bytes)
+
+    char* current = fpga->rw_buffers.buffers[bufnum] + r_queue_idx;
+    char* last = current + fpga->rw_buffers.buff_lens[bufnum] - 3;
+
+    while(current < last) {
+
+        // TODO, could optimize this by checking if any of the bytes (or just
+        // the last byte?) is 0xFF. If none of the bytes are skip forward 4
+        // bytes. Also could do SIMD shit if I wanted to be cool
+        if((*((uint32_t*)current)) == MAGIC_VALUE) {
+            // Found a potential HEADER
+            found = 1;
+            break;
+
+        }
+        // Update the rw_buffer and pointer for searching
+        fpga->rw_buffers.buff_idxs[bufnum] += 1;
+        current += 1;
+    }
+
+    // The only way you should get here is if you searched to the end of the buffer
+    // and didn't find an event start...therefore I'm now done reading the buffer
+    if(!found) {
+        fpga->rw_buffers.buff_idxs[bufnum] += 3; // Final bump to account for the dangling few bytes
+        fpga->rw_buffers.read_finished = 1;
+    }
+
+    return found;
 }
 
 // Read events from read buffer. Returns 0 if a full event is read.
@@ -490,6 +539,7 @@ int read_proc(FPGA_IF* fpga, Event* ret) {
         event = start_event();
         first = 0;
     }
+
 
     // TODO move this header reading shit to its own function
     while(event.header_bytes_read < HEADER_SIZE) {
@@ -506,8 +556,10 @@ int read_proc(FPGA_IF* fpga, Event* ret) {
         event.header_bytes_read += sizeof(uint32_t);
     } // Done reading header
 
-    // Check the CRC
-    if(event.event.header.crc != calc_trig_header_crc(&event.event.header)) {
+    // Check the header's CRC
+    ///|| ((rand() % 100) == 0)/
+    if(event.event.header.crc != calc_trig_header_crc(&event.event.header) ) {
+        printf("BAD HEADER HAPPENED");
         handle_bad_header(&(event.event.header));
         return 0;
     }
@@ -624,7 +676,6 @@ char* copy_event(const Event* event) {
 
 // Send event to redis database
 void redis_publish_event(redisContext*c, const Event event) {
-
     if(!c) {
         return;
     }
@@ -861,9 +912,6 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-
-
-
     // connect to FPGA
     do {
         // Send a TCP reset_command
@@ -878,9 +926,7 @@ int main(int argc, char **argv) {
             printf("error ocurred connecting to FPGA. Will retry.\n");
             sleep(5);
         }
-
     } while(fpga_if.fd < 0);
-
     printf("FPGA TCP connection made\n");
 
     // Open file to write events to
@@ -923,6 +969,11 @@ int main(int argc, char **argv) {
 
         if(!fpga_if.rw_buffers.write_finished) {
             pull_from_fpga(&fpga_if);
+        }
+
+        if(reeling && !fpga_if.rw_buffers.read_finished) {
+            printf("Reeeling\n");
+            reeling = !find_event_start(&fpga_if);
         }
         if(!fpga_if.rw_buffers.read_finished) {
             event_ready = read_proc(&fpga_if, &event);
