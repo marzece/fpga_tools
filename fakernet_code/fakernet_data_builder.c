@@ -301,13 +301,18 @@ EventInProgress start_event() {
 
 
 uint8_t crc_from_bytes(unsigned char* bytes, int length, unsigned char init) {
-    static int is_swapped = htonl(1) != 1;
+    static int is_swapped;
+    static int first = 1;
+    // Run time test of byte order, should only ever happen once.
+    if(first) {
+        first = 0;
+        is_swapped = htonl(1) != 1;
+    }
+
     int i;
     unsigned char crc = init;
-    // TODO the swap choice could be done at compile time.
-    // Redo this with #ifdef's and such
     if(is_swapped) {
-        for(i =length-1; i >= 0; i--) {
+        for(i=length-1; i >= 0; i--) {
             crc8(&crc, bytes[i]);
         }
     }
