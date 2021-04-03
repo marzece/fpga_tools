@@ -32,12 +32,11 @@ uint32_t write_adc_spi(AXI_QSPI* qspi, uint32_t* args) {
     uint32_t wmpch = args[0];
     uint32_t adc_addr = args[1];
     uint32_t adc_data = args[2];
+    uint8_t word_buf[3];
 
     wmpch &= 0xF;
     adc_addr &= 0xFFF;
     adc_data &= 0xFF;
-
-    uint8_t word_buf[3];
 
     word_buf[0] = (wmpch<<4) | (adc_addr >> 8);
     word_buf[1] = adc_addr & 0xFF;

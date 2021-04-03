@@ -167,13 +167,12 @@ uint32_t read_iic_bus_with_reg(AXI_IIC* iic, uint8_t iic_addr, uint8_t reg_addr)
     int i;
     uint32_t val=0;
     for(i=0; i<iic->rw_size; i++) {
-        //while(double_iic_read(IIC_SR_OFFSET) & 0x40) {
-        //   usleep(500);
-        //}
+        usleep(500);
         val |= iic_read(iic, IIC_RX_FIFO_OFFSET) << ((iic->rw_size-1)-i)*8;
     }
     return val;
 }
+
 uint32_t write_iic_bus_with_reg(AXI_IIC* iic, uint8_t iic_addr, uint8_t reg_addr, uint32_t reg_value) {
     uint8_t err_loc = 0;
 

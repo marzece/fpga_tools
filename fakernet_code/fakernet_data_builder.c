@@ -368,7 +368,8 @@ void sig_handler(int signum) {
 }
 
 void write_to_disk(Event* ev) {
-    int nwritten, i;
+    size_t nwritten;
+    int i;
     // Write header
     {
         nwritten = fwrite(&(ev->header.magic_number), sizeof(uint32_t), 1, fdisk);
@@ -493,7 +494,7 @@ int find_event_start(FPGA_IF* fpga) {
     // magic values (0xFFFFFFFF) that indicates the start of a header
     // If found this function returns 1 otherwise returns 0. Since it searches through
     // the rw_buffers it updates the read pointer as it goes.
-    // If the value is found the rw_buffer read pointer is left at the found starting position. 
+    // If the value is found the rw_buffer read pointer is left at the found starting position.
 
     int found = 0;
     int bufnum, r_queue_idx, r_queue_len;
@@ -501,7 +502,7 @@ int find_event_start(FPGA_IF* fpga) {
         fpga->rw_buffers.read_finished = 1;
         return found;
     }
-    
+
     // It should never be possible for bytes_in_buffer to be less than 4 b/c all buffer reads/writes
     // should occurr in chunks of 32-bits (4 bytes)
 
@@ -509,10 +510,9 @@ int find_event_start(FPGA_IF* fpga) {
     char* last = current + fpga->rw_buffers.buff_lens[bufnum] - 3;
 
     while(current < last) {
-
         // TODO, could optimize this by checking if any of the bytes (or just
-        // the last byte?) is 0xFF. If none of the bytes are skip forward 4
-        // bytes. Also could do SIMD shit if I wanted to be cool
+        // the last byte?) is 0xFF. If none of the bytes are, skip forward 4 bytes.
+        // Also could do SIMD shit if I wanted to be cool
         if((*((uint32_t*)current)) == MAGIC_VALUE) {
             // Found a potential HEADER
             found = 1;

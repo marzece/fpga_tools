@@ -62,7 +62,6 @@ void sig_handler(int dummy) {
     exit(0);
 }
 
-
 uint32_t read_addr(uint32_t base, uint32_t addr) {
       fakernet_reg_acc_item *send;
       fakernet_reg_acc_item *recv;
