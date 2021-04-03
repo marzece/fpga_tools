@@ -156,6 +156,7 @@ int handle_line(const char* line) {
 int main(int argc, char **argv) {
     char *line;
     char *prgname = argv[0];
+    int batch = 0;
     
 
     /* Parse options, with --multiline we enable multi line editing. */
@@ -168,6 +169,8 @@ int main(int argc, char **argv) {
         } else if (!strcmp(*argv,"--keycodes")) {
             linenoisePrintKeyCodes();
             exit(0);
+        } else if(!strcmp(*argv, "--batch")) {
+            batch = 1;
         } else {
             fprintf(stderr, "Usage: %s [--multiline] [--keycodes]\n", prgname);
             exit(1);
@@ -201,9 +204,11 @@ int main(int argc, char **argv) {
     }
 
     // First get the command table
-    write(command_fd, SEND_COMMAND_TABLE_COMMAND, strlen(SEND_COMMAND_TABLE_COMMAND));
-    grab_response();
-    produce_command_table(response_buffer);
+    if(!batch) {
+        write(command_fd, SEND_COMMAND_TABLE_COMMAND, strlen(SEND_COMMAND_TABLE_COMMAND));
+        grab_response();
+        produce_command_table(response_buffer);
+    }
 
     /* Now this is the main loop of the typical linenoise-based application.
      * The call to linenoise() will block as long as the user types something
