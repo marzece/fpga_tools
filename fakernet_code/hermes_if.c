@@ -14,6 +14,7 @@
 #define  GPIO1_AXI_ADDR          0x2000
 #define  GPIO2_AXI_ADDR          0x3000
 #define  GPIO3_AXI_ADDR          0x4000
+#define  GPIO4_AXI_ADDR          0xB000
 #define  LMK_AXI_ADDR            0x6000
 #define  DAC_AXI_ADDR            0x7000
 #define  IIC_AXI_ADDR            0x5000
@@ -32,6 +33,7 @@ struct HERMES_IF {
     AXI_GPIO* gpio1;
     AXI_GPIO* gpio2;
     AXI_GPIO* gpio3;
+    AXI_GPIO* gpio4;
     AXI_IIC* iic_main;
     AXI_JESD* jesd_a;
     AXI_JESD* jesd_b;
@@ -84,7 +86,8 @@ static struct HERMES_IF* get_hermes_handle() {
         hermes->gpio1 = new_gpio("gpio_sync_counter", GPIO1_AXI_ADDR);
         hermes->gpio2 = new_gpio("gpio_reset", GPIO2_AXI_ADDR);
         hermes->gpio3 = new_gpio("gpio_axis_debug", GPIO3_AXI_ADDR);
-        hermes->iic_main = new_iic("iic_main", IIC_AXI_ADDR, 0);
+        hermes->gpio4 = new_gpio("gpio_fifo_fullness", GPIO4_AXI_ADDR);
+        hermes->iic_main = new_iic("iic_main", IIC_AXI_ADDR, 1);
         hermes->jesd_a = new_jesd("jesd_a", JESD_A_AXI_ADDR);
         hermes->jesd_b = new_jesd("jesd_b", JESD_B_AXI_ADDR);
         hermes->pipeline = new_data_pipeline_if("dp0", DATA_PIPELINE_0_ADDR);
@@ -111,9 +114,15 @@ static uint32_t read_gpio_1_command(uint32_t *args) {
 uint32_t write_gpio_2_command(uint32_t *args) {
     return write_gpio_value(get_hermes_handle()->gpio2, args[0], args[1]);
 }
+uint32_t write_gpio_4_command(uint32_t *args) {
+    return write_gpio_value(get_hermes_handle()->gpio4, args[0], args[1]);
+}
 //
 uint32_t read_gpio_2_command(uint32_t *args) {
     return read_gpio_value(get_hermes_handle()->gpio2, args[0]);
+}
+uint32_t read_gpio_4_command(uint32_t *args) {
+    return read_gpio_value(get_hermes_handle()->gpio4, args[0]);
 }
 
 static uint32_t set_adc_power_command(uint32_t *args) {
@@ -595,6 +604,8 @@ ServerCommand hermes_commands[] = {
     {"write_gpio1", write_gpio_1_command, 2, 1},
     {"read_gpio2", read_gpio_2_command, 1, 1},
     {"write_gpio2", write_gpio_2_command, 2, 1},
+    {"read_gpio4", read_gpio_4_command, 1, 1},
+    {"write_gpio4", write_gpio_4_command, 2, 1},
     {"set_preamp_power", set_preamp_power_command, 1, 1},
     {"set_adc_power", set_adc_power_command, 1, 1},
     {"read_ads_a", read_ads_a_if_command, 1, 1},
