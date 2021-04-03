@@ -562,7 +562,7 @@ int read_proc(FPGA_IF* fpga, Event* ret) {
     } // Done reading header
 
     // Check the header's CRC
-    if(event.event.header.crc != calc_trig_header_crc(&event.event.header) == 0) {
+    if(event.event.header.crc != calc_trig_header_crc(&event.event.header)) {
         printf("BAD HEADER HAPPENED");
         handle_bad_header(&(event.event.header));
         event = start_event(); // This event is being trashed, just start a new one.
