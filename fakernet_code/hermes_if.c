@@ -6,8 +6,7 @@
 #include "dac_if.h"
 #include "ads_if.h"
 #include "jesd.h"
-#include "adc_sample_fanout.h"
-#include "channel_trigger.h"
+#include "data_pipeline.h"
 
 #define  ADC_A_AXI_ADDR          0x0000
 #define  ADC_B_AXI_ADDR          0x10000
@@ -20,12 +19,7 @@
 #define  IIC_AXI_ADDR            0x5000
 #define  JESD_A_AXI_ADDR         0x9000
 #define  JESD_B_AXI_ADDR         0xA000
-#define  ADC_A_FANOUT_ADDR       0x30000
-#define  ADC_B_FANOUT_ADDR       0x20000
-#define  CHANNEL_TRIGGER_0_ADDR  0x40000
-#define  CHANNEL_TRIGGER_1_ADDR  0x50000
-#define  CHANNEL_TRIGGER_2_ADDR  0x60000
-#define  CHANNEL_TRIGGER_3_ADDR  0x70000
+#define  DATA_PIPELINE_0_ADDR    0x8000
 
 const uint32_t HERMES_SAFE_READ_ADDRESS = GPIO0_AXI_ADDR;
 
@@ -41,8 +35,7 @@ struct HERMES_IF {
     AXI_IIC* iic_main;
     AXI_JESD* jesd_a;
     AXI_JESD* jesd_b;
-    AXI_ADC_SAMPLE_FANOUT* fanout_a;
-    AXI_ADC_SAMPLE_FANOUT* fanout_b;
+    AXI_DATA_PIPELINE* pipeline;
 };
 
 static struct HERMES_IF* hermes = NULL;
@@ -94,8 +87,7 @@ static struct HERMES_IF* get_hermes_handle() {
         hermes->iic_main = new_iic("iic_main", IIC_AXI_ADDR, 0);
         hermes->jesd_a = new_jesd("jesd_a", JESD_A_AXI_ADDR);
         hermes->jesd_b = new_jesd("jesd_b", JESD_B_AXI_ADDR);
-        hermes->fanout_a = new_adc_sample_fanout("fanout_a", ADC_A_FANOUT_ADDR);
-        hermes->fanout_b = new_adc_sample_fanout("fanout_b", ADC_B_FANOUT_ADDR);
+        hermes->pipeline = new_data_pipeline_if("dp0", DATA_PIPELINE_0_ADDR);
     }
     return hermes;
 }
@@ -510,14 +502,6 @@ static uint32_t jesd_b_set_sync_error_reporting_command(uint32_t* args) {
     return set_sync_error_reporting(get_hermes_handle()->jesd_b, state);
 }
 
-static uint32_t turn_on_data_pipe_command(uint32_t* args) {
-    UNUSED(args);
-    write_fanout_value( get_hermes_handle()->fanout_a, 0xF);
-    write_fanout_value( get_hermes_handle()->fanout_b, 0xF);
-    return 0;
-}
-
-
 static uint32_t set_trigger_mode_command(uint32_t* args) {
     uint32_t value = args[0];
     return write_gpio_value(get_hermes_handle()->gpio0, 1, value);
@@ -536,6 +520,66 @@ static uint32_t set_activate_trigger_command(uint32_t* args) {
 static uint32_t read_pipe_valid_status_command(uint32_t* args) {
     UNUSED(args);
     return read_gpio_value(get_hermes_handle()->gpio3, 0);
+}
+
+static uint32_t read_data_pipeline_0_command(uint32_t* args) {
+    uint32_t offset =  args[0];
+    return read_data_pipeline_value(get_hermes_handle()->pipeline, offset);
+
+}
+
+static uint32_t write_data_pipeline_0_command(uint32_t* args) {
+    uint32_t offset = args[0];
+    uint32_t value = args[1];
+    return write_data_pipeline_value(get_hermes_handle()->pipeline, offset, value);
+}
+
+static uint32_t read_data_pipeline_0_threshold_command(uint32_t* args) {
+    UNUSED(args);
+    return read_threshold(get_hermes_handle()->pipeline);
+}
+
+static uint32_t write_data_pipeline_0_threshold_command(uint32_t* args) {
+    uint32_t val = args[0];
+    return write_threshold(get_hermes_handle()->pipeline, val);
+}
+
+static uint32_t read_data_pipeline_0_channel_mask_command(uint32_t* args) {
+    UNUSED(args);
+    return read_channel_mask(get_hermes_handle()->pipeline);
+}
+
+static uint32_t write_data_pipeline_0_channeL_mask_command(uint32_t* args) {
+    uint32_t val = args[0];
+    return write_channel_mask(get_hermes_handle()->pipeline, val);
+}
+
+static uint32_t read_data_pipeline_0_depth_command(uint32_t* args) {
+    int channel = args[0];
+    return read_channel_depth(get_hermes_handle()->pipeline, channel);
+
+}
+
+static uint32_t write_data_pipeline_0_depth_command(uint32_t* args) {
+    int channel = args[0];
+    int value = args[1];
+    return write_channel_depth(get_hermes_handle()->pipeline, channel, value);
+
+}
+
+static uint32_t read_data_pipeline_0_invalid_count_command(uint32_t* args) {
+    UNUSED(args);
+    return read_invalid_count(get_hermes_handle()->pipeline);
+}
+
+static uint32_t read_data_pipeline_0_status_command(uint32_t* args) {
+    UNUSED(args);
+    return read_fifo_status_reg(get_hermes_handle()->pipeline);
+}
+
+static uint32_t write_data_pipeline_0_reset_command(uint32_t* args) {
+    uint32_t mask = args[0];
+    return write_reset_reg(get_hermes_handle()->pipeline, mask);
 }
 
 ServerCommand hermes_commands[] = {
@@ -594,10 +638,21 @@ ServerCommand hermes_commands[] = {
     {"jesd_a_set_sync_error_reporting", jesd_a_set_sync_error_reporting_command, 1, 1},
     {"jesd_b_set_sync_error_reporting", jesd_b_set_sync_error_reporting_command, 1, 1},
     {"read_all_error_rates", read_all_error_rates_command, 0, 10},
-    {"turn_on_data_pipe", turn_on_data_pipe_command, 0, 1},
     {"set_trigger_mode", set_trigger_mode_command, 1, 1},
     {"read_trigger_mode", read_trigger_mode_command, 0, 1},
     {"set_activate_trigger", set_activate_trigger_command, 1, 1},
     {"read_pipe_valid_status", read_pipe_valid_status_command, 0, 1},
+    {"read_data_pipeline_threshold", read_data_pipeline_0_threshold_command, 0, 1},
+    {"write_data_pipeline_threshold", write_data_pipeline_0_threshold_command, 1, 1},
+    {"read_data_pipeline_channel_mask", read_data_pipeline_0_channel_mask_command, 0, 1},
+    {"write_data_pipeline_channeL_mask", write_data_pipeline_0_channeL_mask_command, 1, 1},
+    {"read_data_pipeline_depth", read_data_pipeline_0_depth_command, 1, 1},
+    {"write_data_pipeline_depth", write_data_pipeline_0_depth_command, 2, 1},
+    {"write_data_pipeline_depth", write_data_pipeline_0_depth_command, 2, 1},
+    {"write_data_pipeline", write_data_pipeline_0_command, 2, 1},
+    {"read_data_pipeline", read_data_pipeline_0_command, 1, 1},
+    {"read_data_pipeline_invalid_count", read_data_pipeline_0_invalid_count_command, 0, 1},
+    {"read_data_pipeline_status", read_data_pipeline_0_status_command, 0, 1},
+    {"write_data_pipeline_reset", write_data_pipeline_0_reset_command, 1, 1},
     {"", NULL, 0, 0} // Must be last
 };

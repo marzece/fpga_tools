@@ -336,17 +336,17 @@ static uint32_t write_data_pipeline_0_depth_command(uint32_t* args) {
 
 }
 
-uint32_t read_data_pipeline_0_invalid_count_command(uint32_t* args) {
+static uint32_t read_data_pipeline_0_invalid_count_command(uint32_t* args) {
     UNUSED(args);
     return read_invalid_count(get_ti_handle()->dp_0);
 }
 
-uint32_t read_data_pipeline_0_status_command(uint32_t* args) {
+static uint32_t read_data_pipeline_0_status_command(uint32_t* args) {
     UNUSED(args);
     return read_fifo_status_reg(get_ti_handle()->dp_0);
 }
 
-uint32_t write_data_pipeline_0_reset_command(uint32_t* args) {
+static uint32_t write_data_pipeline_0_reset_command(uint32_t* args) {
     uint32_t mask = args[0];
     return write_reset_reg(get_ti_handle()->dp_0, mask);
 }
