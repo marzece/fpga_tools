@@ -14,6 +14,7 @@
 #include "hermes_if.h"
 #include "ti_board_if.h"
 #include "resp.h"
+#include "server.h"
 
 // For doing "double" reads the 2nd read should be from this register
 #define COMMAND_PIPE_NAME "kintex_command_pipe"
@@ -312,41 +313,14 @@ int main(int argc, char** argv) {
         board_specific_command_table = ti_commands;
     }
 
-    // Open up pipes to receive and respond to commands
-    const char* command_fn = COMMAND_PIPE_NAME;
-    const char* resp_fn = RESPONSE_PIPE_NAME;
+    //init_server(server);
 
-    if(mkfifo(command_fn, 0666)) {
-        printf("Error making command pipe\n");
-        return 1;
-    }
-    if(mkfifo(resp_fn, 0666)) {
-        printf("Error making response pipe\n");
-        return 1;
-    }
-    int _recv_fd = open(command_fn, O_RDONLY);
-    if(_recv_fd <= 0) {
-        printf("Error ocurred opening command recieve pipe\n");
-        printf("%s\n", strerror(errno));
-        return 1;
-    }
-    // This will block until someone connects to the pipe!
-    // TODO should maybe just sleep here and wait for the resp_channel to be
-    // avialble
-    int _resp_fd = open(resp_fn, O_WRONLY );
-    if(_resp_fd <= 0) {
-        printf("Error ocurred opening response pipe\n");
-        printf("%s\n", strerror(errno));
-        close(_recv_fd);
-        unlink(command_fn);
-        unlink(resp_fn);
-        return 1;
-    }
 
     
     printf("Starting main loop\n");
     while(!end_main_loop) {
-        int nbytes = read(_recv_fd, command_buffer, BUFFER_SIZE);
+        //int nbytes = read(_recv_fd, command_buffer, BUFFER_SIZE);
+        int nbytes = 0;
         if(nbytes == 0) {
             continue;
         }
@@ -370,21 +344,10 @@ int main(int argc, char** argv) {
         // don't need to check if it returns 0 or not.
         char* resp = handle_line(command_buffer);
 
-        // resp_buffer should have a null terminator...don't need to send it though?
-        if(!resp) {
-            write(_resp_fd, &resp_buffer, strlen(resp_buffer));
-        } else {
-            write(_resp_fd, resp, strlen(resp));
-            free(resp);
-        }
 
         usleep(1000);
     }
 
     printf("Cntrl-C found, quitting\n");
-    close(_recv_fd);
-    close(_resp_fd);
-    unlink(command_fn);
-    unlink(resp_fn);
     return 0;
 }
