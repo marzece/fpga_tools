@@ -85,6 +85,15 @@ def spi_command(server, device, *args):
     #resp[2] = decode_data(server[1].readline())
     return resp
 
+def adc_hard_reset(server):
+    reset_command = "write_gpio 1 0".encode("ascii")
+    unreset_command = "write_gpio 1 0".encode("ascii")
+    server[0].write(reset_command)
+    grab_response(server)
+    server[0].write(unreset_command)
+    grab_response(server)
+
+
 def adc_spi(server, device, v1, v2, v3):
     if(device not in [SPI_Device.ADC_A, SPI_Device.ADC_B, SPI_Device.TI_ADC]):
         raise TypeError("ADC device not correctly specified for adc spi function")

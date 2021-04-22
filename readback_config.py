@@ -76,6 +76,5 @@ if __name__ == "__main__":
         print("Must specify if you want to send to ADC A or B")
         exit()
 
-    import ipdb;ipdb.set_trace()
     fpga_conn = connect_to_local_client()
     adc_readback(fpga_conn, adcs)

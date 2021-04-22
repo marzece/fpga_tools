@@ -1,6 +1,7 @@
 import json
 import socket
-from fpga_spi import connect_to_local_client, decode_data
+import copy
+from fpga_spi import connect_to_local_client, grab_response, SPI_Device
 
 def grab_bits(word, first_bit, last_bit):
     mask = 0
@@ -67,25 +68,43 @@ class JESDReg:
         return self.name + "\n" + str(addr_str) + "\n\t" + '\n\t'.join(field_strs) + "\n"
 
 
-def write_to_fpga(conn, addr, value):
-    command = "jesd_write 0x%x 0x%x\n" % (addr, value)
+def write_to_fpga(conn, device, addr, value):
+    if(device == SPI_Device.ADC_A):
+        command = "jesd_a_write 0x%x 0x%x\r\n" % (addr, value)
+    elif(device == SPI_Device.ADC_B):
+        command = "jesd_b_write 0x%x 0x%x\r\n" % (addr, value)
+    elif(device ==SPI_Device.TI_ADC):
+        command = "jesd_write 0x%x 0x%x\r\n" % (addr, value)
+    else:
+        raise Exception("Invalid device specified")
     conn[0].write(command.encode("ascii"))
-    data = decode_data(conn[1].read_line())
-    return data
-def read_from_fpga(conn, addr):
-    command = "jesd_read 0x%x\n" % addr
-    conn.sendall(command.encode("ascii"))
-    data = decode_data(conn[1].read_line())
+    data = grab_response(conn)
     return data
 
-def read_reg(conn, reg):
+def read_from_fpga(conn, device, addr):
+    if(device == SPI_Device.ADC_A):
+        command = "jesd_a_read 0x%x\n" % addr
+    elif(device == SPI_Device.ADC_B):
+        command = "jesd_b_read 0x%x\n" % addr
+    elif(device == SPI_Device.TI_ADC):
+        command = "jesd_read 0x%x\n" % addr
+    else:
+        raise Exception("Invalid device specified")
+
+    conn[0].write(command.encode("ascii"))
+    data = grab_response(conn)
+    if(type(data) != int):
+        import ipdb;ipdb.set_trace()
+    return data
+
+def read_reg(conn, device, reg):
     if(reg.per_lane_reg):
         for fields, addr in zip(reg.fields, reg.addr):
-            word = read_from_fpga(conn, addr)
+            word = read_from_fpga(conn, device, addr)
             for f in fields:
                 f.get_value(word)
     else:
-        word = read_from_fpga(conn, reg.addr)
+        word = read_from_fpga(conn, device, reg.addr)
         for f in reg.fields:
             f.get_value(word)
 
@@ -130,15 +149,28 @@ def translate_link_error_status(word):
     return "\n".join(ret)
 
 if __name__ == "__main__":
-    host = "192.168.1.10"
-    port = 4001
-    #conn = socket.create_connection((host, port))
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--adc_a", action="store_true", help="send commands to ADC A")
+    parser.add_argument("--adc_b", action="store_true", help="send commands to ADC B")
+    parser.add_argument("--ti", action="store_true", help="Use commands for TI board")
+
+
+    args = parser.parse_args()
+
+    devices = [SPI_Device.ADC_A if args.adc_a else None,
+               SPI_Device.ADC_B if args.adc_b else None]\
+                if not args.ti else [SPI_Device.TI_ADC]
+    
+    devices = [x for x in devices if x is not None]
+
+
     conn = connect_to_local_client()
 
     jesd_info_fn = "xil_jesd_regs.json"
     regs = read_reg_info_file(jesd_info_fn)
-    write_to_fpga(conn, 0x34, 0x1)
-    for r in regs:
-        read_reg(conn, r)
-
-
+    results = {device:copy.deepcopy(regs) for device in devices}
+    for device, these_regs in results.items():
+        write_to_fpga(conn, device, 0x34, 0x1)
+        for r in these_regs:
+                read_reg(conn, device, r)

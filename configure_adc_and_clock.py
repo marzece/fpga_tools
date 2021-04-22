@@ -3,8 +3,7 @@ import socket
 import argparse
 from time import sleep
 from collections import defaultdict
-from fpga_spi import adc_spi, lmk_spi, decode_data, connect_to_local_client, SPI_Device
-
+from fpga_spi import adc_spi, lmk_spi, decode_data, connect_to_local_client, SPI_Device, adc_hard_reset
 
 def parse_config_file(f):
     evm_devices = ["LMK", "ADS"]
@@ -106,13 +105,13 @@ def program_adc(server, which_adc, addr, value):
         adc_spi(server, which_adc, wmpch, reg_addr, value)
         adc_spi(server, which_adc, wmpch|0x1, reg_addr, value)
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("filename", type=str, help="file that contains Eval board addresses and data")
     parser.add_argument("--adc_a", action="store_true", help="send commands to ADC A")
     parser.add_argument("--adc_b", action="store_true", help="send commands to ADC B")
     parser.add_argument("--ti", action="store_true", help="Use commands for TI board")
+    parser.add_argument("--do_reset", action="store_true", help="Do hard reset (applies to both ADCs)")
 
     args = parser.parse_args()
 
@@ -126,6 +125,10 @@ if __name__ == "__main__":
     devices = [SPI_Device.ADC_A if args.adc_a else None,
                SPI_Device.ADC_B if args.adc_b else None]\
                 if not args.ti else [SPI_Device.TI_ADC]
+
+    if(args.do_reset):
+        print("Doing reset")
+        adc_hard_reset(fpga_conn)
 
     do_programming(fpga_conn, devices, instructions)
 
