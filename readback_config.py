@@ -2,7 +2,7 @@ import socket
 import argparse
 from time import sleep
 from collections import defaultdict, namedtuple
-from fpga_spi import adc_spi, connect_to_local_client, SPI_Device
+from ceres_fpga_spi import adc_spi, connect_to_local_client, SPI_Device
 
 
 dig_pages = {"interleaving": 0x6100, "decimation": 0x6141, "main_dig": 0x6800,
@@ -68,9 +68,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--adc_a", action="store_true", help="send commands to ADC A")
     parser.add_argument("--adc_b", action="store_true", help="send commands to ADC B")
+    parser.add_argument("--adc_c", action="store_true", help="send commands to ADC C")
+    parser.add_argument("--adc_d", action="store_true", help="send commands to ADC D")
     args = parser.parse_args()
 
-    adcs = [SPI_Device.ADC_A if args.adc_a else None, SPI_Device.ADC_B if args.adc_b else None]
+    adcs = [SPI_Device.ADC_A if args.adc_a else None,
+            SPI_Device.ADC_B if args.adc_b else None,
+            SPI_Device.ADC_C if args.adc_c else None,
+            SPI_Device.ADC_D if args.adc_d else None]
+
     adcs = [x for x in adcs if x is not None]
     if not adcs:
         print("Must specify if you want to send to ADC A or B")

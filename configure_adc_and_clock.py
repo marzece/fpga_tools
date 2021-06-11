@@ -3,7 +3,7 @@ import socket
 import argparse
 from time import sleep
 from collections import defaultdict
-from fpga_spi import adc_spi, lmk_spi, decode_data, connect_to_local_client, SPI_Device, adc_hard_reset
+from ceres_fpga_spi import adc_spi, lmk_spi, decode_data, connect_to_local_client, SPI_Device, adc_hard_reset
 
 def parse_config_file(f):
     evm_devices = ["LMK", "ADS"]
@@ -44,6 +44,12 @@ def parse_config_file(f):
     return instructions
 
 def do_programming(server, adcs, instructions):
+    lmks = []
+    if(SPI_Device.ADC_A in adcs or SPI_Device.ADC_B in adcs):
+        lmks.append(SPI_Device.LMK_A)
+    if(SPI_Device.ADC_C in adcs or SPI_Device.ADC_D in adcs):
+        lmks.append(SPI_Device.LMK_B)
+
     for device, addr, value in instructions:
         if(addr == "sleep"):
             print("SLEEPING %f seconds" % value)
@@ -52,19 +58,22 @@ def do_programming(server, adcs, instructions):
         if(addr == "pause"):
             input("Paused, press enter to continue")
             continue
+        #print(device, hex(addr), hex(value))
+        #input("Paused, press enter to continue")
         if(device.lower()== "lmk"):
-            program_clock(server, addr, value)
+            for this_lmk in lmks:
+                program_clock(server, this_lmk, addr, value)
         if(device.lower() == "ads"):
             for this_adc in adcs:
                 if not this_adc:
                     continue
                 program_adc(server, this_adc, addr, value)
 
-def program_clock(server, addr, value):
+def program_clock(server, which_lmk, addr, value):
     # First make sure instructions are in order
     # Remove anything that locks/unlocks stuff, this function handles that
 
-    resp = lmk_spi(server, 0x0, addr, value);
+    resp = lmk_spi(server, which_lmk, 0x0, addr, value);
     #resp = spi_command(server, "write_clk_spi 0x%x 0x%x 0x%x\n" % (0x0, addr, value))
     return resp
 
@@ -110,6 +119,8 @@ if __name__ == "__main__":
     parser.add_argument("filename", type=str, help="file that contains Eval board addresses and data")
     parser.add_argument("--adc_a", action="store_true", help="send commands to ADC A")
     parser.add_argument("--adc_b", action="store_true", help="send commands to ADC B")
+    parser.add_argument("--adc_c", action="store_true", help="send commands to ADC C")
+    parser.add_argument("--adc_d", action="store_true", help="send commands to ADC D")
     parser.add_argument("--ti", action="store_true", help="Use commands for TI board")
     parser.add_argument("--do_reset", action="store_true", help="Do hard reset (applies to both ADCs)")
 
@@ -123,12 +134,14 @@ if __name__ == "__main__":
     fpga_conn = connect_to_local_client()
 
     devices = [SPI_Device.ADC_A if args.adc_a else None,
-               SPI_Device.ADC_B if args.adc_b else None]\
-                if not args.ti else [SPI_Device.TI_ADC]
+               SPI_Device.ADC_B if args.adc_b else None,
+               SPI_Device.ADC_C if args.adc_c else None,
+               SPI_Device.ADC_D if args.adc_d else None]
 
+    print(devices)
     if(args.do_reset):
         print("Doing reset")
-        adc_hard_reset(fpga_conn)
+        adc_hard_reset(fpga_conn, devices)
 
     do_programming(fpga_conn, devices, instructions)
 

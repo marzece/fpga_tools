@@ -13,6 +13,7 @@
 #include "server_common.h"
 #include "hermes_if.h"
 #include "ti_board_if.h"
+#include "ceres_if.h"
 #include "resp.h"
 
 // For doing "double" reads the 2nd read should be from this register
@@ -20,6 +21,7 @@
 #define RESPONSE_PIPE_NAME "kintex_response_pipe"
 #define BUFFER_SIZE 2048
 #define SEND_COMMAND_TABLE_COMMAND "send_command_table"
+#define DEFAULT_IP  "192.168.1.192"
 
 int dummy_mode = 0;
 uint32_t SAFE_READ_ADDRESS;
@@ -33,16 +35,23 @@ char resp_buffer[BUFFER_SIZE];
 static volatile int end_main_loop = 0;
 ServerCommand* board_specific_command_table = NULL;
 
-int setup_udp() {
+enum BOARD_SWITCH {
+    HE2TER,
+    TI,
+    CERES
+};
+
+int setup_udp(const char* ip) {
     debug_file = fopen("fakernet_debug_log.txt", "r");
-    const char* fnet_hname = "192.168.1.192";
+    //const char* fnet_hname = "192.168.1.192";
+    //const char* fnet_hname = "192.168.1.193";
     int reliable = 0; // wtf does this do?
     const char* err_string = NULL;
     if(dummy_mode) {
         return 0;
     }
 
-    fnet_client = fnet_ctrl_connect(fnet_hname, reliable, &err_string, debug_file);
+    fnet_client = fnet_ctrl_connect(ip, reliable, &err_string, debug_file);
     if(!fnet_client) {
         printf("ERROR Connecting!\n");
         return -1;
@@ -279,22 +288,71 @@ char* handle_line(const char* line) {
     return NULL;
 }
 
+// For arguements with a values
+enum ArgIDs {
+    ARG_NONE=0,
+    ARG_IP
+};
+
+void print_help_message() {
+    printf("You need help\n");
+}
+
 int main(int argc, char** argv) {
 
-    int ti_board=0;
-    if(argc > 1) {
-        if(strcmp(argv[1], "--dry") == 0 || strcmp(argv[1], "--dummy") == 0) {
-            printf("DUMMY MODE ENGAGED\n");
-            dummy_mode = 1;
+    int which_board = HE2TER;
+    const char* ip = DEFAULT_IP;
+    if(argc > 1 ) {
+        int i;
+        enum ArgIDs expecting_value = 0;
+        for(i=1; i < argc; i++) {
+            if(!expecting_value) {
+                if(strcmp(argv[i], "--ip") == 0) {
+                    expecting_value = ARG_IP;
+                }
+                else if(strcmp(argv[1], "--dry") == 0 || strcmp(argv[1], "--dummy") == 0) {
+                    printf("DUMMY MODE ENGAGED\n");
+                    dummy_mode = 1;
+                }
+                else if(strcmp(argv[1], "--ti") == 0 || strcmp(argv[1], "--TI") ==0) {
+                    printf("Using TI board commands\n");
+                    which_board = TI;
+                }
+                else if(strcmp(argv[1], "--ceres") == 0 || strcmp(argv[1], "--CERES") ==0) {
+                    printf("Using CERES board commands\n");
+                    which_board = CERES;
+                }
+
+                else if((strcmp(argv[i], "--help") == 0) || (strcmp(argv[i], "-h") == 0)) {
+                    print_help_message();
+                    return 0;
+                }
+                else {
+                    printf("Unrecognized option \"%s\"\n", argv[i]);
+                    return 0;
+                }
+            } else {
+                switch(expecting_value) {
+                    case ARG_IP:
+                        ip = argv[i];
+                        printf("FPGA IP set to %s\n", ip);
+                        break;
+                    case ARG_NONE:
+                    default:
+                        break;
+                }
+                expecting_value = 0;
+            }
         }
-        else if(strcmp(argv[1], "--ti") == 0 || strcmp(argv[1], "--TI") ==0) {
-            printf("Using TI board commands\n");
-            ti_board = 1;
+
+        if(expecting_value) {
+            printf("Did find value for last argument...exiting\n");
+            return 1;
         }
     }
 
     // First connect to FPGA
-    if(setup_udp()) {
+    if(setup_udp(ip)) {
         printf("error ocurred connecting to fpga\n");
         //return 1;
     }
@@ -307,9 +365,13 @@ int main(int argc, char** argv) {
     // Set up command_tables
     board_specific_command_table = hermes_commands;
     SAFE_READ_ADDRESS = HERMES_SAFE_READ_ADDRESS;
-    if(ti_board) {
+    if(which_board == TI) {
         SAFE_READ_ADDRESS = TI_SAFE_READ_ADDRESS;
         board_specific_command_table = ti_commands;
+    }
+    else if(which_board == CERES) {
+        SAFE_READ_ADDRESS = CERES_SAFE_READ_ADDRESS;
+        board_specific_command_table = ceres_commands;
     }
 
     // Open up pipes to receive and respond to commands

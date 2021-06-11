@@ -90,7 +90,6 @@ int write_spi(AXI_QSPI* qspi, uint8_t ssr, uint8_t* data, int nwords) {
     }
     qspi->spi_cr.spi_enable = 1;
     write_qspi_addr(qspi, SPICR_OFFSET, spi_cr_to_bits(qspi->spi_cr));
-    //write_lmk_if(qspi, SPISSR_OFFSET, 0x3);
     qspi->spi_cr.spi_enable = 0;
     write_qspi_addr(qspi, SPICR_OFFSET, spi_cr_to_bits(qspi->spi_cr));
     return 0;

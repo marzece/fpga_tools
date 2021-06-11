@@ -1,7 +1,7 @@
 import json
 import socket
 import copy
-from fpga_spi import connect_to_local_client, grab_response, SPI_Device
+from ceres_fpga_spi import connect_to_local_client, grab_response, SPI_Device
 
 def grab_bits(word, first_bit, last_bit):
     mask = 0
@@ -70,9 +70,13 @@ class JESDReg:
 
 def write_to_fpga(conn, device, addr, value):
     if(device == SPI_Device.ADC_A):
-        command = "jesd_a_write 0x%x 0x%x\r\n" % (addr, value)
+        command = "jesd_write 0x0 0x%x 0x%x\r\n" % (addr, value)
     elif(device == SPI_Device.ADC_B):
-        command = "jesd_b_write 0x%x 0x%x\r\n" % (addr, value)
+        command = "jesd_b_write 0x1 0x%x 0x%x\r\n" % (addr, value)
+    elif(device == SPI_Device.ADC_C):
+        command = "jesd_b_write 0x2 0x%x 0x%x\r\n" % (addr, value)
+    elif(device == SPI_Device.ADC_D):
+        command = "jesd_b_write 0x3 0x%x 0x%x\r\n" % (addr, value)
     elif(device ==SPI_Device.TI_ADC):
         command = "jesd_write 0x%x 0x%x\r\n" % (addr, value)
     else:
@@ -83,9 +87,13 @@ def write_to_fpga(conn, device, addr, value):
 
 def read_from_fpga(conn, device, addr):
     if(device == SPI_Device.ADC_A):
-        command = "jesd_a_read 0x%x\n" % addr
+        command = "jesd_read 0x0 0x%x\n" % addr
     elif(device == SPI_Device.ADC_B):
-        command = "jesd_b_read 0x%x\n" % addr
+        command = "jesd_read 0x1 0x%x\n" % addr
+    elif(device == SPI_Device.ADC_C):
+        command = "jesd_read 0x2 0x%x\n" % addr
+    elif(device == SPI_Device.ADC_D):
+        command = "jesd_read 0x3 0x%x\n" % addr
     elif(device == SPI_Device.TI_ADC):
         command = "jesd_read 0x%x\n" % addr
     else:
@@ -153,13 +161,17 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--adc_a", action="store_true", help="send commands to ADC A")
     parser.add_argument("--adc_b", action="store_true", help="send commands to ADC B")
+    parser.add_argument("--adc_c", action="store_true", help="send commands to ADC C")
+    parser.add_argument("--adc_d", action="store_true", help="send commands to ADC D")
     parser.add_argument("--ti", action="store_true", help="Use commands for TI board")
 
 
     args = parser.parse_args()
 
     devices = [SPI_Device.ADC_A if args.adc_a else None,
-               SPI_Device.ADC_B if args.adc_b else None]\
+               SPI_Device.ADC_B if args.adc_b else None,
+               SPI_Device.ADC_C if args.adc_c else None,
+               SPI_Device.ADC_D if args.adc_d else None]\
                 if not args.ti else [SPI_Device.TI_ADC]
     
     devices = [x for x in devices if x is not None]
@@ -174,3 +186,5 @@ if __name__ == "__main__":
         write_to_fpga(conn, device, 0x34, 0x1)
         for r in these_regs:
                 read_reg(conn, device, r)
+
+    print(results)

@@ -8,14 +8,21 @@ uint32_t read_addr(uint32_t, uint32_t);
 uint32_t double_read_addr(uint32_t, uint32_t);
 int write_addr(uint32_t, uint32_t, uint32_t);
 
-#define  RESET_REG_OFFSET          0x0
-#define  THRESHOLD_REG_OFFSET      0x4
-#define  CHANNEL_MASK_OFFSET       0x8
-#define  DEPTH_ADDR_OFFSET         0x18
-#define  DEPTH_ADDR_WIDTH          0x4
-#define  DEVICE_NUMBER_REG_OFFSET  0xC
-#define  FIFO_STATUS_REG_OFFSET    0x10
-#define  INVALID_COUNT_REG_OFFSET  0x14
+#define  RESET_REG_OFFSET                 0x0
+#define  THRESHOLD_REG_OFFSET             0x4
+#define  CHANNEL_MASK_OFFSET              0x8
+#define  DEVICE_NUMBER_REG_OFFSET         0xC
+#define  FIFO_STATUS_REG_OFFSET           0x10
+#define  INVALID_COUNT_REG_OFFSET         0x14
+#define  LOCAL_TRIGGER_ENABLE_OFFSET      0x18
+#define  LOCAL_TRIGGER_MODE_OFFSET        0x1C
+#define  LOCAL_TRIGGER_LENGTH_OFFSET      0x20
+#define  LOCAL_TRIGGER_COUNT_RESET_OFFST  0x24
+#define  TRIGGER_ENABLE_OFFSET            0x28
+#define  TRIGGER_SUM_WIDTH_OFFSET         0x28
+#define  DEPTH_ADDR_OFFSET                0x100
+#define  DEPTH_ADDR_WIDTH                 0x4
+//#define REGISTER_FILE_STATUS_OFFSET       0x800
 
 
 AXI_DATA_PIPELINE* new_data_pipeline_if(const char* name, uint32_t axi_addr) {
@@ -73,4 +80,44 @@ uint32_t read_fifo_status_reg(AXI_DATA_PIPELINE* dp_axi) {
 uint32_t read_invalid_count(AXI_DATA_PIPELINE* dp_axi) {
     uint32_t offset = INVALID_COUNT_REG_OFFSET;
     return read_data_pipeline_value(dp_axi, offset);
+}
+
+uint32_t read_local_trigger_enable(AXI_DATA_PIPELINE* dp_axi) {
+    return read_data_pipeline_value(dp_axi, LOCAL_TRIGGER_ENABLE_OFFSET);
+}
+
+uint32_t write_local_trigger_enable(AXI_DATA_PIPELINE* dp_axi, uint32_t val) {
+    return write_data_pipeline_value(dp_axi, LOCAL_TRIGGER_ENABLE_OFFSET, val);
+}
+
+uint32_t read_local_trigger_mode(AXI_DATA_PIPELINE* dp_axi) {
+    return read_data_pipeline_value(dp_axi, LOCAL_TRIGGER_MODE_OFFSET);
+}
+
+uint32_t write_local_trigger_mode(AXI_DATA_PIPELINE* dp_axi, uint32_t val) {
+    return write_data_pipeline_value(dp_axi, LOCAL_TRIGGER_MODE_OFFSET, val);
+}
+
+uint32_t read_local_trigger_length(AXI_DATA_PIPELINE* dp_axi) {
+    return read_data_pipeline_value(dp_axi, LOCAL_TRIGGER_LENGTH_OFFSET);
+}
+
+uint32_t write_local_trigger_length(AXI_DATA_PIPELINE* dp_axi, uint32_t val) {
+    return write_data_pipeline_value(dp_axi, LOCAL_TRIGGER_LENGTH_OFFSET, val);
+}
+
+uint32_t read_local_trigger_count_reset_value(AXI_DATA_PIPELINE* dp_axi) {
+    return read_data_pipeline_value(dp_axi, LOCAL_TRIGGER_COUNT_RESET_OFFST);
+}
+
+uint32_t write_local_trigger_count_reset_value(AXI_DATA_PIPELINE* dp_axi, uint32_t val) {
+    return write_data_pipeline_value(dp_axi, LOCAL_TRIGGER_COUNT_RESET_OFFST, val);
+}
+
+uint32_t read_trigger_enable(AXI_DATA_PIPELINE *dp_axi) {
+    return read_data_pipeline_value(dp_axi, TRIGGER_ENABLE_OFFSET);
+}
+
+uint32_t write_trigger_enable(AXI_DATA_PIPELINE *dp_axi, uint32_t val) {
+    return write_data_pipeline_value(dp_axi, TRIGGER_ENABLE_OFFSET, val);
 }

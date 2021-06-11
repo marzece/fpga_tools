@@ -6,7 +6,7 @@
 #include <errno.h>
 #include <linenoise.h>
 
-#define BUFFER_SIZE 2048
+#define BUFFER_SIZE 16384
 #define SEND_COMMAND_TABLE_COMMAND "send_command_table"
 
 FILE* debug_file;

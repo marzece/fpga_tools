@@ -11,7 +11,7 @@ fnetctrl: fnetctrl.o fnet_client.o
 
 fnetctrl.o fnet_client.o: fakernet.h fnet_client.h
 
-kintex_client_server: kintex_client_server.o hermes_if.o gpio.o lmk_if.o ads_if.o iic.o fnet_client.o dac_if.o axi_qspi.o ti_board_if.o jesd.o adc_sample_fanout.o channel_trigger.o data_pipeline.o
+kintex_client_server: kintex_client_server.o hermes_if.o gpio.o lmk_if.o ads_if.o iic.o fnet_client.o dac_if.o axi_qspi.o ti_board_if.o jesd.o adc_sample_fanout.o channel_trigger.o data_pipeline.o ceres_if.o
 	$(CC) -g -o $@ $(CFLAGS) $^
 
 kintex_cli: kintex_cli.o
@@ -63,6 +63,8 @@ channel_trigger.o: channel_trigger.c
 data_pipeline.o: data_pipeline.c
 	$(CC) -g -o $@ -c $(CFLAGS) $^
 
+ceres_if.o: ceres_if.c
+	$(CC) -g -o $@ -c $(CFLAGS) $^
 
 crc32.o: crc32.c
 	$(CC) -g -o $@ -c $(CFLAGS) $^
