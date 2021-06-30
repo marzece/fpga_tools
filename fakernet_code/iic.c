@@ -1,20 +1,22 @@
 #include "iic.h"
 
 #define IIC_CR_OFFSET  0x100
-#define IIC_PIRQ_OFFSET  0x120
+#define IIC_SR_OFFSET  0x104
 #define IIC_TX_FIFO_OFFSET 0x108
 #define IIC_RX_FIFO_OFFSET 0x10C
-#define IIC_SR_OFFSET  0x104
+#define IIC_PIRQ_OFFSET  0x120
+#define IIC_GPIO_OFFSET  0x124
 
 extern uint32_t read_addr(uint32_t, uint32_t);
 extern uint32_t double_read_addr(uint32_t, uint32_t);
 extern int write_addr(uint32_t, uint32_t, uint32_t);
 
-AXI_IIC* new_iic(const char* name, uint32_t axi_addr, int rw_size) {
+AXI_IIC* new_iic(const char* name, uint32_t axi_addr, int data_size, int reg_addr_size) {
     AXI_IIC* ret = malloc(sizeof(AXI_IIC));
     ret->name=name;
     ret->axi_addr = axi_addr;
-    ret->rw_size = rw_size;
+    ret->data_size = data_size;
+    ret->reg_addr_size = reg_addr_size;
     return ret;
 }
 
@@ -22,11 +24,9 @@ int iic_write(AXI_IIC* iic, uint32_t addr, uint32_t data) {
     return write_addr(iic->axi_addr, addr, data);
 }
 
-
 uint32_t iic_read(AXI_IIC* iic, uint32_t addr) {
     return double_read_addr(iic->axi_addr, addr);
 }
-
 
 // This is always a single byte read
 uint32_t read_iic_bus(AXI_IIC* iic, uint8_t iic_addr) {
@@ -66,6 +66,14 @@ uint32_t read_iic_bus(AXI_IIC* iic, uint8_t iic_addr) {
     return iic_read(iic, IIC_RX_FIFO_OFFSET);
 }
 
+uint32_t read_iic_gpio(AXI_IIC* iic) {
+    return iic_read(iic, IIC_GPIO_OFFSET);
+}
+
+uint32_t write_iic_gpio(AXI_IIC* iic, uint32_t value) {
+    return iic_write(iic, IIC_GPIO_OFFSET, value);
+}
+
 // This is always a single byte write
 uint32_t write_iic_bus(AXI_IIC* iic, uint8_t iic_addr, uint8_t iic_value) {
     int err_loc = 0;
@@ -103,13 +111,19 @@ uint32_t write_iic_bus(AXI_IIC* iic, uint8_t iic_addr, uint8_t iic_value) {
     return 0;
 }
 
-uint32_t read_iic_bus_with_reg(AXI_IIC* iic, uint8_t iic_addr, uint8_t reg_addr) {
+uint32_t read_iic_bus_with_reg(AXI_IIC* iic, uint8_t iic_addr, uint32_t reg_addr) {
     uint8_t err_loc = 0;
+    int i;
     // May as well set the RX_FIFO_PIRQ to max (0xF) (PIRQ = Programmable Interrupt btw)
     // If the Rx FIFO reaches the PIRQ value in interrupt (if enabled) is emitted
 
-    if(iic->rw_size > 4) {
-        printf("Cannot do IIC transaction for more than 4-bytes, %i-bytes was requested\n", iic->rw_size);
+    if(iic->data_size > 4) {
+        printf("Cannot do IIC transaction with data more than 4-bytes, %i-bytes was requested\n", iic->data_size);
+        return 0;
+    }
+
+    if(iic->reg_addr_size > 4) {
+        printf("Cannot do IIC transaction with address more than 4-bytes, %i-bytes was requested\n", iic->data_size);
         return 0;
     }
 
@@ -120,8 +134,6 @@ uint32_t read_iic_bus_with_reg(AXI_IIC* iic, uint8_t iic_addr, uint8_t reg_addr)
     }
     err_loc++;
 
-    // The goal here is to read from register 0x0 on the ADC sensor
-    // The sensor is I2C address 0xCE
     // First set the correct bits in the control register.
     // I believe the only necessary one is the IIC Enable bit (perhaps should do a TxReset though)
     if(iic_write(iic, IIC_CR_OFFSET, 0x2)) {
@@ -141,9 +153,15 @@ uint32_t read_iic_bus_with_reg(AXI_IIC* iic, uint8_t iic_addr, uint8_t reg_addr)
         return 0;
     }
     err_loc++;
-    if(iic_write(iic, IIC_TX_FIFO_OFFSET, reg_addr & 0xFF)) {
-        printf("ERROR read_iic_bus_with_reg_command: %i\n", err_loc);
-        return 0;
+
+    for(i=(iic->reg_addr_size-1); i>= 0; i--) {
+        // Grab the relevant byte from the reg_address, top bytes first
+        uint8_t addr_val = (reg_addr & (0xFF << (i*8))) >> (i*8);
+        printf("%i %u\n", i,  addr_val);
+        if(iic_write(iic, IIC_TX_FIFO_OFFSET, addr_val)) {
+            printf("ERROR read_iic_bus_with_reg_command: %i\n", err_loc);
+            return 0;
+        }
     }
 
     err_loc++;
@@ -153,7 +171,7 @@ uint32_t read_iic_bus_with_reg(AXI_IIC* iic, uint8_t iic_addr, uint8_t reg_addr)
         return 0;
     }
     err_loc++;
-    if(iic_write(iic, IIC_TX_FIFO_OFFSET, (1<<9) | iic->rw_size)) {
+    if(iic_write(iic, IIC_TX_FIFO_OFFSET, (1<<9) | iic->data_size)) {
         printf("ERROR read_iic_bus_with_reg_command: %i\n", err_loc);
         return 0;
     }
@@ -164,17 +182,17 @@ uint32_t read_iic_bus_with_reg(AXI_IIC* iic, uint8_t iic_addr, uint8_t reg_addr)
     }
     err_loc++;
 
-    int i;
-    uint32_t val=0;
-    for(i=0; i<iic->rw_size; i++) {
+    uint32_t data_val=0;
+    for(i=0; i<iic->data_size; i++) {
         usleep(500);
-        val |= iic_read(iic, IIC_RX_FIFO_OFFSET) << ((iic->rw_size-1)-i)*8;
+        data_val |= iic_read(iic, IIC_RX_FIFO_OFFSET) << ((iic->data_size-1)-i)*8;
     }
-    return val;
+    return data_val;
 }
 
-uint32_t write_iic_bus_with_reg(AXI_IIC* iic, uint8_t iic_addr, uint8_t reg_addr, uint32_t reg_value) {
+uint32_t write_iic_bus_with_reg(AXI_IIC* iic, uint8_t iic_addr, uint32_t reg_addr, uint32_t reg_value) {
     uint8_t err_loc = 0;
+    int i;
 
     // May as well set the RX_FIFO_PIRQ to max (0xF) (PIRQ = Programmable Interrupt btw)
     // If the Rx FIFO reaches the PIRQ value in interrupt (if enabled) is emitted
@@ -184,8 +202,6 @@ uint32_t write_iic_bus_with_reg(AXI_IIC* iic, uint8_t iic_addr, uint8_t reg_addr
     }
     err_loc++;
 
-    // The goal here is to read from register 0x0 on the ADC sensor
-    // The sensor is I2C address 0xCE
     // First set the correct bits in the control register.
     // I believe the only necessary one is the IIC Enable bit (perhaps should do a TxReset though)
     if(iic_write(iic, IIC_CR_OFFSET, 0x2)) {
@@ -205,24 +221,36 @@ uint32_t write_iic_bus_with_reg(AXI_IIC* iic, uint8_t iic_addr, uint8_t reg_addr
 
     }
     err_loc++;
-    if(iic_write(iic, IIC_TX_FIFO_OFFSET, reg_addr) ) {
-        printf("ERROR write_iic_bus_with_reg: %i\n", err_loc);
-        return -1;
-    }
-    err_loc++;
-    // Uncomment for two bytes write
-    // TODO!!!! Make this use rw_size instead of being hardcoded
-    if(iic_write(iic, IIC_TX_FIFO_OFFSET, (reg_value >> 8) & 0xFF) ) {
-        printf("ERROR write_iic_bus_with_reg: %i\n", err_loc);
-        return -1;
-    }
-    err_loc++;
-    if(iic_write(iic, IIC_TX_FIFO_OFFSET, (reg_value & 0xFF) | 1 << 9) ) {
-        printf("ERROR write_iic_bus_with_reg: %i\n", err_loc);
-        return -1;
-    }
-    err_loc++;
 
+    for(i=(iic->reg_addr_size-1); i>= 0; i--) {
+        // Grab the relevant byte from the reg_address, top bytes first
+        uint8_t addr_val = (reg_addr & (0xFF << (i*8))) >> (i*8);
+        printf("Writing 0x%x\n", addr_val);
+        if(iic_write(iic, IIC_TX_FIFO_OFFSET, addr_val)) {
+            printf("ERROR read_iic_bus_with_reg_command: %i\n", err_loc);
+            return 0;
+        }
+    }
+
+    err_loc++;
+    for(i=(iic->data_size-1); i>= 0; i--) {
+        // Grab the relevant byte from the reg_value, top bytes first
+       //uint32_t val = (reg_value & (0xFF << (i*8))) >> (i*8);
+        uint32_t val = ((reg_value >> (i*8)) & 0xFF);
+
+        // If this is the last data byte, then set the STOP bit
+        if(i==0) {
+            val |= 1 << 9;
+        }
+
+        printf("Writing 0x%x\n", val);
+        if(iic_write(iic, IIC_TX_FIFO_OFFSET, val)) {
+            printf("ERROR write_iic_bus_with_reg: %i\n", err_loc);
+            return -1;
+        }
+    }
+
+    err_loc++;
     if(iic_write(iic, IIC_CR_OFFSET, 0x1) ) {
         printf("ERROR write_iic_bus_with_reg: %i\n", err_loc);
         return -1;

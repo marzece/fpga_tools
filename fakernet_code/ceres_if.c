@@ -22,6 +22,7 @@
 #define  LMK_B_AXI_ADDR           0xB000
 
 #define  IIC_AXI_ADDR            0x4000
+#define  CLKGEN_IIC_AXI_ADDR     0xD000
 
 #define  JESD_A_AXI_ADDR         0x7000
 #define  JESD_B_AXI_ADDR         0x8000
@@ -29,6 +30,9 @@
 #define  JESD_D_AXI_ADDR         0xA000
 
 #define  DATA_PIPELINE_0_ADDR    0x6000
+
+//#define CLKGEN_IIC_ADDR         0xD2
+#define CLKGEN_IIC_ADDR          0xD0
 
 const uint32_t CERES_SAFE_READ_ADDRESS = GPIO0_AXI_ADDR;
 
@@ -44,6 +48,7 @@ struct CERES_IF {
     AXI_GPIO* gpio2;
     AXI_GPIO* gpio3;
     AXI_IIC* iic_main;
+    AXI_IIC* clk_gen_iic;
     AXI_JESD* jesd_a;
     AXI_JESD* jesd_b;
     AXI_JESD* jesd_c;
@@ -83,7 +88,6 @@ const char* debug_bits[] = {
 "BIG_AXIS_COPY_2 in TREADY" };
 */
 
-
 static struct CERES_IF* get_ceres_handle() {
     if(ceres == NULL) {
         ceres = malloc(sizeof(struct CERES_IF));
@@ -97,7 +101,8 @@ static struct CERES_IF* get_ceres_handle() {
         ceres->gpio1 = new_gpio("gpio_sync_counter", GPIO1_AXI_ADDR);
         ceres->gpio2 = new_gpio("gpio_reset", GPIO2_AXI_ADDR);
         ceres->gpio3 = new_gpio("gpio_pdn", GPIO3_AXI_ADDR);
-        ceres->iic_main = new_iic("iic_main", IIC_AXI_ADDR, 1);
+        ceres->iic_main = new_iic("iic_main", IIC_AXI_ADDR,1, 1);
+        ceres->clk_gen_iic = new_iic("clkgen_iic", CLKGEN_IIC_AXI_ADDR, 2, 2);
         ceres->jesd_a = new_jesd("jesd_a", JESD_A_AXI_ADDR);
         ceres->jesd_b = new_jesd("jesd_b", JESD_B_AXI_ADDR);
         ceres->jesd_c = new_jesd("jesd_c", JESD_C_AXI_ADDR);
@@ -173,6 +178,44 @@ static uint32_t write_iic_bus_with_reg_command(uint32_t* args) {
     uint32_t reg_value = args[2];
     return write_iic_bus_with_reg(get_ceres_handle()->iic_main, iic_addr, reg_addr, reg_value); 
 }
+
+static uint32_t read_clkgen_iic_command(uint32_t *args) {
+    uint32_t offset = args[0];
+    return iic_read(get_ceres_handle()->clk_gen_iic, offset);
+}
+
+static uint32_t write_clkgen_iic_command(uint32_t *args) {
+    uint32_t offset = args[0];
+    uint32_t value = args[1];
+    return iic_write(get_ceres_handle()->clk_gen_iic, offset, value);
+}
+
+static uint32_t write_clkgen_register_command(uint32_t *args) {
+    uint32_t iic_addr = CLKGEN_IIC_ADDR;
+    uint16_t reg_addr = args[0];
+    uint16_t reg_value = args[1];
+    // IIC Stuff
+    return write_iic_bus_with_reg(get_ceres_handle()->clk_gen_iic, iic_addr, reg_addr, reg_value);
+}
+
+static uint32_t read_clkgen_register_command(uint32_t *args) {
+    uint32_t iic_addr = CLKGEN_IIC_ADDR;
+    uint16_t reg_addr = args[0];
+    // IIC Stuff
+    return read_iic_bus_with_reg(get_ceres_handle()->clk_gen_iic, iic_addr, reg_addr);
+}
+
+static uint32_t write_clkgen_gpio_command(uint32_t *args) {
+    uint32_t val = args[0];
+    return write_iic_gpio(get_ceres_handle()->clk_gen_iic, val);
+}
+
+static uint32_t read_clkgen_gpio_command(uint32_t *args) {
+    UNUSED(args);
+    return read_iic_gpio(get_ceres_handle()->clk_gen_iic);
+}
+
+//static uint32_t write_clkgen_eeprom(uint32*t args) { }
 
 AXI_QSPI* adc_switch(int which_adc) {
     AXI_QSPI* this_adc = NULL;
@@ -583,6 +626,12 @@ ServerCommand ceres_commands[] = {
 {"write_iic_bus",                                  write_iic_bus_command,                                  2,  1},
 {"read_iic_bus_with_reg",                          read_iic_bus_with_reg_command,                          2,  1},
 {"write_iic_bus_with_reg",                         write_iic_bus_with_reg_command,                         3,  1},
+{"write_clkgen_iic",                               write_clkgen_iic_command,                               2,  1},
+{"read_clkgen_iic",                                read_clkgen_iic_command,                                1,  1},
+{"read_clkgen_gpio",                               read_clkgen_gpio_command,                               0,  1},
+{"write_clkgen_gpio",                              write_clkgen_gpio_command,                              1,  1},
+{"write_clkgen_register",                          write_clkgen_register_command,                          2,  1},
+{"read_clkgen_register",                           read_clkgen_register_command,                           1,  1},
 {"read_gpio0",                                     read_gpio_0_command,                                    1,  1},
 {"write_gpio0",                                    write_gpio_0_command,                                   2,  1},
 {"read_gpio1",                                     read_gpio_1_command,                                    1,  1},

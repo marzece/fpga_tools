@@ -7,14 +7,17 @@
 typedef struct AXI_IIC {
     const char* name;
     uint32_t axi_addr;
-    int rw_size; // Number of bytes that ought to be read/write at the same time
+    int data_size; // Number of bytes that ought to be read/write at the same time
+    int reg_addr_size; // Number of bytes that are used for the chips internal addressing
 } AXI_IIC;
 
-AXI_IIC* new_iic(const char* name, uint32_t axi_addr, int rw_size);
+AXI_IIC* new_iic(const char* name, uint32_t axi_addr, int data_size, int reg_addr_size);
 uint32_t iic_read(AXI_IIC* iic, uint32_t addr);
 int iic_write(AXI_IIC* iic, uint32_t addr, uint32_t data);
 uint32_t read_iic_bus(AXI_IIC* iic, uint8_t iic_addr);
 uint32_t write_iic_bus(AXI_IIC* iic, uint8_t iic_addr, uint8_t iic_value);
-uint32_t read_iic_bus_with_reg(AXI_IIC* iic, uint8_t iic_addr, uint8_t reg_addr);
-uint32_t write_iic_bus_with_reg(AXI_IIC* iic, uint8_t iic_addr, uint8_t reg_addr, uint32_t reg_value);
+uint32_t read_iic_gpio(AXI_IIC* iic);
+uint32_t write_iic_gpio(AXI_IIC* iic, uint32_t value);
+uint32_t read_iic_bus_with_reg(AXI_IIC* iic, uint8_t iic_addr, uint32_t reg_addr);
+uint32_t write_iic_bus_with_reg(AXI_IIC* iic, uint8_t iic_addr, uint32_t reg_addr, uint32_t reg_value);
 #endif
