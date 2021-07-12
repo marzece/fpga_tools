@@ -107,7 +107,7 @@ def readback_eeprom(fpga):
     return image
 
 def program_registers(fpga, regs):
-    for addr, value in regs:
+    for addr, value in regs.items():
         _ = write_iic_register(fpga, addr, value)
         sleep(0.1)
 
@@ -182,7 +182,7 @@ if __name__ == "__main__":
 
     if(args.program_regs):
         print("Programming Registers")
-        program_regs(fpga, regs)
+        program_registers(fpga, regs)
 
     if(args.reg_commit):
         print("Doing Reg Commit")
