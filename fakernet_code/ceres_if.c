@@ -31,8 +31,7 @@
 
 #define  DATA_PIPELINE_0_ADDR    0x6000
 
-//#define CLKGEN_IIC_ADDR         0xD2
-#define CLKGEN_IIC_ADDR          0xD0
+#define CLKGEN_IIC_ADDR          0xCE
 
 const uint32_t CERES_SAFE_READ_ADDRESS = GPIO0_AXI_ADDR;
 
