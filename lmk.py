@@ -1,6 +1,6 @@
 import re
 import json
-from fpga_spi import connect_to_fpga, lmk_spi
+from ceres_fpga_spi import connect_to_local_client, lmk_spi, SPI_Device
 
 # Helper function for getting certain bits from a word
 def _grab_bits_(word, first_bit, last_bit):
@@ -47,7 +47,7 @@ class Clock:
 class LMK:
     def __init__(self, config_fn):
         self.reg_info = {}
-        with open("ti_lmk_regs.json") as reg_file:
+        with open("lmk_tools/ti_lmk_regs.json") as reg_file:
             reg_json = json.load(reg_file)
             regs_list = reg_json["Registers"]
             for reg in regs_list:
@@ -138,12 +138,10 @@ class LMK:
         self.config = dict(lines)
 
     def readback_config(self):
-        conn = connect_to_fpga()
-        lmk = LMK("MASADA_ADC_Config.cfg")
-        for reg_addr, reg in lmk.reg_info.items():
+        conn = connect_to_local_client()
+        for reg_addr, reg in self.reg_info.items():
             mode = reg["Mode"]
             if("R" not in mode.upper()):
                 continue
-
-            rb = lmk_spi(conn, 0x1, reg_addr, 0)
+            rb = lmk_spi(conn, SPI_Device.LMK_A, 0x1, reg_addr, 0)
             print("Reg {} => {}".format(hex(reg_addr), hex(rb[-1])))
