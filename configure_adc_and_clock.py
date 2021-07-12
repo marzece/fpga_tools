@@ -114,7 +114,7 @@ def program_adc(server, which_adc, addr, value):
         adc_spi(server, which_adc, wmpch, reg_addr, value)
         adc_spi(server, which_adc, wmpch|0x1, reg_addr, value)
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("filename", type=str, help="file that contains Eval board addresses and data")
     parser.add_argument("--adc_a", action="store_true", help="send commands to ADC A")
@@ -147,3 +147,6 @@ if __name__ == "__main__":
 
     #fpga_conn[0].write("jesd_sys_reset\n".encode("ascii"))
     #_ = fpga_conn[1].readline()
+
+if __name__ == "__main__":
+    main()
