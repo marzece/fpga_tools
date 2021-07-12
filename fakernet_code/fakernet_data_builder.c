@@ -1005,6 +1005,7 @@ int main(int argc, char **argv) {
             for(i=0; i < NUM_CHANNELS; i++) {
                 if(calculated_crcs[i] != given_crcs[i]) {
                     printf("Event %i Channel %i CRC does not match\n", event.header.trig_number, i);
+                    printf("Calculated = 0x%x, Given = 0x%x\n", calculated_crcs[i], given_crcs[i]);
                 }
             }
             redis_publish_event(redis, event);
