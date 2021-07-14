@@ -40,6 +40,8 @@ void daemonize(void) {
 }
 
 void serverLog(int level, const char* fmt, ...) {
+    (void) level;
+    (void) fmt;
     // TODO
 }
 
@@ -130,7 +132,6 @@ end:
 }
 
 void initServerConfig(void) {
-    int j;
 
    // server.runid[CONFIG_RUN_ID_SIZE] = '\0';
    // server.timezone = getTimeZone(); /* Initialized by tzset(). */
@@ -155,6 +156,7 @@ void initServerConfig(void) {
 
 
     /* Client output buffer limits */
+   // int j;
    // for (j = 0; j < CLIENT_TYPE_OBUF_COUNT; j++) {
    //     server.client_obuf_limits[j] = clientBufferLimitsDefaults[j];
    // }
@@ -162,7 +164,9 @@ void initServerConfig(void) {
 }
 
 int serverCron(struct aeEventLoop* eventLoop, long long id, void *clientData) {
-
+    (void) eventLoop;
+    (void) id;
+    (void) clientData;
     /* TODO!!!!! */
     server.cronloops++;
     return 0;

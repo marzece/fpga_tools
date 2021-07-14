@@ -29,6 +29,7 @@
  */
 
 
+#include <stdlib.h>
 #include <sys/epoll.h>
 
 typedef struct aeApiState {
@@ -37,18 +38,18 @@ typedef struct aeApiState {
 } aeApiState;
 
 static int aeApiCreate(aeEventLoop *eventLoop) {
-    aeApiState *state = zmalloc(sizeof(aeApiState));
+    aeApiState *state = malloc(sizeof(aeApiState));
 
     if (!state) return -1;
-    state->events = zmalloc(sizeof(struct epoll_event)*eventLoop->setsize);
+    state->events = malloc(sizeof(struct epoll_event)*eventLoop->setsize);
     if (!state->events) {
-        zfree(state);
+        free(state);
         return -1;
     }
     state->epfd = epoll_create(1024); /* 1024 is just a hint for the kernel */
     if (state->epfd == -1) {
-        zfree(state->events);
-        zfree(state);
+        free(state->events);
+        free(state);
         return -1;
     }
     eventLoop->apidata = state;
@@ -66,8 +67,8 @@ static void aeApiFree(aeEventLoop *eventLoop) {
     aeApiState *state = eventLoop->apidata;
 
     close(state->epfd);
-    zfree(state->events);
-    zfree(state);
+    free(state->events);
+    free(state);
 }
 
 static int aeApiAddEvent(aeEventLoop *eventLoop, int fd, int mask) {

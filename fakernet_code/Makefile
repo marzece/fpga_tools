@@ -11,7 +11,7 @@ fnetctrl: fnetctrl.o fnet_client.o
 
 fnetctrl.o fnet_client.o: fakernet.h fnet_client.h
 
-kintex_client_server: kintex_client_server.o hermes_if.o gpio.o lmk_if.o ads_if.o iic.o fnet_client.o dac_if.o axi_qspi.o ti_board_if.o jesd.o adc_sample_fanout.o channel_trigger.o data_pipeline.o server.o ae.o
+kintex_client_server: kintex_client_server.o hermes_if.o gpio.o lmk_if.o ads_if.o iic.o fnet_client.o dac_if.o axi_qspi.o ti_board_if.o jesd.o adc_sample_fanout.o channel_trigger.o data_pipeline.o server.o ae.o sds.o adlist.o connection.o anet.o networking.o
 	$(CC) -g -o $@ $(CFLAGS) $^
 
 kintex_cli: kintex_cli.o
@@ -74,6 +74,21 @@ server.o: server.c
 	$(CC) -g -o $@ -c $(CFLAGS) $^
 
 ae.o: ae.c
+	$(CC) -g -o $@ -c $(CFLAGS) $^
+
+connection.o: connection.c
+	$(CC) -g -o $@ -c $(CFLAGS) $^
+
+sds.o: sds.c
+	$(CC) -g -o $@ -c $(CFLAGS) $^
+
+adlist.o: adlist.c
+	$(CC) -g -o $@ -c $(CFLAGS) $^
+
+anet.o: anet.c
+	$(CC) -g -o $@ -c $(CFLAGS) $^
+
+networking.o: networking.c
 	$(CC) -g -o $@ -c $(CFLAGS) $^
 
 clean:

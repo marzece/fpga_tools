@@ -29,6 +29,7 @@
  */
 
 
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/event.h>
 #include <sys/time.h>
@@ -42,7 +43,7 @@ static int aeApiCreate(aeEventLoop *eventLoop) {
     aeApiState *state = malloc(sizeof(aeApiState));
 
     if (!state) return -1;
-    state->events = zmalloc(sizeof(struct kevent)*eventLoop->setsize);
+    state->events = malloc(sizeof(struct kevent)*eventLoop->setsize);
     if (!state->events) {
         free(state);
         return -1;

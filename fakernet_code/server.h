@@ -1,6 +1,9 @@
 #ifndef _FNET_SERVER_H
 #define _FNET_SERVER_H
 #include <sys/socket.h>
+#include "sds.h"
+#include "connection.h"
+#include "adlist.h"
 
 /*TODO list
  *  - Add log file
@@ -28,12 +31,15 @@
 #define CONFIG_FDSET_INCR (CONFIG_MIN_RESERVED_FDS+96)
 #define CONFIG_BINDADDR_MAX 16
 #define PROTO_REPLY_CHUNK_BYTES (16*1024)
+#define PROTO_IOBUF_LEN (1024*16)
+#define PROTO_REQ_MULTIBULK 2
+#define PROTO_MBULK_BIG_ARG (1024*32)
 
 #define serverPanic(...) _serverPanic(__FILE__, __LINE__, __VA_ARGS__), exit(1)
+struct client;// Forward decl
 
 struct  Server {
     pid_t pid;
-    void* current_client; // TODO look up the correct type of this !
     int ipfd[CONFIG_BINDADDR_MAX];
     int ipfd_count;
     unsigned int maxclients;
@@ -41,10 +47,16 @@ struct  Server {
     int config_hz;
     int hz;
     int dynamic_hz;
+    int tcpkeepalive;
     int arch_bits;
     int bindaddr_count;
     int daemonize;
     int cronloops;
+    uint64_t next_client_id; // TODO make sure this gets initted to 1
+    list* clients;
+    list* clients_to_close;
+    client* current_client;
+    time_t unixtime;
 
     struct aeEventLoop *el;
     // logfile;
@@ -77,7 +89,7 @@ typedef struct client {
     time_t obuf_soft_limit_reached_time;
     uint64_t flags;         /* Client flags: CLIENT_* macros. */
     int btype;              /* Type of blocking op if CLIENT_BLOCKED. */
-    blockingState bpop;     /* blocking state */
+    //blockingState bpop;     /* blocking state */
     sds peerid;             /* Cached peer ID. */
     listNode *client_list_node; /* list node in client list */
 
@@ -93,11 +105,11 @@ void initServer(void);
 
 void _serverPanic(const char* file, int line, const char* msg, ...);
 
-void acceptTcpHandler(aeEventLoop *el, int fd, void *privdata, int mask);
+void acceptTcpHandler(struct aeEventLoop *el, int fd, void *privdata, int mask);
 
-static void anetSetError(char *err, const char *fmt, ...);
-static int anetSetReuseAddr(char *err, int fd);
-static int anetListen(char *err, int s, struct sockaddr *sa, socklen_t len, int backlog);
-static int anetTcpServer(char *err, int port, char *bindaddr, int af, int backlog);
+//static void anetSetError(char *err, const char *fmt, ...);
+//static int anetSetReuseAddr(char *err, int fd);
+//static int anetListen(char *err, int s, struct sockaddr *sa, socklen_t len, int backlog);
+//static int anetTcpServer(char *err, int port, char *bindaddr, int af, int backlog);
 int listenToPort(int port, int *fds, int *count);
 #endif
