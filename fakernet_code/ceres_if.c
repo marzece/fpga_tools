@@ -618,6 +618,23 @@ static uint32_t write_data_pipeline_trigger_enable_command(uint32_t* args) {
     return write_trigger_enable(get_ceres_handle()->pipeline, enable);
 }
 
+static uint32_t set_trigger_params_command(uint32_t* args) {
+    uint32_t rate = args[0];   // Number of counts between each readout
+    uint32_t length = args[1]; // Amount of data in each readout
+
+    if(rate == 0 || length == 0) {
+        printf("Rate and length parameter canot be zero\n");
+        return -1;
+    }
+
+    rate = 100e6 / rate; // Idk if 100e6 is the right value here, but its close enough probably
+    uint32_t ret = 0;
+    ret = write_local_trigger_length(get_ceres_handle()->pipeline, length);
+    ret |= write_local_trigger_count_reset_value(get_ceres_handle()->pipeline, rate);
+
+    return ret;
+}
+
 ServerCommand ceres_commands[] = {
 {"read_iic_reg",                                   read_iic_block_command,                                 1,  1},
 {"write_iic_reg",                                  write_iic_block_command,                                2,  0},
@@ -680,5 +697,6 @@ ServerCommand ceres_commands[] = {
 {"write_data_pipeline_trigger_count_reset_value",  write_data_pipeline_trigger_count_reset_value_command,  1,  1},
 {"read_data_pipeline_trigger_enable",              read_data_pipeline_trigger_enable_command,              0,  1},
 {"write_data_pipeline_trigger_enable",             write_data_pipeline_trigger_enable_command,             1,  1},
+{"set_trigger_params",                             set_trigger_params_command,             2,  1},
 {"",                                               NULL,                                                   0,  0}    //  Must  be  last
 };
