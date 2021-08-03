@@ -87,7 +87,7 @@ static struct HERMES_IF* get_hermes_handle() {
         hermes->gpio2 = new_gpio("gpio_reset", GPIO2_AXI_ADDR);
         hermes->gpio3 = new_gpio("gpio_axis_debug", GPIO3_AXI_ADDR);
         hermes->gpio4 = new_gpio("gpio_fifo_fullness", GPIO4_AXI_ADDR);
-        hermes->iic_main = new_iic("iic_main", IIC_AXI_ADDR, 1);
+        hermes->iic_main = new_iic("iic_main", IIC_AXI_ADDR, 1, 1);
         hermes->jesd_a = new_jesd("jesd_a", JESD_A_AXI_ADDR);
         hermes->jesd_b = new_jesd("jesd_b", JESD_B_AXI_ADDR);
         hermes->pipeline = new_data_pipeline_if("dp0", DATA_PIPELINE_0_ADDR);
