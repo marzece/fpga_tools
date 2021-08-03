@@ -25,6 +25,7 @@ static FILE* fdisk = NULL;
 // Variable for deciding to stay in the main loop or not.
 // When loop is zero program should exit soon after.
 int loop = 1;
+// If reeling==1 need to search for next trigger header magic value.
 int reeling = 0;
 
 /* okay here's basically what's going on here.
@@ -47,7 +48,7 @@ int reeling = 0;
 
 #define MAGIC_VALUE 0xFFFFFFFF
 #define HEADER_SIZE 20 // 128-bits aka 16 bytes
-#define NUM_CHANNELS 8
+#define NUM_CHANNELS 16
 #define BUFFER_SIZE (1024*1024) // 1 MB
 
 // Write Buffer = buffers[buf_state]

@@ -193,7 +193,6 @@ static uint32_t write_iic_bus_with_reg_command(uint32_t* args) {
     return write_iic_bus_with_reg(get_hermes_handle()->iic_main, iic_addr, reg_addr, reg_value); 
 }
 
-
 static uint32_t write_ads_a_if_command(uint32_t *args) {
     uint32_t offset = args[0];
     uint32_t data = args[1];
