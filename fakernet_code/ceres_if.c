@@ -332,17 +332,7 @@ static uint32_t read_lmk_if_command(uint32_t* args) {
     return read_lmk_if(lmk, args[1]);
 }
 
-static uint32_t write_lmk_spi_command(uint32_t* args) {
-    uint32_t which_lmk = args[0];
-    uint32_t rw = args[1];
-    uint32_t addr = args[2];
-    uint32_t data = args[3];
-
-    AXI_QSPI* lmk = lmk_switch(which_lmk);
-    if(!lmk) {
-        return -1;
-    }
-
+uint32_t write_lmk_spi(AXI_QSPI* lmk, uint32_t rw, uint32_t addr, uint32_t data) {
     // RW is 3 bits and the bottom bits are always zero (pretty sure)
     // so RW only has two valid values.
     rw = rw ? 0x4 : 0x0;
@@ -357,6 +347,20 @@ static uint32_t write_lmk_spi_command(uint32_t* args) {
     // Bit 0 of the SSR is the LMK select line, pull it low to start SPI data transfer
     uint32_t ssr = 0x0;
     return write_spi(lmk, ssr, word_buf, 3);
+
+}
+static uint32_t write_lmk_spi_command(uint32_t* args) {
+    uint32_t which_lmk = args[0];
+    uint32_t rw = args[1];
+    uint32_t addr = args[2];
+    uint32_t data = args[3];
+
+    AXI_QSPI* lmk = lmk_switch(which_lmk);
+    if(!lmk) {
+        return -1;
+    }
+
+    return write_lmk_spi(lmk, rw, addr, data);
 }
 
 static uint32_t lmk_spi_data_available_command(uint32_t* args) {
@@ -635,6 +639,28 @@ static uint32_t set_trigger_params_command(uint32_t* args) {
     return ret;
 }
 
+static uint32_t set_sysref_command(uint32_t* args) {
+    uint32_t which_lmk = args[0];   // Number of counts between each readout
+    uint32_t onoff = args[1];   // Number of counts between each readout
+
+    AXI_QSPI* lmk = lmk_switch(which_lmk);
+    if(!lmk) {
+        return -1;
+    }
+
+    uint32_t addr = 0x127;
+    uint32_t rw = 1;
+    uint32_t data = 0x11 ? onoff : 0x01;
+    uint32_t ret = write_lmk_spi(lmk, rw, addr, data);
+
+    // TODO look at these values? Return them?
+    spi_drr_pop(lmk);
+    spi_drr_pop(lmk);
+    spi_drr_pop(lmk);
+
+    return ret;
+}
+
 ServerCommand ceres_commands[] = {
 {"read_iic_reg",                                   read_iic_block_command,                                 1,  1},
 {"write_iic_reg",                                  write_iic_block_command,                                2,  0},
@@ -697,6 +723,7 @@ ServerCommand ceres_commands[] = {
 {"write_data_pipeline_trigger_count_reset_value",  write_data_pipeline_trigger_count_reset_value_command,  1,  1},
 {"read_data_pipeline_trigger_enable",              read_data_pipeline_trigger_enable_command,              0,  1},
 {"write_data_pipeline_trigger_enable",             write_data_pipeline_trigger_enable_command,             1,  1},
-{"set_trigger_params",                             set_trigger_params_command,             2,  1},
+{"set_trigger_params",                             set_trigger_params_command,                             2,  1},
+{"set_sysref",                                     set_sysref_command,                                     2,  1},
 {"",                                               NULL,                                                   0,  0}    //  Must  be  last
 };
