@@ -949,6 +949,8 @@ int main(int argc, char **argv) {
 
     Event event;
     int event_ready;
+    struct timeval prev_time;
+    gettimeofday(&prev_time, NULL);
 
     // TODO, I should have the reader update this to make sure the next "new"
     // buffer will have enough bytes to finish off the event!
@@ -1009,7 +1011,12 @@ int main(int argc, char **argv) {
                     printf("Calculated = 0x%x, Given = 0x%x\n", calculated_crcs[i], given_crcs[i]);
                 }
             }
-            redis_publish_event(redis, event);
+            struct timeval this_time;
+            gettimeofday(&this_time, NULL);
+            if(((this_time.tv_sec - prev_time.tv_sec)*1e6 + (this_time.tv_usec - prev_time.tv_usec) ) > 200e3) {
+                redis_publish_event(redis, event);
+                prev_time = this_time;
+            }
             display_event(&event);
             if(!do_not_save) {
                 write_to_disk(&event);
