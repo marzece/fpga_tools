@@ -351,6 +351,8 @@ static uint32_t write_data_pipeline_0_reset_command(uint32_t* args) {
     return write_reset_reg(get_ti_handle()->dp_0, mask);
 }
 
+ServerCommand ti_commands[] = { {"", NULL, 0,0,0,0} };
+/*
 ServerCommand ti_commands[] = {
     {"read_ads", read_ads_if_command, 1, 1},
     {"write_ads", write_ads_if_command, 2, 1},
@@ -390,4 +392,4 @@ ServerCommand ti_commands[] = {
     {"read_data_pipeline_0_status", read_data_pipeline_0_status_command, 0, 1},
     {"write_data_pipeline_0_reset", write_data_pipeline_0_reset_command, 1, 1},
     {"", NULL, 0, 0} // Must be last
-};
+}; */

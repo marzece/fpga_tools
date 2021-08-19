@@ -591,8 +591,11 @@ static uint32_t write_data_pipeline_0_reset_command(uint32_t* args) {
     return write_reset_reg(get_hermes_handle()->pipeline, mask);
 }
 
+ServerCommand hermes_commands[] = { {"", NULL, 0, 0, 0, 0} };
+
+/*
 ServerCommand hermes_commands[] = {
-    {"read_iic_reg", read_iic_block_command, 1, 1},
+    {"read_iic_reg", read_iic_block_command, 1, 1, 0, 0},
     {"write_iic_reg", write_iic_block_command, 2, 0},
     {"read_iic_bus", read_iic_bus_command, 1, 1},
     {"write_iic_bus", write_iic_bus_command, 2, 1},
@@ -666,4 +669,4 @@ ServerCommand hermes_commands[] = {
     {"read_data_pipeline_status", read_data_pipeline_0_status_command, 0, 1},
     {"write_data_pipeline_reset", write_data_pipeline_0_reset_command, 1, 1},
     {"", NULL, 0, 0} // Must be last
-};
+};*/

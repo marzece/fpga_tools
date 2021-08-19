@@ -476,8 +476,7 @@ static int anetV6Only(char *err, int s) {
     return ANET_OK;
 }
 
-static int _anetTcpServer(char *err, int port, char *bindaddr, int af, int backlog)
-{
+static int _anetTcpServer(char *err, int port, char *bindaddr, int af, int backlog) {
     int s = -1, rv;
     char _port[6];  /* strlen("65535") */
     struct addrinfo hints, *servinfo, *p;
@@ -493,13 +492,13 @@ static int _anetTcpServer(char *err, int port, char *bindaddr, int af, int backl
         return ANET_ERR;
     }
     for (p = servinfo; p != NULL; p = p->ai_next) {
-        if ((s = socket(p->ai_family,p->ai_socktype,p->ai_protocol)) == -1)
+        if ((s = socket(p->ai_family,p->ai_socktype,p->ai_protocol)) == -1) {
             continue;
+        }
 
-        if (af == AF_INET6 && anetV6Only(err,s) == ANET_ERR) goto error;
-        if (anetSetReuseAddr(err,s) == ANET_ERR) goto error;
+        if (anetSetReuseAddr(err,s) == ANET_ERR) { goto error; }
         if (anetListen(err,s,p->ai_addr,p->ai_addrlen,backlog) == ANET_ERR) s = ANET_ERR;
-        goto end;
+        { goto end; }
     }
     if (p == NULL) {
         anetSetError(err, "unable to bind socket, errno: %d", errno);
@@ -507,7 +506,7 @@ static int _anetTcpServer(char *err, int port, char *bindaddr, int af, int backl
     }
 
 error:
-    if (s != -1) close(s);
+    if (s != -1) { close(s); }
     s = ANET_ERR;
 end:
     freeaddrinfo(servinfo);

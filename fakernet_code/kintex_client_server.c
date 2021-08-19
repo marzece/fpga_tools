@@ -11,6 +11,7 @@
 #include <errno.h>
 #include "fnet_client.h"
 #include "server_common.h"
+#include "server.h"
 #include "hermes_if.h"
 #include "ti_board_if.h"
 #include "resp.h"
@@ -134,23 +135,35 @@ int write_addr(uint32_t base, uint32_t addr, uint32_t data) {
       return 0;
 }
 
-uint32_t write_addr_command(uint32_t* args) {
-    return write_addr(args[0], 0, args[1]);
+uint32_t write_addr_command(client* c, int argc, sds* args) {
+    UNUSED(c);
+    UNUSED(argc);
+    UNUSED(args);
+    //return write_addr((char*)args[0], 0, args[1]);
+    return 0;
 }
 
-uint32_t read_addr_command(uint32_t* args) {
-    return double_read_addr(args[0], 0);
+uint32_t read_addr_command(client* c, int argc, sds* args) {
+    //return double_read_addr(args[0], 0);
+    UNUSED(c);
+    UNUSED(argc);
+    UNUSED(args);
+    return 0;
 }
 
-uint32_t sleep_command(uint32_t* args) {
-    return sleep(args[0]);
+uint32_t sleep_command(client* c, int argc, sds* args) {
+    UNUSED(c);
+    UNUSED(argc);
+    UNUSED(args);
+    //return sleep(args[0]);
+    return 0;
 }
 
 static ServerCommand commandTable[] = {
-    {"write_addr", write_addr_command, 2, 1},
-    {"read_addr", read_addr_command, 1, 1},
-    {"sleep", sleep_command, 1, 1},
-    {"", NULL, 0, 0} // Must be last
+    {"write_addr", write_addr_command, 2, 1, 0, 0},
+    {"read_addr", read_addr_command, 1, 1, 0, 0},
+    {"sleep", sleep_command, 1, 1, 0, 0},
+    {"", NULL, 0, 0, 0, 0} // Must be last
 };
 
 ServerCommand* search_for_command(ServerCommand* table, const char* command_name) {
@@ -169,6 +182,7 @@ ServerCommand* search_for_command(ServerCommand* table, const char* command_name
 // data buffer.
 // If it returns non-NULL then the calling function assumes the given char*
 // is the response (and it's NULL terminated)
+/*
 char* handle_line(const char* line) {
     // first check if the first char is a '#' or the line is empty
     // if it is, treat this as a comment
@@ -279,6 +293,7 @@ char* handle_line(const char* line) {
     free(args);
     return NULL;
 }
+*/
 
 int main(int argc, char** argv) {
 
@@ -313,40 +328,27 @@ int main(int argc, char** argv) {
         board_specific_command_table = ti_commands;
     }
 
-    //init_server(server);
+    initServerConfig();
+    aeEventLoop*  el = server.el;
 
+    //aeSetBeforeSleepProc(el, beforeSleep);
 
-    
-    printf("Starting main loop\n");
-    while(!end_main_loop) {
-        //int nbytes = read(_recv_fd, command_buffer, BUFFER_SIZE);
-        int nbytes = 0;
-        if(nbytes == 0) {
-            continue;
-        }
-        if(nbytes >= BUFFER_SIZE-1) {
-            printf("Large command recieved...I can't handle this\n");
-            end_main_loop = 1;
-            break;
-        }
-
-        // Make sure the command ends in a null terminator
-        command_buffer[nbytes] = '\0';
-
-        if(command_buffer[nbytes-1] != '\n'){
-            printf("%s\n", command_buffer);
-
-        } else {
-            printf("%s", command_buffer);
-        }
-
-        // handle_line should always write it's results to the resp_buffer,
-        // don't need to check if it returns 0 or not.
-        char* resp = handle_line(command_buffer);
-
-
-        usleep(1000);
+    /* enter the main event loop */
+    el->stop = 0;
+    while (!el->stop) {
+        if (el->beforesleep != NULL)
+            el->beforesleep(el);
+        aeProcessEvents(el, AE_ALL_EVENTS | AE_DONT_WAIT);
     }
+
+    serverLog(LL_NOTICE, "ctrl-c caught. flushing buffers...");
+
+    time_t now = time(NULL);
+    while (time(NULL) < now + 1) {
+        if (aeProcessEvents(el, AE_FILE_EVENTS | AE_DONT_WAIT) == 0) break;
+    }
+
+    aeDeleteEventLoop(el);
 
     printf("Cntrl-C found, quitting\n");
     return 0;
