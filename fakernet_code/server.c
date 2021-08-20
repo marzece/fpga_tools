@@ -45,10 +45,18 @@ void daemonize(void) {
     }
 }
 
+#define MAX_LOGMSG_LEN 1024
 void serverLog(int level, const char* fmt, ...) {
-    (void) level;
-    (void) fmt;
-    // TODO
+    UNUSED(level);
+    va_list ap;
+    char msg[MAX_LOGMSG_LEN];
+
+    va_start(ap, fmt);
+    vsnprintf(msg, sizeof(msg), fmt, ap);
+    va_end(ap);
+
+    printf("Server Log: %s\n", msg);
+    //logger(level,msg);
 }
 
 // TODO! these assert & panic functions should be implemented by the "final" program.
@@ -120,18 +128,19 @@ void initServerConfig(void) {
     server.bindaddr_count = 0;
     server.maxclients = CONFIG_DEFAULT_MAX_CLIENTS;
     server.verbosity = CONFIG_DEFAULT_VERBOSITY;
+    server.ipfd_count = 0;
+    //server.reserved_fds = 10;
     //server.unixsocket = NULL;
     //server.unixsocketperm = CONFIG_DEFAULT_UNIX_SOCKET_PERM;
     //server.maxidletime = CONFIG_DEFAULT_CLIENT_TIMEOUT;
     //server.tcpkeepalive = CONFIG_DEFAULT_TCP_KEEPALIVE;
     //server.active_expire_enabled = 1;
     server.proto_max_bulk_len = CONFIG_DEFAULT_PROTO_MAX_BULK_LEN;
-    //server.client_max_querybuf_len = PROTO_MAX_QUERYBUF_LEN;
+    server.client_max_querybuf_len = PROTO_MAX_QUERYBUF_LEN;
     //server.daemonize = CONFIG_DEFAULT_DAEMONIZE;
-    //server.maxclients = CONFIG_DEFAULT_MAX_CLIENTS;
     //server.blocked_clients = 0;
     //memset(server.blocked_clients_by_type,0, sizeof(server.blocked_clients_by_type));
-    //server.shutdown_asap = 0;
+    server.shutdown_asap = 0;
 
     /* Client output buffer limits */
     // -- Eric M. client_obuf_limits used to be an array with a set of limits for each "type" of client.
@@ -139,13 +148,87 @@ void initServerConfig(void) {
     server.client_obuf_limits = clientBufferLimitsDefaults;
 }
 
+/* This is our timer interrupt, called server.hz times per second.
+ * Here is where we do a number of things that need to be done asynchronously.
+ *
+ * Everything directly called here will be called server.hz times per second,
+ * so in order to throttle execution of things we want to do less frequently
+ * a macro is used: run_with_period(milliseconds) { .... } */
 int serverCron(struct aeEventLoop* eventLoop, long long id, void *clientData) {
-    (void) eventLoop;
-    (void) id;
-    (void) clientData;
-    /* TODO!!!!! */
+    UNUSED(eventLoop);
+    UNUSED(id);
+    UNUSED(clientData);
+
+    /* Update the time cache. */
+    updateCachedTime(1);
+
+    // TODO re-add dynamic rate?
+    //server.hz = server.config_hz;
+    /* Adapt the server.hz value to the number of configured clients. If we have
+     * many clients, we want to call serverCron() with an higher frequency. */
+    //if (server.dynamic_hz) {
+    //    while (listLength(server.clients) / server.hz >
+    //           MAX_CLIENTS_PER_CLOCK_TICK)
+    //    {
+    //        server.hz *= 2;
+    //        if (server.hz > CONFIG_MAX_HZ) {
+    //            server.hz = CONFIG_MAX_HZ;
+    //            break;
+    //        }
+    //    }
+    //}
+
+
+
+
+    /* We received a SIGTERM, shutting down here in a safe way, as it is
+     * not ok doing so inside the signal handler. */
+    if (server.shutdown_asap) {
+        if (prepareForShutdown() == C_OK) {
+            exit(0);
+        }
+        serverLog(LL_WARNING,"SIGTERM received but errors trying to shut down the server, check the logs for more information");
+        server.shutdown_asap = 0;
+    }
+
+
+
+    /* We need to do a few operations on clients asynchronously. */
+    //clientsCron();
+
+
+    /* Clear the paused clients flag if needed. */
+    //clientsArePaused(); /* Don't check return value, just use the side effect.*/
+
+
     server.cronloops++;
-    return 0;
+    return 1000/server.hz;
+}
+
+void closeListeningSockets(void) {
+    int j;
+
+    for (j = 0; j < server.ipfd_count; j++) {
+        close(server.ipfd[j]);
+    }
+}
+
+int prepareForShutdown(void) {
+
+    serverLog(LL_WARNING,"User requested shutdown...");
+
+    /* Remove the pid file if possible and needed. */
+    /* TODO re-add this!
+    if (server.daemonize || server.pidfile) {
+        serverLog(LL_NOTICE,"Removing the pid file.");
+        unlink(server.pidfile);
+    }
+    */
+
+    /* Close the listening sockets. Apparently this allows faster restarts. */
+    closeListeningSockets();
+    serverLog(LL_WARNING,"Server is now ready to exit, bye bye...");
+    return C_OK;
 }
 
 void setupSignalHandlers(void) {
@@ -169,10 +252,7 @@ void updateCachedTime(int update_daylight_info) {
     server.unixtime = server.mstime / 1000;
 
     /* To get information about daylight saving time, we need to call
-     * localtime_r and cache the result. However calling localtime_r in this
-     * context is safe since we will never fork() while here, in the main
-     * thread. The logging function will call a thread safe version of
-     * localtime that has no locks. */
+     * localtime_r and cache the result. */
     if (update_daylight_info) {
         struct tm tm;
         time_t ut = server.unixtime;
@@ -181,19 +261,38 @@ void updateCachedTime(int update_daylight_info) {
     }
 }
 
+/* This function gets called every time Redis is entering the
+ * main loop of the event driven library, that is, before to sleep
+ * for ready file descriptors. */
+void beforeSleep(struct aeEventLoop *eventLoop) {
+    UNUSED(eventLoop);
+
+    /* Try to process pending commands for clients that were just unblocked. */
+    //if (listLength(server.unblocked_clients))
+    //    processUnblockedClients();
+
+    //TODO does this really belong here?
+    handleClientsWithPendingWrites();
+
+    /* Close clients that need to be closed asynchronous */
+    freeClientsInAsyncFreeQueue();
+}
+
 int listenToPort(int port, int *fds, int *count) {
     int j;
 
     /* Force binding of 0.0.0.0 if no bind address is specified, always
      * entering the loop if j == 0. */
-    if (server.bindaddr_count == 0) server.bindaddr[0] = NULL;
+    if (server.bindaddr_count == 0) {
+        server.bindaddr[0] = NULL;
+    }
+
     for (j = 0; j < server.bindaddr_count || j == 0; j++) {
         if (server.bindaddr[j] == NULL) {
             int unsupported = 0;
             /* Bind * for both IPv6 and IPv4, we enter here only if
              * server.bindaddr_count == 0. */
-            fds[*count] = anetTcp6Server(server.neterr,port,NULL,
-                server.tcp_backlog);
+            fds[*count] = anetTcp6Server(server.neterr,port,NULL, server.tcp_backlog);
             if (fds[*count] != ANET_ERR) {
                 anetNonBlock(NULL,fds[*count]);
                 (*count)++;
@@ -202,10 +301,12 @@ int listenToPort(int port, int *fds, int *count) {
                 serverLog(LL_WARNING,"Not listening to IPv6: unsupported");
             }
 
-            if (*count == 1 || unsupported) {
+            if (count) {
+                break;
+            }
+            if (unsupported) {
                 /* Bind the IPv4 address as well. */
-                fds[*count] = anetTcpServer(server.neterr,port,NULL,
-                    server.tcp_backlog);
+                fds[*count] = anetTcpServer(server.neterr,port,NULL, server.tcp_backlog);
                 if (fds[*count] != ANET_ERR) {
                     anetNonBlock(NULL,fds[*count]);
                     (*count)++;
@@ -284,8 +385,9 @@ int processCommand(client *c) {
     if (!c->cmd) {
         sds args = sdsempty();
         int i;
-        for (i=1; i < c->argc && sdslen(args) < 128; i++)
+        for (i=1; i < c->argc && sdslen(args) < 128; i++) {
             args = sdscatprintf(args, "`%.*s`, ", 128-(int)sdslen(args), (char*)c->argv[i]);
+        }
         addReplyErrorFormat(c, "unknown command `%s`, with args beginning with: %s",
             (char*)c->argv[0], args);
         sdsfree(args);
@@ -346,24 +448,18 @@ void initServer(void) {
     server.hz = server.config_hz;
     server.pid = getpid();
     server.current_client = NULL;
-    //server.clients = listCreate();
+    server.clients = listCreate();
     //server.clients_index = raxNew();
-    //server.clients_to_close = listCreate();
-    //server.slaves = listCreate();
-    //server.monitors = listCreate();
-    //server.clients_pending_write = listCreate();
-    //server.clients_pending_read = listCreate();
-    //server.slaveseldb = -1; /* Force to emit the first SELECT command. */
-    //server.unblocked_clients = listCreate();
-    //server.ready_keys = listCreate();
-    //server.clients_waiting_acks = listCreate();
-    //server.get_ack_from_slaves = 0;
-    //server.clients_paused = 0;
-    //server.system_memory_size = zmalloc_get_memory_size();
+    server.clients_to_close = listCreate();
+    server.clients_pending_write = listCreate();
+    server.clients_pending_read = listCreate();
     server.stat_net_input_bytes = 0;
     server.stat_net_output_bytes = 0;
     server.stat_rejected_conn = 0;
     server.stat_numconnections = 0;
+    server.stat_total_writes_processed = 0;
+    server.mstime = 0;
+    server.ustime =0;
 
 
     //createSharedObjects();
@@ -378,7 +474,7 @@ void initServer(void) {
 
     /* Open the TCP listening socket for the user commands. */
     if (server.port != 0 &&
-        listenToPort(server.port,server.ipfd,&server.ipfd_count) == C_ERR)
+        listenToPort(server.port, server.ipfd, &server.ipfd_count) == C_ERR)
         exit(1);
 
 

@@ -280,10 +280,9 @@ static const char *connSocketGetLastError(connection *conn) {
     return strerror(conn->last_errno);
 }
 
-static void connSocketEventHandler(struct aeEventLoop *el, int fd, void *clientData, int mask)
-{
-    (void) el;
-    (void) fd;
+static void connSocketEventHandler(struct aeEventLoop *el, int fd, void *clientData, int mask) {
+    UNUSED(el);
+    UNUSED(fd);
     connection *conn = clientData;
 
     if (conn->state == CONN_STATE_CONNECTING &&

@@ -15,11 +15,8 @@
 #include "hermes_if.h"
 #include "ti_board_if.h"
 #include "resp.h"
-#include "server.h"
 
 // For doing "double" reads the 2nd read should be from this register
-#define COMMAND_PIPE_NAME "kintex_command_pipe"
-#define RESPONSE_PIPE_NAME "kintex_response_pipe"
 #define BUFFER_SIZE 2048
 #define SEND_COMMAND_TABLE_COMMAND "send_command_table"
 
@@ -34,6 +31,7 @@ char command_buffer[BUFFER_SIZE];
 char resp_buffer[BUFFER_SIZE];
 static volatile int end_main_loop = 0;
 ServerCommand* board_specific_command_table = NULL;
+
 
 int setup_udp() {
     debug_file = fopen("fakernet_debug_log.txt", "r");
@@ -56,11 +54,10 @@ void sig_handler(int dummy) {
     (void) dummy;
     if(!end_main_loop) {
         end_main_loop = 1;
+        server.shutdown_asap=1;
         return;
     }
     // Want to make sure these pipes get cleaned up no matter what
-    unlink(RESPONSE_PIPE_NAME);
-    unlink(COMMAND_PIPE_NAME);
     exit(0);
 }
 
@@ -329,26 +326,13 @@ int main(int argc, char** argv) {
     }
 
     initServerConfig();
+    initServer();
     aeEventLoop*  el = server.el;
 
-    //aeSetBeforeSleepProc(el, beforeSleep);
-
-    /* enter the main event loop */
-    el->stop = 0;
-    while (!el->stop) {
-        if (el->beforesleep != NULL)
-            el->beforesleep(el);
-        aeProcessEvents(el, AE_ALL_EVENTS | AE_DONT_WAIT);
-    }
-
-    serverLog(LL_NOTICE, "ctrl-c caught. flushing buffers...");
-
-    time_t now = time(NULL);
-    while (time(NULL) < now + 1) {
-        if (aeProcessEvents(el, AE_FILE_EVENTS | AE_DONT_WAIT) == 0) break;
-    }
-
-    aeDeleteEventLoop(el);
+    aeSetBeforeSleepProc(el, beforeSleep);
+    //aeSetAfterSleepProc(server.el,afterSleep);
+    aeMain(server.el);
+    aeDeleteEventLoop(server.el);
 
     printf("Cntrl-C found, quitting\n");
     return 0;

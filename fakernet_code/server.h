@@ -156,8 +156,8 @@ typedef struct client {
 
 struct  Server {
     pid_t pid;
-    int ipfd[CONFIG_BINDADDR_MAX];
-    int ipfd_count;
+    int ipfd[CONFIG_BINDADDR_MAX]; /* TCP socket file descriptors */
+    int ipfd_count;             /* Used slots in ipfd[] */
     unsigned int maxclients;
     int port;
     int tcp_backlog;            /* TCP listen() backlog */
@@ -177,7 +177,6 @@ struct  Server {
     list *clients_pending_write; /* There is to write or install handler. */
     list *clients_pending_read;  /* Client has pending read socket buffers. */
     unsigned int blocked_clients;   /* # of clients executing a blocking cmd.*/
-    list *unblocked_clients; /* list of clients to unblock before next loop */
     client* current_client;
     char neterr[ANET_ERR_LEN];   /* Error buffer for anet.c */
     long long proto_max_bulk_len;   /* Protocol bulk length maximum size. */
@@ -186,6 +185,8 @@ struct  Server {
     int daylight_active;        /* Currently in daylight saving time. */
     long long mstime;            /* 'unixtime' in milliseconds. */
     long long ustime;            /* 'unixtime' in microseconds. */
+    int shutdown_asap;          /* SHUTDOWN needed ASAP */
+
 
     aeEventLoop *el;
     long long stat_net_input_bytes; /* Bytes read from network. */
@@ -193,6 +194,7 @@ struct  Server {
     long long stat_rejected_conn;   /* Clients rejected because of maxclients */
     long long stat_numconnections;  /* Number of connections received */
     long long stat_numcommands;     /* Number of processed commands */
+    long long stat_total_writes_processed; /* Total number of writes processed */
     size_t client_max_querybuf_len; /* Limit for client query buffer length */
     clientBufferLimitsConfig client_obuf_limits;
     // logfile;
@@ -225,6 +227,7 @@ void call(client *c, int flags);
 sds catClientInfoString(sds s, client *client);
 void freeClient(client *c);
 void freeClientAsync(client *c);
+int freeClientsInAsyncFreeQueue(void);
 void resetClient(client *c);
 void asyncCloseClientOnOutputBufferLimitReached(client *c);
 void addReplyErrorLength(client *c, const char *s, size_t len);
@@ -233,6 +236,11 @@ void addReplyString(client *c, const char *s);
 void addReplyErrorFormat(client *c, const char *fmt, ...);
 ServerCommand* lookupCommand(sds name);
 ServerCommand* lookupCommandByCString(char *s) ;
+void beforeSleep(struct aeEventLoop *eventLoop);
+int handleClientsWithPendingWrites(void);
+void updateCachedTime(int update_daylight_info);
+int prepareForShutdown(void);
+void closeListeningSockets(void);
 
 
 #ifdef __GNUC__

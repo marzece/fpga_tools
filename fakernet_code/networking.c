@@ -132,8 +132,9 @@ void addReplySds(client *c, sds s) {
 
 void addReplyProto(client *c, const char *s, size_t len) {
     if (prepareClientToWrite(c) != C_OK) return;
-    if (_addReplyToBuffer(c,s,len) != C_OK)
+    if (_addReplyToBuffer(c,s,len) != C_OK) {
         _addReplyProtoToList(c,s,len);
+    }
 }
 
 /* Low level function called by the addReplyError...() functions.
@@ -151,24 +152,6 @@ void addReplyErrorLength(client *c, const char *s, size_t len) {
     addReplyProto(c,s,len);
     addReplyProto(c,"\r\n",2);
 
-    /* Sometimes it could be normal that a slave replies to a master with
-     * an error and this function gets called. Actually the error will never
-     * be sent because addReply*() against master clients has no effect...
-     * A notable example is:
-     *
-     *    EVAL 'redis.call("incr",KEYS[1]); redis.call("nonexisting")' 1 x
-     *
-     * Where the master must propagate the first change even if the second
-     * will produce an error. However it is useful to log such events since
-     * they are rare and may hint at errors in a script or a bug in Redis. */
-    if (c->flags & (CLIENT_MASTER|CLIENT_SLAVE) && !(c->flags & CLIENT_MONITOR)) {
-        char* to = c->flags & CLIENT_MASTER? "master": "replica";
-        char* from = c->flags & CLIENT_MASTER? "replica": "master";
-        char *cmdname = c->lastcmd ? c->lastcmd->name : "<unknown>";
-        serverLog(LL_WARNING,"== CRITICAL == This %s is sending an error "
-                             "to its %s: '%s' after processing the command "
-                             "'%s'", from, to, s, cmdname);
-    }
 }
 
 void addReplyString(client *c, const char *s) {
@@ -179,6 +162,7 @@ void addReplyError(client *c, const char *err) {
 }
 
 void addReplyErrorFormat(client *c, const char *fmt, ...) {
+    serverLog(LL_NOTICE, "Add reply error formate!");
     size_t l, j;
     va_list ap;
     va_start(ap,fmt);
@@ -270,7 +254,6 @@ void readQueryFromClient(connection *conn) {
 
     /* There is more data in the client input buffer, continue parsing it
      * in case to check if there is a full command to execute. */
-     //processInputBufferAndReplicate(c);
      processInputBuffer(c);
 }
 
@@ -329,7 +312,6 @@ int processInlineBuffer(client *c) {
     /* Create redis objects for all arguments. */
     for (c->argc = 0, j = 0; j < argc; j++) {
         if (sdslen(argv[j])) {
-            //c->argv[c->argc] = createObject(OBJ_STRING,argv[j]);
             c->argv[c->argc] = sdsnew(argv[j]);
             c->argc++;
         } else {
@@ -341,6 +323,7 @@ int processInlineBuffer(client *c) {
 }
 
 void processInputBuffer(client *c) {
+    server.current_client = c;
     /* Keep processing while there is something in the input buffer */
     while(c->qb_pos < sdslen(c->querybuf)) {
 
@@ -391,6 +374,7 @@ void processInputBuffer(client *c) {
             }
         }
     }
+    server.current_client = NULL;
 
     /* Trim to pos */
     if (c->qb_pos) {
@@ -613,8 +597,6 @@ void linkClient(client *c) {
 }
 
 void unlinkClient(client *c) {
-    listNode *ln;
-
     /* If this is marked as current client unset it. */
     if (server.current_client == c) server.current_client = NULL;
 
@@ -630,15 +612,6 @@ void unlinkClient(client *c) {
 
         connClose(c->conn);
         c->conn = NULL;
-    }
-
-    /* When client was just unblocked because of a blocking operation,
-     * remove it from the list of unblocked clients. */
-    if (c->flags & CLIENT_UNBLOCKED) {
-        ln = listSearchKey(server.unblocked_clients,c);
-        serverAssert(ln != NULL);
-        listDelNode(server.unblocked_clients,ln);
-        c->flags &= ~CLIENT_UNBLOCKED;
     }
 }
 
@@ -871,6 +844,152 @@ void freeClientAsync(client *c) {
     }
     c->flags |= CLIENT_CLOSE_ASAP;
     listAddNodeTail(server.clients_to_close,c);
+}
+
+/* Free the clients marked as CLOSE_ASAP, return the number of clients
+ * freed. */
+int freeClientsInAsyncFreeQueue(void) {
+    int freed = 0;
+    listIter li;
+    listNode *ln;
+
+    listRewind(server.clients_to_close,&li);
+    while ((ln = listNext(&li)) != NULL) {
+        client *c = listNodeValue(ln);
+
+        c->flags &= ~CLIENT_CLOSE_ASAP;
+        freeClient(c);
+        listDelNode(server.clients_to_close,ln);
+        freed++;
+    }
+    return freed;
+}
+
+/* Write data in output buffers to client. Return C_OK if the client
+ * is still valid after the call, C_ERR if it was freed because of some
+ * error.  If handler_installed is set, it will attempt to clear the
+ * write event.
+*/
+int writeToClient(client *c, int handler_installed) {
+    ssize_t nwritten = 0, totwritten = 0;
+    size_t objlen;
+    clientReplyBlock *o;
+
+    while(clientHasPendingReplies(c)) {
+        if (c->bufpos > 0) {
+            nwritten = connWrite(c->conn,c->buf+c->sentlen,c->bufpos-c->sentlen);
+            if (nwritten <= 0) break;
+            c->sentlen += nwritten;
+            totwritten += nwritten;
+
+            /* If the buffer was sent, set bufpos to zero to continue with
+             * the remainder of the reply. */
+            if ((int)c->sentlen == c->bufpos) {
+                c->bufpos = 0;
+                c->sentlen = 0;
+            }
+        } else {
+            o = listNodeValue(listFirst(c->reply));
+            objlen = o->used;
+
+            if (objlen == 0) {
+                c->reply_bytes -= o->size;
+                listDelNode(c->reply,listFirst(c->reply));
+                continue;
+            }
+
+            nwritten = connWrite(c->conn, o->buf + c->sentlen, objlen - c->sentlen);
+            if (nwritten <= 0) break;
+            c->sentlen += nwritten;
+            totwritten += nwritten;
+
+            /* If we fully sent the object on head go to the next one */
+            if (c->sentlen == objlen) {
+                c->reply_bytes -= o->size;
+                listDelNode(c->reply,listFirst(c->reply));
+                c->sentlen = 0;
+                /* If there are no longer objects in the list, we expect
+                 * the count of reply bytes to be exactly zero. */
+                if (listLength(c->reply) == 0)
+                    serverAssert(c->reply_bytes == 0);
+            }
+        }
+    }
+    server.stat_net_output_bytes += totwritten;
+
+    if (nwritten == -1) {
+        if (connGetState(c->conn) != CONN_STATE_CONNECTED) {
+            serverLog(LL_VERBOSE,
+                "Error writing to client: %s", connGetLastError(c->conn));
+            freeClientAsync(c);
+            return C_ERR;
+        }
+    }
+    if (totwritten > 0) {
+        /* For clients representing masters we don't count sending data
+         * as an interaction, since we always send REPLCONF ACK commands
+         * that take some time to just fill the socket output buffer.
+         * We just rely on data / pings received for timeout detection. */
+        if (!(c->flags & CLIENT_MASTER)) c->lastinteraction = server.unixtime;
+    }
+    if (!clientHasPendingReplies(c)) {
+        c->sentlen = 0;
+        /* Note that writeToClient() is called in a threaded way, but
+         * adDeleteFileEvent() is not thread safe: however writeToClient()
+         * is always called with handler_installed set to 0 from threads
+         * so we are fine. */
+        if (handler_installed) connSetWriteHandler(c->conn, NULL);
+
+        /* Close connection after entire reply has been sent. */
+        if (c->flags & CLIENT_CLOSE_AFTER_REPLY) {
+            freeClientAsync(c);
+            return C_ERR;
+        }
+    }
+    return C_OK;
+}
+
+/* Write event handler. Just send data to the client. */
+void sendReplyToClient(connection *conn) {
+    client *c = connGetPrivateData(conn);
+    writeToClient(c,1);
+}
+
+/* This function is called just before entering the event loop, in the hope
+ * we can just write the replies to the client output buffer without any
+ * need to use a syscall in order to install the writable event handler,
+ * get it called, and so forth. */
+int handleClientsWithPendingWrites(void) {
+    listIter li;
+    listNode *ln;
+    int processed = listLength(server.clients_pending_write);
+
+    listRewind(server.clients_pending_write,&li);
+    while((ln = listNext(&li))) {
+        client *c = listNodeValue(ln);
+        c->flags &= ~CLIENT_PENDING_WRITE;
+        listDelNode(server.clients_pending_write,ln);
+
+        /* Don't write to clients that are going to be closed anyway. */
+        if (c->flags & CLIENT_CLOSE_ASAP) continue;
+
+        /* Try to write buffers to the client socket. */
+        if (writeToClient(c,0) == C_ERR) continue;
+
+        /* If after the synchronous writes above we still have data to
+         * output to the client, we need to install the writable handler. */
+        if (clientHasPendingReplies(c)) {
+            /* For the fsync=always policy, we want that a given FD is never
+             * served for reading and writing in the same event loop iteration,
+             * so that in the middle of receiving the query, and serving it
+             * to the client, we'll call beforeSleep() that will do the
+             * actual fsync of AOF to disk. the write barrier ensures that. */
+            if (connSetWriteHandler(c->conn, sendReplyToClient) == C_ERR) {
+                freeClientAsync(c);
+            }
+        }
+    }
+    return processed;
 }
 
 /* resetClient prepare the client to process the next command */
