@@ -42,8 +42,6 @@ enum BOARD_SWITCH {
 
 int setup_udp(const char* ip) {
     debug_file = fopen("fakernet_debug_log.txt", "r");
-    //const char* fnet_hname = "192.168.1.192";
-    //const char* fnet_hname = "192.168.1.193";
     int reliable = 0; // wtf does this do?
     const char* err_string = NULL;
     if(dummy_mode) {
