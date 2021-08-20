@@ -5,17 +5,18 @@
 #include "server_common.h"
 #include "connection.h"
 #include "adlist.h"
-#include "anet.h"
 #include "ae.h"
+
+#define ANET_OK 0
+#define ANET_ERR -1
+#define ANET_ERR_LEN 1024
 
 /*TODO list
  *  - Add log file
  *  - Add verbosity
  *  - UNIX domain sockets
- *  - Put back server stats
- *
- *
  */
+
 // Log levels
 #define LL_DEBUGk 0
 #define LL_VERBOSE 1
@@ -201,6 +202,9 @@ struct  Server {
 };
 
 extern struct Server server;
+extern ServerCommand* server_command_table;
+void send_command_table(client* c, int argc, sds* argv);
+
 void daemonize(void);
 void initServerConfig(void);
 void initServer(void);
@@ -234,6 +238,10 @@ void addReplyErrorLength(client *c, const char *s, size_t len);
 void addReplyProto(client *c, const char *s, size_t len);
 void addReplyString(client *c, const char *s);
 void addReplyErrorFormat(client *c, const char *fmt, ...);
+void addReplyStatus(client *c, const char *status);
+void addReplyStatusFormat(client *c, const char *fmt, ...);
+void addReplyLongLongWithPrefix(client *c, long long ll, char prefix);
+void addReplyLongLong(client *c, long long ll);
 ServerCommand* lookupCommand(sds name);
 ServerCommand* lookupCommandByCString(char *s) ;
 void beforeSleep(struct aeEventLoop *eventLoop);

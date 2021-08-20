@@ -34,6 +34,7 @@
 #include "sds.h"
 
 int string2ll(const char *s, size_t slen, long long *value);
+int ll2string(char *dst, size_t dstlen, long long svalue);
 
 
 #endif

@@ -162,7 +162,6 @@ void addReplyError(client *c, const char *err) {
 }
 
 void addReplyErrorFormat(client *c, const char *fmt, ...) {
-    serverLog(LL_NOTICE, "Add reply error formate!");
     size_t l, j;
     va_list ap;
     va_start(ap,fmt);
@@ -195,6 +194,30 @@ void addReplyStatusFormat(client *c, const char *fmt, ...) {
     va_end(ap);
     addReplyStatusLength(c,s,sdslen(s));
     sdsfree(s);
+}
+
+/* Add a long long as integer reply or bulk len / multi bulk count.
+ * Basically this is used to output <prefix><long long><crlf>. */
+void addReplyLongLongWithPrefix(client *c, long long ll, char prefix) {
+    char buf[128];
+    int len;
+
+    buf[0] = prefix;
+    len = ll2string(buf+1,sizeof(buf)-1,ll);
+    buf[len+1] = '\r';
+    buf[len+2] = '\n';
+    addReplyProto(c,buf,len+3);
+}
+
+void addReplyLongLong(client *c, long long ll) {
+        addReplyLongLongWithPrefix(c,ll,':');
+}
+
+/* Add a C buffer as bulk reply */
+void addReplyBulkCBuffer(client *c, const void *p, size_t len) {
+    addReplyLongLongWithPrefix(c,len,'$');
+    addReplyProto(c,p,len);
+    addReplyString(c, "\r\n");
 }
 
 void readQueryFromClient(connection *conn) {

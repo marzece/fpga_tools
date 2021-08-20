@@ -27,6 +27,9 @@ clientBufferLimitsConfig clientBufferLimitsDefaults = {0, 0, 0}; /* normal */
 
 
 struct Server server;
+ServerCommand* server_command_table;
+ServerCommand send_command_table_command = {"send_command_table", send_command_table, NULL, 1, 0, 0, 0};
+
 // stolen from redis/server.c
 void daemonize(void) {
     int fd;
@@ -115,6 +118,25 @@ static int anetListen(char *err, int s, struct sockaddr *sa, socklen_t len, int 
         return ANET_ERR;
     }
     return ANET_OK;
+}
+
+void send_command_table(client* c, int argc, sds* argv) {
+    int i;
+    int ncommands;
+    ServerCommand* cmd = server_command_table;
+    // First need to count the commands available
+    while(cmd->func || cmd->legacy_func) {
+        cmd++;
+    }
+    ncommands = cmd - server_command_table;
+
+
+    addReplyLongLongWithPrefix(c, ncommands, '*');
+    for(i=0; i<ncommands; i++) {
+        ServerCommand* cmd = &(server_command_table[i]);
+        addReplyStatusFormat(c, "%s %i", cmd->name, cmd->nargs-1);
+    }
+
 }
 
 void initServerConfig(void) {
@@ -346,8 +368,17 @@ int listenToPort(int port, int *fds, int *count) {
 }
 
 ServerCommand *lookupCommand(sds name) {
-    // !TODO!!!
-    //return dictFetchValue(server.commands, name);
+    if(strcasecmp(name, send_command_table_command.name) == 0) {
+        return &send_command_table_command;
+    }
+
+    ServerCommand* command = server_command_table;
+    while(command->func || command->legacy_func) {
+        if(strcasecmp(name, command->name) == 0) {
+            return command;
+        }
+        command++;
+    }
     return NULL;
 }
 
@@ -406,17 +437,42 @@ int processCommand(client *c) {
 
 void call(client *c, int flags) {
     long long start, duration;
+    int i;
     ServerCommand *real_cmd = c->cmd;
 
     /* Call the command. */
     updateCachedTime(0);
     start = server.ustime;
-    c->cmd->func(c, c->argc, c->argv);
+
+    if(real_cmd->func) {
+        c->cmd->func(c, c->argc, c->argv);
+    }
+    else {
+        // Use legacy_func
+        int num_ints_needed = real_cmd->nargs > real_cmd->nresp ? real_cmd->nargs : real_cmd->nresp;
+        uint32_t* args_uint = malloc(sizeof(uint32_t)*num_ints_needed);
+        for(i=1; i<real_cmd->nargs; i++) {
+            args_uint[i-1] = strtoul(c->argv[i], NULL, 0);
+        }
+        uint32_t resp = real_cmd->legacy_func(args_uint);
+        if(real_cmd->nresp == 0) {
+            addReplyStatus(c, "OK");
+        }
+        else if(real_cmd->nresp == 1) {
+            addReplyLongLong(c, (long long)resp);
+        }
+        else {
+            addReplyLongLongWithPrefix(c, (long long)real_cmd->nresp, '*');
+            for(i=0; i<real_cmd->nresp; i++) {
+                addReplyLongLong(c, (long long)args_uint[i]);
+            }
+        }
+        free(args_uint);
+    }
     duration = ustime()-start;
 
     if(flags & CMD_CALL_LOG) {
-        // TODO!
-        //serverLog();
+        serverLog(LL_NOTICE, "Command %s executed", c->cmd->name);
     }
 
 
@@ -428,7 +484,6 @@ void call(client *c, int flags) {
         real_cmd->microseconds += duration;
         real_cmd->calls++;
     }
-
     server.stat_numcommands++;
 }
 
@@ -473,9 +528,9 @@ void initServer(void) {
     }
 
     /* Open the TCP listening socket for the user commands. */
-    if (server.port != 0 &&
-        listenToPort(server.port, server.ipfd, &server.ipfd_count) == C_ERR)
+    if (server.port != 0 && listenToPort(server.port, server.ipfd, &server.ipfd_count) == C_ERR) {
         exit(1);
+    }
 
 
     /* Abort if there are no listening sockets at all. */

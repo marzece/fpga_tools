@@ -9,10 +9,12 @@ typedef struct client client; // Forward declaration
 // Squelch warnings for unused arguements
 #define UNUSED(V) ((void) V)
 
-typedef uint32_t (*CLIFunc)(client* c, int argc, sds* argv);
+typedef void (*CLIFunc)(client* c, int argc, sds* argv);
+typedef uint32_t (*LegacyFunc)(uint32_t* args);
 typedef struct ServerCommand {
     char* name;
     CLIFunc func;
+    LegacyFunc legacy_func;
     int nargs;
     int nresp;
     long long microseconds; // cumalative time spend executing this command

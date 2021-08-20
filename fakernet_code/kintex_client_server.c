@@ -12,13 +12,13 @@
 #include "fnet_client.h"
 #include "server_common.h"
 #include "server.h"
+#include "util.h"
 #include "hermes_if.h"
 #include "ti_board_if.h"
 #include "resp.h"
 
 // For doing "double" reads the 2nd read should be from this register
 #define BUFFER_SIZE 2048
-#define SEND_COMMAND_TABLE_COMMAND "send_command_table"
 
 int dummy_mode = 0;
 uint32_t SAFE_READ_ADDRESS;
@@ -132,36 +132,85 @@ int write_addr(uint32_t base, uint32_t addr, uint32_t data) {
       return 0;
 }
 
-uint32_t write_addr_command(client* c, int argc, sds* args) {
-    UNUSED(c);
+void write_addr_command(client* c, int argc, sds* args) {
     UNUSED(argc);
-    UNUSED(args);
-    //return write_addr((char*)args[0], 0, args[1]);
-    return 0;
+    //write_addr((char*)args[0], 0, args[1]);
+    long long addr;
+    long long val;
+    int valid = string2ll((char*) args[1], sdslen(args[1]), &addr);
+    if(!valid) {
+        addReplyErrorFormat(c, "'%s' is not a valid number", args[1]);
+        return;
+    }
+    valid = string2ll((char*) args[2], sdslen(args[2]), &val);
+    if(!valid) {
+        addReplyErrorFormat(c, "'%s' is not a valid number", args[2]);
+        return;
+    }
+
+    write_addr(addr, 0, val);
+    addReplyStatus(c, "OK");
 }
 
-uint32_t read_addr_command(client* c, int argc, sds* args) {
-    //return double_read_addr(args[0], 0);
-    UNUSED(c);
+void read_addr_command(client* c, int argc, sds* args) {
     UNUSED(argc);
-    UNUSED(args);
-    return 0;
+    long long val;
+    int valid = string2ll((char*) args[1], sdslen(args[1]), &val);
+    if(!valid) {
+        addReplyErrorFormat(c, "'%s' is not a valid number", args[1]);
+        return;
+    }
+    uint32_t ret = double_read_addr(val, 0);
+    addReplyLongLong(c, ret);
 }
 
-uint32_t sleep_command(client* c, int argc, sds* args) {
-    UNUSED(c);
+void sleep_command(client* c, int argc, sds* args) {
     UNUSED(argc);
-    UNUSED(args);
-    //return sleep(args[0]);
-    return 0;
+    // TODO remove this command, its no longer worth keeping and it doesn't
+    // play well with the server.
+
+    long long val;
+    int valid = string2ll((char*) args[1], sdslen(args[1]), &val);
+    if(!valid) {
+        addReplyErrorFormat(c, "'%s' is not a valid number", args[1]);
+        return;
+    }
+    sleep((unsigned int) val);
+    addReplyStatus(c, "OK");
 }
 
-static ServerCommand commandTable[] = {
-    {"write_addr", write_addr_command, 2, 1, 0, 0},
-    {"read_addr", read_addr_command, 1, 1, 0, 0},
-    {"sleep", sleep_command, 1, 1, 0, 0},
-    {"", NULL, 0, 0, 0, 0} // Must be last
+static ServerCommand default_commands[] = {
+    {"write_addr", write_addr_command, NULL, 3, 1, 0, 0},
+    {"read_addr", read_addr_command, NULL, 2, 1, 0, 0},
+    {"sleep",  sleep_command, NULL, 2, 1, 0, 0},
+    {"", NULL, NULL, 0, 0, 0, 0} // Must be last
 };
+
+ServerCommand* combine_command_tables() {
+    /* First calculate the lenght of the "built in" commands, then of the board specific commands.
+     Then create a alloc memory sufficient for both.
+     Then copy. */
+    ServerCommand* combined_table;
+    ServerCommand* cmd;
+    int num_built_in = sizeof(default_commands) / sizeof(ServerCommand);
+    int num_board_specific = 0;
+
+    cmd = board_specific_command_table;
+    while(cmd->func || cmd->legacy_func) {
+        cmd++;
+    }
+     // Add one to make sure we include the "NULL" terminator
+    num_board_specific = cmd - board_specific_command_table + 1;
+    num_built_in -= 1; // Subtract one b/c we don't wanna include the "NULL" terminator
+
+    combined_table = malloc(sizeof(ServerCommand)*(num_built_in + num_board_specific));
+    if(!combined_table) {
+        return NULL;
+    }
+    memcpy(combined_table, default_commands, sizeof(ServerCommand)*num_built_in);
+    memcpy(combined_table+num_built_in, board_specific_command_table, sizeof(ServerCommand)*num_board_specific);
+    return combined_table;
+}
 
 ServerCommand* search_for_command(ServerCommand* table, const char* command_name) {
     int cmd_index = 0;
@@ -173,124 +222,6 @@ ServerCommand* search_for_command(ServerCommand* table, const char* command_name
     }
     return &(table[cmd_index]);
 }
-
-// This function is a little hacked together, if it returns NULL then
-// the calling function assumes the response was stuffed in to the "resp_buffer"
-// data buffer.
-// If it returns non-NULL then the calling function assumes the given char*
-// is the response (and it's NULL terminated)
-/*
-char* handle_line(const char* line) {
-    // first check if the first char is a '#' or the line is empty
-    // if it is, treat this as a comment
-    if(strlen(line) == 0 || line[0] == '#') {
-        return 0;
-    }
-    int i;
-    char* command_name = NULL;
-    char* arg_buff[11]= {command_name, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
-    char* line_copy = malloc(sizeof(char)*(strlen(line)+1));
-    strcpy(line_copy, line);
-    command_name = strtok(line_copy, " \t\r\n");
-    arg_buff[0] = command_name;
-    int nargs = 0;
-    while(nargs-1 < 10) {
-        arg_buff[nargs+1] = strtok(NULL, " \t\r\n");
-        // TODO add empty string check
-        if(arg_buff[nargs+1] == NULL) {
-            break;
-        }
-        nargs +=1;
-    }
-
-    ServerCommand* command = NULL;
-    if(strcmp(command_name, SEND_COMMAND_TABLE_COMMAND) == 0) {
-        // send command table is special!
-        char* return_string = NULL;
-        char** commands_buf = NULL;
-        // TODO BUF_SIZE is basically already used....should I just use the standard resp_buffer?
-        const int BUF_SIZE = 1024;
-        char buf[BUF_SIZE];
-        int bytes_count = 0;
-        int bytes;
-        char* write_location;
-        int command_count = 0;
-
-        for(i=0; i<2; i++) {
-            command = i==0 ? commandTable : board_specific_command_table;
-            while(command->func != NULL) {
-                command_count += 1;
-                commands_buf = realloc(commands_buf, sizeof(char*)*command_count);
-                // TODO I guess I should check the return value of snprintf...but whatevs
-                snprintf(buf, BUF_SIZE, "+%s %i\r\n", command->name, command->nargs);
-                bytes = strlen(buf);
-                commands_buf[command_count-1] = malloc(sizeof(char)*(bytes + 1));
-                memcpy(commands_buf[command_count-1], buf, bytes+1);
-
-                bytes_count += bytes;
-                command += 1;
-            }
-        }
-        snprintf(buf, BUF_SIZE, "*%i\r\n", command_count);
-        return_string = malloc(strlen(buf) + bytes_count + 1); // The +1 is for the null terminator
-        write_location = return_string;
-        memcpy(write_location, buf, strlen(buf));
-        write_location += strlen(buf);
-
-        for(i=0; i<command_count; i++) {
-            bytes = strlen(commands_buf[i]);
-            memcpy(write_location, commands_buf[i], bytes);
-            write_location += bytes;
-            free(commands_buf[i]);
-        }
-        free(commands_buf);
-        return return_string;
-    }
-
-    // First search the board specific commands
-    command = search_for_command(board_specific_command_table, command_name);
-    if(command->func == NULL) {
-        // Then search the "standard" commands
-        command = search_for_command(commandTable, command_name);
-    }
-    if(command->func == NULL) {
-        snprintf(resp_buffer, BUFFER_SIZE,"-Invalid/Unknown command given\r\n");
-        return 0;
-    }
-
-    if(command->nargs != nargs) {
-        // Too few arguments
-        // TODO send back error message
-        snprintf(resp_buffer, BUFFER_SIZE, "-Err: Command \"%s\" requires %i arguments, %i given.\r\n",command_name, command->nargs, nargs);
-        return NULL;
-    }
-
-    int array_size = nargs > command->nresp ? nargs : command->nresp;
-    uint32_t *args = malloc(sizeof(uint32_t)*array_size);
-    for(i=0; i< nargs; i++) {
-        args[i] = strtoul(arg_buff[i+1], NULL, 0);
-    }
-
-    uint32_t ret = command->func(args);
-    int bytes_written = 0;
-    if(command->nresp <= 0) {
-        bytes_written = snprintf(resp_buffer, BUFFER_SIZE, "+OK\r\n");
-    }
-    else if(command->nresp == 1) {
-        bytes_written = resp_uint32(resp_buffer, BUFFER_SIZE, ret);
-        //snprintf(resp_buffer, BUFFER_SIZE, "0x%x\n", ret);
-    } else {
-        bytes_written = resp_array(resp_buffer, BUFFER_SIZE, args, command->nresp);
-    }
-
-    if(bytes_written >= BUFFER_SIZE) {
-        snprintf(resp_buffer, BUFFER_SIZE, "-Resp Buffer overflow!\r\n");
-    }
-
-    free(args);
-    return NULL;
-}
-*/
 
 int main(int argc, char** argv) {
 
@@ -324,12 +255,13 @@ int main(int argc, char** argv) {
         SAFE_READ_ADDRESS = TI_SAFE_READ_ADDRESS;
         board_specific_command_table = ti_commands;
     }
+    ServerCommand* commandTable = combine_command_tables();
 
     initServerConfig();
+    server_command_table = commandTable;
     initServer();
-    aeEventLoop*  el = server.el;
 
-    aeSetBeforeSleepProc(el, beforeSleep);
+    aeSetBeforeSleepProc(server.el, beforeSleep);
     //aeSetAfterSleepProc(server.el,afterSleep);
     aeMain(server.el);
     aeDeleteEventLoop(server.el);
