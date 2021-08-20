@@ -61,7 +61,7 @@ struct TI_IF* get_ti_handle() {
         ti_board->gpio0 = new_gpio("gpio_jesd_reset", GPIO0_AXI_ADDR);
         ti_board->gpio1 = new_gpio("gpio_sync_counter", GPIO1_AXI_ADDR);
         ti_board->gpio2 = new_gpio("gpio_reset", GPIO2_AXI_ADDR);
-        ti_board->iic_main = new_iic("iic_main", IIC_AXI_ADDR, 0);
+        ti_board->iic_main = new_iic("iic_main", IIC_AXI_ADDR, 0, 1);
         ti_board->jesd = new_jesd("jesd", JESD_A_AXI_ADDR);
         ti_board->fanout = new_adc_sample_fanout("fanout", ADC_A_FANOUT_ADDR);
         ti_board->dp_0 = new_data_pipeline_if("data_pipeline_0", DATA_PIPELINE_0_ADDR);
@@ -351,7 +351,7 @@ static uint32_t write_data_pipeline_0_reset_command(uint32_t* args) {
     return write_reset_reg(get_ti_handle()->dp_0, mask);
 }
 
-ServerCommand ti_commands[] = { {"", NULL, 0,0,0,0} };
+ServerCommand ti_commands[] = { {"", NULL, NULL, 0,0,0,0} };
 /*
 ServerCommand ti_commands[] = {
     {"read_ads", read_ads_if_command, 1, 1},
