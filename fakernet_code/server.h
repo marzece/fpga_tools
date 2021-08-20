@@ -5,11 +5,8 @@
 #include "server_common.h"
 #include "connection.h"
 #include "adlist.h"
+#include "anet.h"
 #include "ae.h"
-
-#define ANET_OK 0
-#define ANET_ERR -1
-#define ANET_ERR_LEN 1024
 
 /*TODO list
  *  - Add log file

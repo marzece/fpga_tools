@@ -17,10 +17,8 @@
 #include "server_common.h"
 #include "server.h"
 #include "ae.h"
+#include "anet.h"
 
-#define ANET_OK 0
-#define ANET_ERR -1
-#define ANET_ERR_LEN 1024
 
 /* Output buffer limits presets. */
 clientBufferLimitsConfig clientBufferLimitsDefaults = {0, 0, 0}; /* normal */
@@ -82,42 +80,6 @@ void _serverPanic(const char *file, int line, const char *msg, ...) {
     serverLog(LL_WARNING,"Guru Meditation: %s #%s:%d",fmtmsg,file,line);
     serverLog(LL_WARNING,"------------------------------------------------");
     *((char*)-1) = 'x';
-}
-
-
-static void anetSetError(char *err, const char *fmt, ...) {
-    va_list ap;
-
-    if (!err) return;
-    va_start(ap, fmt);
-    vsnprintf(err, ANET_ERR_LEN, fmt, ap);
-    va_end(ap);
-}
-
-static int anetSetReuseAddr(char *err, int fd) {
-    int yes = 1;
-    /* Make sure connection-intensive things like the redis benchmark
-     * will be able to close/open sockets a zillion of times */
-    if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1) {
-        anetSetError(err, "setsockopt SO_REUSEADDR: %s", strerror(errno));
-        return ANET_ERR;
-    }
-    return ANET_OK;
-}
-
-static int anetListen(char *err, int s, struct sockaddr *sa, socklen_t len, int backlog) {
-    if (bind(s,sa,len) == -1) {
-        anetSetError(err, "bind: %s", strerror(errno));
-        close(s);
-        return ANET_ERR;
-    }
-
-    if (listen(s, backlog) == -1) {
-        anetSetError(err, "listen: %s", strerror(errno));
-        close(s);
-        return ANET_ERR;
-    }
-    return ANET_OK;
 }
 
 void send_command_table(client* c, int argc, sds* argv) {
