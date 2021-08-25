@@ -187,7 +187,7 @@ static inline ssize_t connSyncReadLine(connection *conn, char *ptr, ssize_t size
     return conn->type->sync_readline(conn, ptr, size, timeout);
 }
 
-connection *connCreateSocket();
+connection *connCreateSocket(void);
 connection *connCreateAcceptedSocket(int fd);
 
 void connSetPrivateData(connection *conn, void *data);

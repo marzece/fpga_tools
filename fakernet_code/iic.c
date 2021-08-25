@@ -7,8 +7,8 @@
 #define IIC_PIRQ_OFFSET  0x120
 #define IIC_GPIO_OFFSET  0x124
 
-extern uint32_t read_addr(uint32_t, uint32_t);
-extern uint32_t double_read_addr(uint32_t, uint32_t);
+extern uint32_t read_addr(uint32_t, uint32_t, uint32_t*);
+extern uint32_t double_read_addr(uint32_t, uint32_t, uint32_t*);
 extern int write_addr(uint32_t, uint32_t, uint32_t);
 
 AXI_IIC* new_iic(const char* name, uint32_t axi_addr, int data_size, int reg_addr_size) {
@@ -25,7 +25,12 @@ int iic_write(AXI_IIC* iic, uint32_t addr, uint32_t data) {
 }
 
 uint32_t iic_read(AXI_IIC* iic, uint32_t addr) {
-    return double_read_addr(iic->axi_addr, addr);
+    uint32_t ret;
+    if(double_read_addr(iic->axi_addr, addr, &ret)) {
+        // TODO!!!
+        return -1;
+    }
+    return ret;
 }
 
 // This is always a single byte read

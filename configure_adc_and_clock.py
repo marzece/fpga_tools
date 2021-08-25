@@ -3,7 +3,7 @@ import socket
 import argparse
 from time import sleep
 from collections import defaultdict
-from ceres_fpga_spi import adc_spi, lmk_spi, decode_data, connect_to_local_client, SPI_Device, adc_hard_reset
+from ceres_fpga_spi import adc_spi, lmk_spi, decode_data, connect_to_fpga, SPI_Device, adc_hard_reset
 
 def parse_config_file(f):
     evm_devices = ["LMK", "ADS"]
@@ -131,7 +131,7 @@ def main():
     with open(fn, 'r') as f:
         instructions = parse_config_file(f)
 
-    fpga_conn = connect_to_local_client()
+    fpga_conn = connect_to_fpga()
 
     devices = [SPI_Device.ADC_A if args.adc_a else None,
                SPI_Device.ADC_B if args.adc_b else None,

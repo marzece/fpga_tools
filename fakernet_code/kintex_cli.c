@@ -175,11 +175,11 @@ int connect_to_server(const char* ip, const int port) {
         goto error;
 
     }
-    //args |= O_NONBLOCK;
+    args |= O_NONBLOCK;
 
     // Idk if this is needed!
-    //int yes = 1;
-    //setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
+    int yes = 1;
+    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
 
     if(fcntl(fd, F_SETFL, args) < 0) {
         printf("Error setting socket opts\n");

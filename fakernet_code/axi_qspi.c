@@ -27,8 +27,8 @@
 #define SPI_CR_LOOPBACK_LOC 0
 
 // These functions should be provided by the "main" program
-uint32_t read_addr(uint32_t, uint32_t);
-uint32_t double_read_addr(uint32_t, uint32_t);
+int read_addr(uint32_t, uint32_t, uint32_t*);
+int double_read_addr(uint32_t, uint32_t, uint32_t*);
 int write_addr(uint32_t, uint32_t, uint32_t);
 
 
@@ -47,7 +47,13 @@ int write_qspi_addr(AXI_QSPI* qspi, uint32_t offset, uint32_t data) {
 }
 
 uint32_t read_qspi_addr(AXI_QSPI* qspi, uint32_t offset) {
-    return double_read_addr(qspi->axi_addr, offset);
+    uint32_t ret;
+    if(double_read_addr(qspi->axi_addr, offset, &ret)) {
+        // TODO!!!!
+        return -1;
+
+    }
+    return ret;
 }
 
 uint32_t spi_cr_to_bits(struct SPI_CR spi_cr) {

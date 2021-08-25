@@ -9,16 +9,9 @@ class SPI_Device(Enum):
     PREAMP_DAC=4
     TI_ADC=5
 
-def connect_to_local_client():
-    command_pipe = open("fakernet_code/kintex_command_pipe", "wb", 0)
-    resp_pipe = open("fakernet_code/kintex_response_pipe", "rb")
-    return command_pipe, resp_pipe
-
 def connect_to_fpga():
-    HOST = "192.168.1.10"
-    PORT = 4001
-    if DEBUG_OUTP:
-        return open("fpga_spi_debug.txt", "w");
+    HOST = "localhost"
+    PORT = 4002
 
     fpga_conn = socket.create_connection((HOST, PORT))
     #Do I need to error check? Idk fuckit dude
@@ -28,7 +21,7 @@ def grab_response(server):
     t=False
     resp_reader = hiredis.Reader() # TODO (just make this global?)
     while t is False:
-        resp_reader.feed(server[1].readline())
+        resp_reader.feed(server.recv(1024))
         t = resp_reader.gets()
     return t
 
@@ -70,17 +63,17 @@ def spi_command(server, device, *args):
     write_command = write_command.encode("ascii")
     pop_command = pop_command.encode("ascii")
 
-    server[0].write(write_command)
+    server.sendall(write_command)
     _ = grab_response(server)
     
     resp = [0, 0, 0]
-    server[0].write(pop_command)
+    server.sendall(pop_command)
     resp[0] = grab_response(server)
     #resp[0] = decode_data(server[1].readline())
-    server[0].write(pop_command)
+    server.sendall(pop_command)
     resp[1] = grab_response(server)
     #resp[1] = decode_data(server[1].readline())
-    server[0].write(pop_command)
+    server.sendall(pop_command)
     resp[2] = grab_response(server)
     #resp[2] = decode_data(server[1].readline())
     return resp
@@ -88,9 +81,9 @@ def spi_command(server, device, *args):
 def adc_hard_reset(server):
     reset_command = "write_gpio2 1 1".encode("ascii")
     unreset_command = "write_gpio2 1 0".encode("ascii")
-    server[0].write(reset_command)
+    server.sendall(reset_command)
     grab_response(server)
-    server[0].write(unreset_command)
+    server.sendall(unreset_command)
     grab_response(server)
 
 def adc_spi(server, device, v1, v2, v3):

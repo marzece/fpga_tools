@@ -4,8 +4,8 @@
 #include "data_pipeline.h"
 
 
-uint32_t read_addr(uint32_t, uint32_t);
-uint32_t double_read_addr(uint32_t, uint32_t);
+int read_addr(uint32_t, uint32_t, uint32_t*);
+int double_read_addr(uint32_t, uint32_t, uint32_t*);
 int write_addr(uint32_t, uint32_t, uint32_t);
 
 #define  RESET_REG_OFFSET                 0x0
@@ -33,7 +33,12 @@ AXI_DATA_PIPELINE* new_data_pipeline_if(const char* name, uint32_t axi_addr) {
 }
 
 uint32_t read_data_pipeline_value(AXI_DATA_PIPELINE *dp_axi, uint32_t offset) {
-    return double_read_addr(dp_axi->axi_addr, offset);
+    uint32_t ret;
+    if(double_read_addr(dp_axi->axi_addr, offset, &ret)) {
+        // TODO!!!
+        return -1;
+    }
+    return ret;
 }
 
 uint32_t write_data_pipeline_value(AXI_DATA_PIPELINE* dp_axi, uint32_t offset, uint32_t data) {

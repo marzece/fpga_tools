@@ -83,6 +83,8 @@ void _serverPanic(const char *file, int line, const char *msg, ...) {
 }
 
 void send_command_table(client* c, int argc, sds* argv) {
+    UNUSED(argc);
+    UNUSED(argv);
     int i;
     int ncommands;
     ServerCommand* cmd = server_command_table;
@@ -92,10 +94,9 @@ void send_command_table(client* c, int argc, sds* argv) {
     }
     ncommands = cmd - server_command_table;
 
-
     addReplyLongLongWithPrefix(c, ncommands, '*');
     for(i=0; i<ncommands; i++) {
-        ServerCommand* cmd = &(server_command_table[i]);
+        cmd = &(server_command_table[i]);
         addReplyStatusFormat(c, "%s %i", cmd->name, cmd->nargs-1);
     }
 
@@ -385,10 +386,9 @@ int processCommand(client *c) {
             (char*)c->argv[0], args);
         sdsfree(args);
         return C_OK;
-    } else if ((c->cmd->nargs > 0 && c->cmd->nargs != c->argc) ||
-               (c->argc < -c->cmd->nargs)) {
-        addReplyErrorFormat(c,"wrong number of arguments for '%s' command",
-            c->cmd->name);
+    } else if ((c->cmd->nargs > 0 && c->cmd->nargs != c->argc) || (c->argc < -c->cmd->nargs)) {
+        addReplyErrorFormat(c,"wrong number of arguments for '%s' command. Expects: %i, Got: %i",
+            c->cmd->name, c->cmd->nargs, c->argc);
         return C_OK;
     }
 
@@ -424,9 +424,15 @@ void call(client *c, int flags) {
             addReplyLongLong(c, (long long)resp);
         }
         else {
-            addReplyLongLongWithPrefix(c, (long long)real_cmd->nresp, '*');
-            for(i=0; i<real_cmd->nresp; i++) {
-                addReplyLongLong(c, (long long)args_uint[i]);
+            if(resp != 0) {
+                // TODO! need to add low level error string!
+                addReplyErrorFormat(c, "Error performing command '%s'", real_cmd->name);
+            }
+            else {
+                addReplyLongLongWithPrefix(c, (long long)real_cmd->nresp, '*');
+                for(i=0; i<real_cmd->nresp; i++) {
+                    addReplyLongLong(c, (long long)args_uint[i]);
+                }
             }
         }
         free(args_uint);

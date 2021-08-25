@@ -1,6 +1,6 @@
 CC = cc
 
-CFLAGS += -std=gnu99 -Wall -W -Wshadow -Wwrite-strings \
+CFLAGS += -O0 -std=gnu99 -Wall -W -Wshadow -Wwrite-strings \
         -Wno-unused-function -Wno-unused-label -Wstrict-prototypes
 
 LDLIBS += -lm

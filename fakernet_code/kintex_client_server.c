@@ -67,33 +67,35 @@ void sig_handler(int dummy) {
     exit(0);
 }
 
-uint32_t read_addr(uint32_t base, uint32_t addr) {
-      fakernet_reg_acc_item *send;
-      fakernet_reg_acc_item *recv;
+int read_addr(uint32_t base, uint32_t addr, uint32_t* result) {
+    fakernet_reg_acc_item *send;
+    fakernet_reg_acc_item *recv;
 
-      if(dummy_mode) {
-          return 0xDEADBEEF;
-      }
+    if(dummy_mode) {
+        *result = 0xDEADBEEF;
+        return 0;
+    }
 
-      fnet_ctrl_get_send_recv_bufs(fnet_client, &send, &recv);
+    fnet_ctrl_get_send_recv_bufs(fnet_client, &send, &recv);
 
-      addr = base + addr;
-      addr &= 0x3FFFFFF; // Only the first 25-bits are valid
+    addr = base + addr;
+    addr &= 0x3FFFFFF; // Only the first 25-bits are valid
 
-      send[0].data = htonl(0x0);
-      send[0].addr = htonl(FAKERNET_REG_ACCESS_ADDR_READ | addr);
+    send[0].data = htonl(0x0);
+    send[0].addr = htonl(FAKERNET_REG_ACCESS_ADDR_READ | addr);
 
-      int num_items = 1;
-      int ret = fnet_ctrl_send_recv_regacc(fnet_client, num_items);
-      
-      // Pretty sure "ret" will be the number of UDP reg-accs dones
-      if(ret == 0) {
-          printf("ERROR %i\n", ret);
-          printf("%s\n", fnet_ctrl_last_error(fnet_client));
-          printf("%s\n", strerror(errno));
-          return -1;
-      }
-      return ntohl(recv[0].data);
+    int num_items = 1;
+    int ret = fnet_ctrl_send_recv_regacc(fnet_client, num_items);
+
+    // Pretty sure "ret" will be the number of UDP reg-accs dones
+    if(ret == 0) {
+        printf("ERROR %i\n", ret);
+        printf("%s\n", fnet_ctrl_last_error(fnet_client));
+        printf("%s\n", strerror(errno));
+        return -1;
+    }
+    *result = ntohl(recv[0].data);
+    return 0;
 }
 
 // My M_AXI Reg Mem IF has a 1-read latency.
@@ -103,19 +105,18 @@ uint32_t read_addr(uint32_t base, uint32_t addr) {
 // A better solution would be to have a super-secret address that says just return
 // whatever the most recent read result was. Then I do a read from the desired address,
 // then I read from that super-secret address
-uint32_t double_read_addr(uint32_t base, uint32_t addr) {
-    read_addr(base, addr);
+int double_read_addr(uint32_t base, uint32_t addr, uint32_t* result) {
+
+    read_addr(base, addr, result);
     usleep(100);
-    return read_addr(SAFE_READ_ADDRESS, 0x0);
+    return read_addr(SAFE_READ_ADDRESS, 0x0, result);
 }
 
 int write_addr(uint32_t base, uint32_t addr, uint32_t data) {
       fakernet_reg_acc_item *send;
       fakernet_reg_acc_item *recv;
 
-      if(dummy_mode) {
-          return 0;
-      }
+      if(dummy_mode) { return 0; }
 
       addr = addr+base;
       fnet_ctrl_get_send_recv_bufs(fnet_client, &send, &recv);
@@ -161,12 +162,16 @@ void write_addr_command(client* c, int argc, sds* args) {
 void read_addr_command(client* c, int argc, sds* args) {
     UNUSED(argc);
     long long val;
+    uint32_t ret;
     int valid = string2ll((char*) args[1], sdslen(args[1]), &val);
     if(!valid) {
         addReplyErrorFormat(c, "'%s' is not a valid number", args[1]);
         return;
     }
-    uint32_t ret = double_read_addr(val, 0);
+    if(double_read_addr(val, 0, &ret)) {
+        addReplyError(c, "failed to read value from FPGA.");
+        return;
+    }
     addReplyLongLong(c, ret);
 }
 

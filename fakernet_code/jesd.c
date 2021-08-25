@@ -30,8 +30,8 @@
 #define JESD_SYNC_STATUS_SYNC_BIT 0x1
 #define JESD_SYNC_STATUS_SYSREF_BIT 0x10000
 
-uint32_t read_addr(uint32_t, uint32_t);
-uint32_t double_read_addr(uint32_t, uint32_t);
+int read_addr(uint32_t, uint32_t, uint32_t*);
+int double_read_addr(uint32_t, uint32_t, uint32_t*);
 int write_addr(uint32_t, uint32_t, uint32_t);
 
 static uint32_t jesd_ila_offset(unsigned int channel) {
@@ -67,7 +67,12 @@ AXI_JESD* new_jesd(const char* name, uint32_t axi_addr) {
 }
 
 uint32_t read_jesd(AXI_JESD* jesd, uint32_t offset) {
-    return double_read_addr(jesd->axi_addr, offset);
+    uint32_t ret;
+    if(double_read_addr(jesd->axi_addr, offset, &ret)) {
+        // TODO!
+        return -1;
+    }
+    return ret;
 }
 
 uint32_t write_jesd(AXI_JESD* jesd, uint32_t offset, uint32_t data) {
@@ -95,6 +100,23 @@ uint32_t read_error_register(AXI_JESD* jesd, unsigned int channel) {
         return read_jesd(jesd, ila_base + JESD_ILA_ERROR_COUNT_OFFSET);
 }
 
+uint32_t jesd_error_count(AXI_JESD* jesd, uint32_t *resp, int enable_error_reporting) {
+    int i;
+    const int ERROR_COUNTING_ENABLE = 0x1;
+    //const int ERROR_SYNC_REPORT_ENABLE = 0x100;
+    if(enable_error_reporting) {
+        uint32_t error_reporting = read_jesd(jesd, JESD_ERROR_REPORTING_OFFSET);
+        if(!(error_reporting & ERROR_COUNTING_ENABLE)) {
+            write_jesd(jesd, JESD_ERROR_REPORTING_OFFSET, error_reporting | ERROR_COUNTING_ENABLE);
+        }
+    }
+
+    for(i=0; i < NUM_CHANNELS; i++) {
+        resp[i] = read_error_register(jesd, i);
+    }
+    return 0;
+}
+
 uint32_t jesd_read_error_rate(AXI_JESD* jesd, uint32_t *resp) {
     int i;
     const int ERROR_COUNTING_ENABLE = 0x1;
@@ -105,13 +127,9 @@ uint32_t jesd_read_error_rate(AXI_JESD* jesd, uint32_t *resp) {
     if(!(error_reporting & ERROR_COUNTING_ENABLE)) {
         write_jesd(jesd, JESD_ERROR_REPORTING_OFFSET, error_reporting | ERROR_COUNTING_ENABLE);
     }
-    for(i=0; i < NUM_CHANNELS; i++) {
-        first[i] = read_error_register(jesd, i);
-    }
+    jesd_error_count(jesd, first, 0);
     usleep(500e3);
-    for(i=0; i < NUM_CHANNELS; i++) {
-        second[i] = read_error_register(jesd, i);
-    }
+    jesd_error_count(jesd, second, 0);
 
     for(i=0; i < NUM_CHANNELS; i++) {
         // Don't need to worry aobut rollover, since everything here is a 32-bit
