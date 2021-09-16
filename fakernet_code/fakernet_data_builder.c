@@ -954,8 +954,8 @@ int main(int argc, char **argv) {
 
     // TODO, I should have the reader update this to make sure the next "new"
     // buffer will have enough bytes to finish off the event!
-    //const int SWAP_THRESHOLD = 0.10*BUFFER_SIZE;
-    const int SWAP_THRESHOLD = 10000;
+    const int SWAP_THRESHOLD = 0.20*BUFFER_SIZE;
+    //const int SWAP_THRESHOLD = 10000;
 
     redisContext* redis = create_redis_conn();
 
