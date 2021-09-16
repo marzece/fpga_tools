@@ -3,8 +3,8 @@
 #include <stdio.h>
 #include "gpio.h"
 
-uint32_t read_addr(uint32_t, uint32_t);
-uint32_t double_read_addr(uint32_t, uint32_t);
+int read_addr(uint32_t, uint32_t, uint32_t*);
+int double_read_addr(uint32_t, uint32_t, uint32_t*);
 int write_addr(uint32_t, uint32_t, uint32_t);
 
 AXI_GPIO* new_gpio(const char* name, uint32_t axi_addr) {
@@ -16,7 +16,13 @@ AXI_GPIO* new_gpio(const char* name, uint32_t axi_addr) {
 
 uint32_t read_gpio_value(AXI_GPIO *gpio, int port_number) {
     uint32_t port_offset = port_number == 0 ? 0x0 : 0x8;
-    return double_read_addr(gpio->axi_addr, port_offset);
+    uint32_t ret;
+    if(double_read_addr(gpio->axi_addr, port_offset, &ret)) {
+        // TODO!
+         printf("ERROR occurred while doing GPIO read\n");
+        return -1;
+    }
+    return ret;
 }
 
 uint32_t write_gpio_value(AXI_GPIO* gpio, int port_number, uint32_t data) {

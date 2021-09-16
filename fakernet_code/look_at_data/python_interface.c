@@ -32,8 +32,9 @@ static PyObject* _count_events(PyObject *self, PyObject *args) {
 }
 static PyObject* _get_event_locations(PyObject *self, PyObject *args) {
     PyObject* py_file_in;
+    long max_events=0;
     int i;
-    if (!PyArg_ParseTuple(args, "O", &py_file_in)) {
+    if (!PyArg_ParseTuple(args, "O|i", &py_file_in, &max_events)) {
         PyErr_SetString(error, "Failed to interpret args");
         return NULL;
     }
@@ -45,13 +46,20 @@ static PyObject* _get_event_locations(PyObject *self, PyObject *args) {
         PyErr_SetString(error, "Could not open given file");
         return NULL;
     }
+    // Is there a better way to handle unsigned stuff?
+    // Python's C interface doesn't seem to provide a way to have specifically unsigned args
+
+    if(max_events < 0) {
+        PyErr_SetString(error, "Max events cannot be negative!");
+        return NULL;
+    }
 
     FILE* fin = fdopen(fd, "rb");
     if(!fin) {
         PyErr_SetString(error, "Error creating FILE from file descriptor");
         return NULL;
     }
-    EventIndex index = get_events_index(fin);
+    EventIndex index = get_events_index(fin, (unsigned int)max_events);
     PyObject* locations = PyList_New(index.nevents);
     PyObject* lengths = PyList_New(index.nevents);
     for(i=0; i < index.nevents; i++) {

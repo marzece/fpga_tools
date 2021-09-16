@@ -2,23 +2,25 @@ import fpga_spi
 import hiredis
 import redis
 from time import sleep, time
+import socket
+
+resp_reader = hiredis.Reader()
 
 #TODO MOVE THESE TO A SEPERATE MODULE!!!
 def grab_response(server):
     t=False
-    resp_reader = hiredis.Reader() # TODO (just make this global?)
-    while t is False:
-        resp_reader.feed(server[1].readline())
-        t = resp_reader.gets()
+    resp_reader.feed(server.recv(1024))
+    t = resp_reader.gets()
     return t
 
 def connect_to_local_client():
-    command_pipe = open("fakernet_code/kintex_command_pipe", "wb", 0)
-    resp_pipe = open("fakernet_code/kintex_response_pipe", "rb")
-    return command_pipe, resp_pipe
+    HOST = "localhost"
+    PORT = 4002
+    fpga_conn = socket.create_connection((HOST, PORT))
+    return fpga_conn
 
 def send_command(server, command):
-    server[0].write(command.encode('ascii'))
+    server.sendall(command.encode('ascii'))
     return grab_response(server)
 
 def publish_data(db, data):
@@ -45,7 +47,8 @@ if __name__ == "__main__":
     voltage_measurement_LSB = 25e-3 # 25mV per LSB, from LTC4151 datasheet
     current_adc_conv = current_measurement_LSB/current_measurement_resistor
 
-    monitor_iic_addr = 0xD6 # CERES, HERMES slot 1
+    #monitor_iic_addr = 0xD6 # CERES, HERMES slot 1
+    monitor_iic_addr = 0xD4 # CERES, HERMES slot 0
     if(args.kcu):
         monitor_iic_addr = 0xD4
 
@@ -55,7 +58,7 @@ if __name__ == "__main__":
         else:
             monitor_iic_addr = int(args.addr)
 
-    read_vm_command = "read_iic_bus_with_reg "+str(monitor_iic_addr) +"  {iic_reg}\n"
+    read_vm_command = "read_iic_bus_with_reg "+str(monitor_iic_addr) +"  {iic_reg}\r\n"
 
     # First set the IIC MUX
     # I'm going to assume the IIC mux will never be screwed with
@@ -63,8 +66,8 @@ if __name__ == "__main__":
     # IIC MUX IIC ADDR = 0xEA
     # 0x5 is the correct data value for talking to the FMC IIC
     if args.kcu:
-        _ = send_command(server, "write_iic_bus 0xEA 0x5\n")
-        value = send_command(server, "read_iic_bus 0xEA\n")
+        _ = send_command(server, "write_iic_bus 0xEA 0x5\r\n")
+        value = send_command(server, "read_iic_bus 0xEA\r\n")
         if(value != 0x5):
             print("Failed to write IIC Mux!!!!")
             print(value)

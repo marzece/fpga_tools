@@ -56,9 +56,9 @@ int count_events(FILE* fin) {
     return count;
 }
 
-EventIndex get_events_index(FILE* fin) {
+EventIndex get_events_index(FILE* fin, const unsigned int max_counts) {
     TrigHeader header;
-    int count = 0;
+    unsigned int count = 0;
     const int SAMPLE_BYTES = 2;
     const int CHANNEL_HEADER_BYTES = 4;
     const int CHANNEL_CRC_SIZE = 4;
@@ -73,8 +73,8 @@ EventIndex get_events_index(FILE* fin) {
     // It might be more optimal not to do this b/c it means looping through the file twice.
     int nevents = count_events(fin);
     EventIndex index;
-    index.locations = malloc(sizeof(long)*nevents);
-    index.nsamples = malloc(sizeof(unsigned int)*nevents);
+    index.locations = (long*)malloc(sizeof(long)*nevents);
+    index.nsamples = (unsigned int*)malloc(sizeof(unsigned int)*nevents);
     index.nevents = 0;
 
     if(fseek(fin, 0, SEEK_SET)) {
@@ -85,7 +85,7 @@ EventIndex get_events_index(FILE* fin) {
     }
 
     const int TRIGGER_HEADER_BYTES = 20;
-    while(read_header(fin, &header) == 0) {
+    while(read_header(fin, &header) == 0 && (max_counts == 0  || count < max_counts)) {
         // Now need to determine how far to jump ahead to get next triggr header
         index.locations[count] = ftell(fin) - TRIGGER_HEADER_BYTES;
         index.nsamples[count] = header.length*2;
@@ -109,7 +109,7 @@ int get_event(FILE* fin, long offset, uint16_t** samples) {
         // ERROR
         return -1;;
     }
-    *samples = malloc(sizeof(uint16_t)*header.length*2*NCHANNELS);
+    *samples = (uint16_t*)malloc(sizeof(uint16_t)*header.length*2*NCHANNELS);
 
     if(read_event(fin, header.length*2, *samples) != 0) {
         // ERROR

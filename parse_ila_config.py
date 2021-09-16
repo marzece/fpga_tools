@@ -1,7 +1,7 @@
 import json
 import socket
 import copy
-from ceres_fpga_spi import connect_to_local_client, grab_response, SPI_Device
+from ceres_fpga_spi import connect_to_fpga, grab_response, SPI_Device
 
 def grab_bits(word, first_bit, last_bit):
     mask = 0
@@ -81,25 +81,25 @@ def write_to_fpga(conn, device, addr, value):
         command = "jesd_write 0x%x 0x%x\r\n" % (addr, value)
     else:
         raise Exception("Invalid device specified")
-    conn[0].write(command.encode("ascii"))
+    conn.sendall(command.encode("ascii"))
     data = grab_response(conn)
     return data
 
 def read_from_fpga(conn, device, addr):
     if(device == SPI_Device.ADC_A):
-        command = "jesd_read 0x0 0x%x\n" % addr
+        command = "jesd_read 0x0 0x%x\r\n" % addr
     elif(device == SPI_Device.ADC_B):
-        command = "jesd_read 0x1 0x%x\n" % addr
+        command = "jesd_read 0x1 0x%x\r\n" % addr
     elif(device == SPI_Device.ADC_C):
-        command = "jesd_read 0x2 0x%x\n" % addr
+        command = "jesd_read 0x2 0x%x\r\n" % addr
     elif(device == SPI_Device.ADC_D):
-        command = "jesd_read 0x3 0x%x\n" % addr
+        command = "jesd_read 0x3 0x%x\r\n" % addr
     elif(device == SPI_Device.TI_ADC):
-        command = "jesd_read 0x%x\n" % addr
+        command = "jesd_read 0x%x\r\n" % addr
     else:
         raise Exception("Invalid device specified")
 
-    conn[0].write(command.encode("ascii"))
+    conn.sendall(command.encode("ascii"))
     data = grab_response(conn)
     if(type(data) != int):
         import ipdb;ipdb.set_trace()
@@ -177,7 +177,7 @@ if __name__ == "__main__":
     devices = [x for x in devices if x is not None]
 
 
-    conn = connect_to_local_client()
+    conn = connect_to_fpga()
 
     jesd_info_fn = "xil_jesd_regs.json"
     regs = read_reg_info_file(jesd_info_fn)

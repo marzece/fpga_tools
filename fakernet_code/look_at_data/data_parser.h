@@ -32,7 +32,7 @@ int read_header(FILE* fin, TrigHeader* header);
 
 int count_events(FILE* fin);
 
-EventIndex get_events_index(FILE* fin);
+EventIndex get_events_index(FILE* fin, const unsigned int max_counts);
 
 // Assumes that "samples" is of sufficienty length
 // for nsamples*NCHANNELS number of samples
