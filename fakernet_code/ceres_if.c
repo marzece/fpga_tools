@@ -6,6 +6,7 @@
 #include "dac_if.h"
 #include "ads_if.h"
 #include "jesd.h"
+#include "jesd_phy.h"
 #include "data_pipeline.h"
 
 #define  ADC_A_AXI_ADDR          0x0000
@@ -28,6 +29,11 @@
 #define  JESD_B_AXI_ADDR         0x8000
 #define  JESD_C_AXI_ADDR         0x9000
 #define  JESD_D_AXI_ADDR         0xA000
+
+#define  JESD_PHY_A_AXI_ADDR         0xE000
+#define  JESD_PHY_B_AXI_ADDR         0x20000
+#define  JESD_PHY_C_AXI_ADDR         0xF000
+#define  JESD_PHY_D_AXI_ADDR         0x11000
 
 #define  DATA_PIPELINE_0_ADDR    0x6000
 
@@ -52,6 +58,10 @@ struct CERES_IF {
     AXI_JESD* jesd_b;
     AXI_JESD* jesd_c;
     AXI_JESD* jesd_d;
+    AXI_JESD_PHY* jesd_phy_a;
+    AXI_JESD_PHY* jesd_phy_b;
+    AXI_JESD_PHY* jesd_phy_c;
+    AXI_JESD_PHY* jesd_phy_d;
     AXI_DATA_PIPELINE* pipeline;
 };
 
@@ -106,6 +116,10 @@ static struct CERES_IF* get_ceres_handle() {
         ceres->jesd_b = new_jesd("jesd_b", JESD_B_AXI_ADDR);
         ceres->jesd_c = new_jesd("jesd_c", JESD_C_AXI_ADDR);
         ceres->jesd_d = new_jesd("jesd_d", JESD_D_AXI_ADDR);
+        ceres->jesd_phy_a = new_jesd_phy("jesd_phy_a", JESD_PHY_A_AXI_ADDR);
+        ceres->jesd_phy_b = new_jesd_phy("jesd_phy_b", JESD_PHY_B_AXI_ADDR);
+        ceres->jesd_phy_c = new_jesd_phy("jesd_phy_c", JESD_PHY_C_AXI_ADDR);
+        ceres->jesd_phy_d = new_jesd_phy("jesd_phy_d", JESD_PHY_D_AXI_ADDR);
         ceres->pipeline = new_data_pipeline_if("dp0", DATA_PIPELINE_0_ADDR);
     }
     return ceres;
@@ -668,6 +682,46 @@ static uint32_t set_sysref_command(uint32_t* args) {
     return ret;
 }
 
+AXI_JESD_PHY* jesd_phy_switch(uint32_t which_jesd) {
+    AXI_JESD_PHY* this_jesd_phy = NULL;
+    switch(which_jesd) {
+        case(0):
+            this_jesd_phy = get_ceres_handle()->jesd_phy_a;
+            break;
+        case(1):
+            this_jesd_phy = get_ceres_handle()->jesd_phy_b;
+            break;
+        case(2):
+            this_jesd_phy = get_ceres_handle()->jesd_phy_b;
+            break;
+        case(3):
+            this_jesd_phy = get_ceres_handle()->jesd_phy_b;
+            break;
+        default:
+            // TODO really need to add an error string!
+            return NULL;
+    }
+    return this_jesd_phy;
+}
+
+static uint32_t set_jesd_lpmen_command(uint32_t* args) {
+    uint32_t which_jesd = args[0];
+    uint32_t val = args[1];
+    AXI_JESD_PHY* this_jesd_phy = jesd_phy_switch(which_jesd);
+    if(!this_jesd_phy) {
+        return -1;
+    }
+    return write_lpmen(this_jesd_phy, val);
+}
+static uint32_t read_jesd_lpmen_command(uint32_t* args) {
+    uint32_t which_jesd = args[0];
+    AXI_JESD_PHY* this_jesd_phy = jesd_phy_switch(which_jesd);
+    if(!this_jesd_phy) {
+        return -1;
+    }
+    return read_lpmen(this_jesd_phy);
+}
+
 ServerCommand ceres_commands[] = {
 {"read_iic_reg",NULL,                              read_iic_block_command,                                 2,  1, 0, 0},
 {"write_iic_reg",NULL,                             write_iic_block_command,                                3,  0, 0, 0},
@@ -733,5 +787,7 @@ ServerCommand ceres_commands[] = {
 {"write_data_pipeline_trigger_enable",NULL,        write_data_pipeline_trigger_enable_command,             2,  1, 0, 0},
 {"set_trigger_params",NULL,                        set_trigger_params_command,                             3,  1, 0, 0},
 {"set_sysref",NULL,                                set_sysref_command,                                     3,  1, 0, 0},
+{"write_lpmen",NULL,                               set_jesd_lpmen_command,                                 3,  1, 0, 0},
+{"read_lpmen",NULL,                                read_jesd_lpmen_command,                                2,  1, 0, 0},
 {"",NULL,                                          NULL,                                                   0,  0, 0, 0}    //  Must  be  last
 };
