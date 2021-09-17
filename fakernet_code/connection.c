@@ -123,7 +123,7 @@ ConnectionType CT_Socket;
  */
 
 connection *connCreateSocket() {
-    connection *conn = malloc(sizeof(connection));
+    connection *conn = calloc(1, sizeof(connection));
     conn->type = &CT_Socket;
     conn->fd = -1;
 
