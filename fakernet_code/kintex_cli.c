@@ -284,7 +284,13 @@ int main(int argc, char **argv) {
     // First get the command table
     if(!batch) {
         write(server_fd, SEND_COMMAND_TABLE_COMMAND, strlen(SEND_COMMAND_TABLE_COMMAND));
-        grab_response(server_fd);
+        int bytes_recvd = grab_response(server_fd);
+        if(bytes_recvd == 0) {
+            // This means the server crashed or disconnected probably
+             printf("Error communicating with server...cannot continue.\n");
+             exit(0);
+        }
+
         produce_command_table(response_buffer);
     }
 
