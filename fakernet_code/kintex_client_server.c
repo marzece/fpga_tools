@@ -257,15 +257,15 @@ int main(int argc, char** argv) {
                 if(strcmp(argv[i], "--ip") == 0) {
                     expecting_value = ARG_IP;
                 }
-                else if(strcmp(argv[1], "--dry") == 0 || strcmp(argv[1], "--dummy") == 0) {
+                else if(strcmp(argv[i], "--dry") == 0 || strcmp(argv[i], "--dummy") == 0) {
                     printf("DUMMY MODE ENGAGED\n");
                     dummy_mode = 1;
                 }
-                else if(strcmp(argv[1], "--ti") == 0 || strcmp(argv[1], "--TI") ==0) {
+                else if(strcmp(argv[i], "--ti") == 0 || strcmp(argv[1], "--TI") ==0) {
                     printf("Using TI board commands\n");
                     which_board = TI;
                 }
-                else if(strcmp(argv[1], "--ceres") == 0 || strcmp(argv[1], "--CERES") ==0) {
+                else if(strcmp(argv[i], "--ceres") == 0 || strcmp(argv[1], "--CERES") ==0) {
                     printf("Using CERES board commands\n");
                     which_board = CERES;
                 }
