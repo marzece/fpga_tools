@@ -18,7 +18,7 @@
 #include "server.h"
 #include "ae.h"
 #include "anet.h"
-
+#include "signal.h"
 
 /* Output buffer limits presets. */
 clientBufferLimitsConfig clientBufferLimitsDefaults = {0, 0, 0}; /* normal */
