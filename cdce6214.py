@@ -1,4 +1,4 @@
-from ceres_fpga_spi import decode_data, connect_to_local_client, grab_response
+from ceres_fpga_spi import decode_data, connect_to_fpga, grab_response
 from time import sleep
 
 REGMAP_FILENAME = "/Users/ericmarzec/fpga_tools/regmap.txt"
@@ -51,27 +51,27 @@ def eeprom_to_registers(image, regmap):
     return result
 
 def write_iic_register(fpga, addr, value):
-    write_clkgen_command = "write_clkgen_register {addr} {value}"
+    write_clkgen_command = "write_clkgen_register {addr} {value}\r\n"
     this_command = write_clkgen_command.format(addr=addr, value=value)
-    fpga[0].write(this_command.encode("ascii"))
+    fpga.sendall(this_command.encode("ascii"))
     return grab_response(fpga)
 
-def read_iic_register(fpga, addr, value):
-    read_clkgen_command = "read_clkgen_register {addr}"
+def read_iic_register(fpga, addr):
+    read_clkgen_command = "read_clkgen_register {addr}\r\n"
     this_command = read_clkgen_command.format(addr=addr)
-    fpga[0].write(this_command.encode("ascii"))
+    fpga.sendall(this_command.encode("ascii"))
     return grab_response(fpga)
 
 def set_clkgen_gpio(fpga, val):
-    clkgen_gpio_command = "write_clkgen_gpio {value}"
-    fpga[0].write(clkgen_gpio_command.encode('ascii'))
+    clkgen_gpio_command = "write_clkgen_gpio {value}\r\n"
+    fpga.sendall(clkgen_gpio_command.encode('ascii'))
     return grab_response(fpga)
 
 def do_power_cycle(fpga):
     # Finally power-down then power-up the CDCE chip
     set_clkgen_gpio(fpga, 0x0);
     sleep(1.0)
-    set_clkgen_gpio(fgpa, 0x7)
+    set_clkgen_gpio(fpga, 0x7)
 
 def write_eeprom(fpga, image):
     NVM_WRITE_ADDR_LOC = 0xD
@@ -98,10 +98,10 @@ def readback_eeprom(fpga):
     NUM_REGISTERS = 64
 
     image = {}
-    _ = write_iic_register(NVM_READ_ADDR_LOC, 0x0);
+    _ = write_iic_register(fpga, NVM_READ_ADDR_LOC, 0x0);
     sleep(0.1)
     for i in range(NUM_REGISTERS):
-        image[i] = read_iic_register(NVM_READ_DATA_LOC)
+        image[i] = read_iic_register(fpga, NVM_READ_DATA_LOC)
         sleep(0.1)
 
     return image
@@ -166,7 +166,7 @@ if __name__ == "__main__":
         print("Can only have a single programming method specified!")
         exit(0)
 
-    fpga = connect_to_local_client()
+    fpga = connect_to_fpga()
     regs = read_reg_file(args.filename)
     reg_map = read_regmap_file()
 
@@ -176,7 +176,7 @@ if __name__ == "__main__":
         write_eeprom(fpga, eeprom_image)
         sleep(1.0)
         readback = readback_eeprom(fpga)
-        for reg, rb in enumerate(read_back):
+        for reg, rb in enumerate(readback):
             if(rb != eeprom_image[reg]):
                 print("0x%x\tSet: 0x%x\tReadback: 0x%x" % (reg, eeprom_image[reg], rb))
 
@@ -186,7 +186,7 @@ if __name__ == "__main__":
 
     if(args.reg_commit):
         print("Doing Reg Commit")
-        perform_reg_commit_operation(fgpa)
+        perform_reg_commit_operation(fpga)
 
 
 
