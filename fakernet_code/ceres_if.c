@@ -692,16 +692,38 @@ AXI_JESD_PHY* jesd_phy_switch(uint32_t which_jesd) {
             this_jesd_phy = get_ceres_handle()->jesd_phy_b;
             break;
         case(2):
-            this_jesd_phy = get_ceres_handle()->jesd_phy_b;
+            this_jesd_phy = get_ceres_handle()->jesd_phy_c;
             break;
         case(3):
-            this_jesd_phy = get_ceres_handle()->jesd_phy_b;
+            this_jesd_phy = get_ceres_handle()->jesd_phy_d;
             break;
         default:
             // TODO really need to add an error string!
             return NULL;
     }
     return this_jesd_phy;
+}
+
+static uint32_t write_jesd_phy_command(uint32_t* args) {
+    uint32_t which_jesd = args[0];
+    uint32_t addr = args[1];
+    uint32_t val = args[2];
+    AXI_JESD_PHY* this_jesd_phy = jesd_phy_switch(which_jesd);
+    if(!this_jesd_phy) {
+        return -1;
+    }
+    return write_jesd_phy(this_jesd_phy, addr, val);
+
+}
+
+static uint32_t read_jesd_phy_command(uint32_t* args) {
+    uint32_t which_jesd = args[0];
+    uint32_t addr = args[1];
+    AXI_JESD_PHY* this_jesd_phy = jesd_phy_switch(which_jesd);
+    if(!this_jesd_phy) {
+        return -1;
+    }
+    return read_jesd_phy(this_jesd_phy, addr);
 }
 
 static uint32_t set_jesd_lpmen_command(uint32_t* args) {
@@ -720,6 +742,89 @@ static uint32_t read_jesd_lpmen_command(uint32_t* args) {
         return -1;
     }
     return read_lpmen(this_jesd_phy);
+}
+
+static uint32_t reset_lpmen_command(uint32_t* args) {
+    uint32_t which_jesd = args[0];
+    AXI_JESD_PHY* this_jesd_phy = jesd_phy_switch(which_jesd);
+    if(!this_jesd_phy) {
+        return -1;
+    }
+    return reset_lpmen(this_jesd_phy);
+
+}
+
+static uint32_t read_insertion_loss_command(uint32_t* args) {
+    uint32_t which_jesd = args[0];
+    AXI_JESD_PHY* this_jesd_phy = jesd_phy_switch(which_jesd);
+    if(!this_jesd_phy) {
+        return -1;
+    }
+    return read_insertion_loss(this_jesd_phy);
+}
+
+
+static uint32_t read_jesd_drp_common_command(uint32_t* args) {
+    uint32_t which_jesd = args[0];
+    uint32_t drp_addr = args[1];
+    AXI_JESD_PHY* this_jesd_phy = jesd_phy_switch(which_jesd);
+    if(!this_jesd_phy) {
+        return -1;
+    }
+    return read_drp_common(this_jesd_phy, drp_addr);
+}
+
+static uint32_t write_jesd_drp_common_command(uint32_t* args) {
+    uint32_t which_jesd = args[0];
+    uint32_t drp_addr = args[1];
+    uint16_t drp_data = args[2] & 0xFFFF;
+
+    AXI_JESD_PHY* this_jesd_phy = jesd_phy_switch(which_jesd);
+    if(!this_jesd_phy) {
+        return -1;
+    }
+    return write_drp_common(this_jesd_phy, drp_addr, drp_data);
+}
+
+static uint32_t read_drp_interface_selector_command(uint32_t* args) {
+    uint32_t which_jesd = args[0];
+    AXI_JESD_PHY* this_jesd_phy = jesd_phy_switch(which_jesd);
+    if(!this_jesd_phy) {
+        return -1;
+    }
+    return read_jesd_phy_drp_interface_selector(this_jesd_phy);
+}
+
+static uint32_t write_drp_interface_selector_command(uint32_t* args) {
+    uint32_t which_jesd = args[0];
+    uint32_t interface = args[1];
+    AXI_JESD_PHY* this_jesd_phy = jesd_phy_switch(which_jesd);
+    if(!this_jesd_phy) {
+        return -1;
+    }
+    return write_jesd_phy_drp_interface_selector(this_jesd_phy, interface);
+}
+
+static uint32_t read_jesd_drp_channel_command(uint32_t* args) {
+    uint32_t which_jesd = args[0];
+    uint32_t drp_addr = args[1];
+    AXI_JESD_PHY* this_jesd_phy = jesd_phy_switch(which_jesd);
+    if(!this_jesd_phy) {
+        return -1;
+    }
+    return read_drp_transceiver(this_jesd_phy, drp_addr);
+}
+
+static uint32_t write_jesd_drp_channel_command(uint32_t* args) {
+    uint32_t which_jesd = args[0];
+    uint32_t drp_addr = args[1];
+    uint16_t drp_data = args[2] & 0xFFFF;
+
+    AXI_JESD_PHY* this_jesd_phy = jesd_phy_switch(which_jesd);
+    if(!this_jesd_phy) {
+        return -1;
+    }
+    return write_drp_transceiver(this_jesd_phy, drp_addr, drp_data);
 }
 
 ServerCommand ceres_commands[] = {
@@ -787,7 +892,17 @@ ServerCommand ceres_commands[] = {
 {"write_data_pipeline_trigger_enable",NULL,        write_data_pipeline_trigger_enable_command,             2,  1, 0, 0},
 {"set_trigger_params",NULL,                        set_trigger_params_command,                             3,  1, 0, 0},
 {"set_sysref",NULL,                                set_sysref_command,                                     3,  1, 0, 0},
+{"write_jesd_phy",NULL,                            write_jesd_phy_command,                                         4,  1, 0, 0},
+{"read_jesd_phy",NULL,                             read_jesd_phy_command,                                          3,  1, 0, 0},
 {"write_lpmen",NULL,                               set_jesd_lpmen_command,                                 3,  1, 0, 0},
 {"read_lpmen",NULL,                                read_jesd_lpmen_command,                                2,  1, 0, 0},
+{"reset_lpmen",NULL,                               reset_lpmen_command,                                    2,  1, 0, 0},
+{"read_insertion_loss",NULL,                       read_insertion_loss_command,                            2,  1, 0, 0},
+{"read_jesd_drp_common",NULL,                      read_jesd_drp_common_command,                           3,  1, 0, 0},
+{"write_jesd_drp_common",NULL,                     write_jesd_drp_common_command,                          4,  1, 0, 0},
+{"read_drp_interface_selector",NULL,               read_drp_interface_selector_command,                    2,  1, 0, 0},
+{"write_drp_interface_selector",NULL,              write_drp_interface_selector_command,                   3,  1, 0, 0},
+{"read_jesd_drp_channel",NULL,                     read_jesd_drp_channel_command,                          3,  1, 0, 0},
+{"write_jesd_drp_channel",NULL,                    write_jesd_drp_channel_command,                         4,  1, 0, 0},
 {"",NULL,                                          NULL,                                                   0,  0, 0, 0}    //  Must  be  last
 };
