@@ -1,4 +1,6 @@
 *.swp
+*.s
+*.out
 *.swo
 *.o
 *.pyc
@@ -11,3 +13,4 @@
 *.npz
 *.gif
 *.yml
+*.png
