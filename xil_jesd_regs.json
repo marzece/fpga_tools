@@ -165,8 +165,44 @@
             ]
         },
         {
+            "name": "Test Error Count",
+            "addr": "0x820",
+            "addr_increment": "0x40",
+            "fields": [
+                {
+                    "name": "count",
+                    "bit_low": 0,
+                    "bit_high": 31
+                }
+            ]
+        },
+        {
             "name": "Link Error Count",
             "addr": "0x824",
+            "addr_increment": "0x40",
+            "fields": [
+                {
+                    "name": "count",
+                    "bit_low": 0,
+                    "bit_high": 31
+                }
+            ]
+        },
+        {
+            "name": "Test Mode ILA Count",
+            "addr": "0x828",
+            "addr_increment": "0x40",
+            "fields": [
+                {
+                    "name": "count",
+                    "bit_low": 0,
+                    "bit_high": 31
+                }
+            ]
+        },
+        {
+            "name": "Test Mode Multiframe Count",
+            "addr": "0x82C",
             "addr_increment": "0x40",
             "fields": [
                 {

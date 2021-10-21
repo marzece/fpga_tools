@@ -11,7 +11,6 @@ def grab_bits(word, first_bit, last_bit):
         mask |= 1
     return (word >> first_bit) & mask
 
-
 def read_reg_info_file(fn):
     f = open(fn)
     json_obj = json.load(f)
@@ -43,6 +42,7 @@ class JESDReg:
     def __init__(self, **kwargs):
         self.name = kwargs['name']
         addr = int(kwargs['addr'], 16)
+        self.raw_value = None
         if(kwargs.get('addr_increment')):
             self.per_lane_reg = True
             incr = int(kwargs["addr_increment"], 16)
@@ -66,7 +66,6 @@ class JESDReg:
         else:
             addr_str = addr_str + hex(self.addr)
         return self.name + "\n" + str(addr_str) + "\n\t" + '\n\t'.join(field_strs) + "\n"
-
 
 def write_to_fpga(conn, device, addr, value):
     if(device == SPI_Device.ADC_A):
@@ -107,12 +106,15 @@ def read_from_fpga(conn, device, addr):
 
 def read_reg(conn, device, reg):
     if(reg.per_lane_reg):
+        reg.raw_value = []
         for fields, addr in zip(reg.fields, reg.addr):
             word = read_from_fpga(conn, device, addr)
+            reg.raw_value.append(word)
             for f in fields:
                 f.get_value(word)
     else:
         word = read_from_fpga(conn, device, reg.addr)
+        reg.raw_value = word
         for f in reg.fields:
             f.get_value(word)
 
@@ -189,3 +191,11 @@ if __name__ == "__main__":
                 read_reg(conn, device, r)
 
     print(results)
+
+def calc_fchk(regs, lane):
+    the_sum = 0
+    for reg in regs[:6]:
+        the_sum += reg.raw_value[lane]
+    the_sum %= 255
+    fchk = regs[6].fields[lane][0].value
+    return the_sum, fchk
