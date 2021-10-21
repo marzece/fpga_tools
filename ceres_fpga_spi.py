@@ -18,11 +18,8 @@ server_device_ids = { SPI_Device.ADC_A: 0, SPI_Device.ADC_B:1,
                       SPI_Device.LMK_A:0, SPI_Device.LMK_B:1,
                       SPI_Device.TI_ADC:0}
 
-def connect_to_fpga():
-    HOST = "localhost"
-    PORT = 4002
-
-    fpga_conn = socket.create_connection((HOST, PORT))
+def connect_to_fpga(ip="localhost", port=4002):
+    fpga_conn = socket.create_connection((ip, port))
     #Do I need to error check? Idk fuckit dude
     return fpga_conn
 

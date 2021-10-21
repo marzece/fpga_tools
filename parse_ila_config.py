@@ -164,6 +164,7 @@ if __name__ == "__main__":
     parser.add_argument("--adc_c", action="store_true", help="send commands to ADC C")
     parser.add_argument("--adc_d", action="store_true", help="send commands to ADC D")
     parser.add_argument("--ti", action="store_true", help="Use commands for TI board")
+    parser.add_argument("--port", type=int, default=4002, help="Port to connect to server at")
 
 
     args = parser.parse_args()
@@ -177,7 +178,7 @@ if __name__ == "__main__":
     devices = [x for x in devices if x is not None]
 
 
-    conn = connect_to_fpga()
+    conn = connect_to_fpga(port=args.port)
 
     jesd_info_fn = "xil_jesd_regs.json"
     regs = read_reg_info_file(jesd_info_fn)

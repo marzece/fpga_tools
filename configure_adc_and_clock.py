@@ -121,6 +121,7 @@ def main():
     parser.add_argument("--adc_b", action="store_true", help="send commands to ADC B")
     parser.add_argument("--adc_c", action="store_true", help="send commands to ADC C")
     parser.add_argument("--adc_d", action="store_true", help="send commands to ADC D")
+    parser.add_argument("--port", type=int, default=4002, help="Port to connect to server on")
     parser.add_argument("--ti", action="store_true", help="Use commands for TI board")
     parser.add_argument("--do_reset", action="store_true", help="Do hard reset (applies to both ADCs)")
 
@@ -131,7 +132,7 @@ def main():
     with open(fn, 'r') as f:
         instructions = parse_config_file(f)
 
-    fpga_conn = connect_to_fpga()
+    fpga_conn = connect_to_fpga(port=args.port)
 
     devices = [SPI_Device.ADC_A if args.adc_a else None,
                SPI_Device.ADC_B if args.adc_b else None,

@@ -2,7 +2,7 @@ import socket
 import argparse
 from time import sleep
 from collections import defaultdict, namedtuple
-from ceres_fpga_spi import adc_spi, connect_to_local_client, SPI_Device
+from ceres_fpga_spi import adc_spi, connect_to_fpga, SPI_Device
 
 
 dig_pages = {"interleaving": 0x6100, "decimation": 0x6141, "main_dig": 0x6800,
@@ -70,6 +70,7 @@ if __name__ == "__main__":
     parser.add_argument("--adc_b", action="store_true", help="send commands to ADC B")
     parser.add_argument("--adc_c", action="store_true", help="send commands to ADC C")
     parser.add_argument("--adc_d", action="store_true", help="send commands to ADC D")
+    parser.add_argument("--port", type=int, default=4002, help="Port to connect to server on")
     args = parser.parse_args()
 
     adcs = [SPI_Device.ADC_A if args.adc_a else None,
@@ -82,5 +83,5 @@ if __name__ == "__main__":
         print("Must specify if you want to send to ADC A or B")
         exit()
 
-    fpga_conn = connect_to_local_client()
+    fpga_conn = connect_to_fpga(port=args.port)
     adc_readback(fpga_conn, adcs)

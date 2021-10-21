@@ -238,7 +238,8 @@ ServerCommand* search_for_command(ServerCommand* table, const char* command_name
 // For arguements with a values
 enum ArgIDs {
     ARG_NONE=0,
-    ARG_IP
+    ARG_IP,
+    ARG_PORT
 };
 
 void print_help_message() {
@@ -249,6 +250,7 @@ int main(int argc, char** argv) {
 
     int which_board = HE2TER;
     const char* ip = DEFAULT_IP;
+    int port = -1;
     if(argc > 1 ) {
         int i;
         enum ArgIDs expecting_value = 0;
@@ -256,6 +258,9 @@ int main(int argc, char** argv) {
             if(!expecting_value) {
                 if(strcmp(argv[i], "--ip") == 0) {
                     expecting_value = ARG_IP;
+                }
+                else if(strcmp(argv[i], "--port") == 0) {
+                    expecting_value = ARG_PORT;
                 }
                 else if(strcmp(argv[i], "--dry") == 0 || strcmp(argv[i], "--dummy") == 0) {
                     printf("DUMMY MODE ENGAGED\n");
@@ -283,6 +288,12 @@ int main(int argc, char** argv) {
                     case ARG_IP:
                         ip = argv[i];
                         printf("FPGA IP set to %s\n", ip);
+                        break;
+                    case ARG_PORT:
+                        port = atoi(argv[i]);
+                        if(port <= 0) {
+                            printf("Invalid port given, will be using the default port");
+                        }
                         break;
                     case ARG_NONE:
                     default:
@@ -323,6 +334,9 @@ int main(int argc, char** argv) {
     ServerCommand* commandTable = combine_command_tables();
 
     initServerConfig();
+    if(port > 0) {
+        server.port = port;
+    }
     server_command_table = commandTable;
     initServer();
 

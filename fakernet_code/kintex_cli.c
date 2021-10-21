@@ -240,6 +240,7 @@ int main(int argc, char **argv) {
     char *line;
     char *prgname = argv[0];
     int batch = 0;
+    int arg_port = -1;
     
 
     /* Parse options, with --multiline we enable multi line editing. */
@@ -254,6 +255,12 @@ int main(int argc, char **argv) {
             exit(0);
         } else if(!strcmp(*argv, "--batch")) {
             batch = 1;
+        } else if(!strcmp(*argv, "--port")) {
+            // TODO NEED to check if another arg exists before handling it!
+            // Also should make sure the given port is valid
+            argv++;
+            argc--;
+            arg_port = atoi(*argv);
         } else {
             fprintf(stderr, "Usage: %s [--multiline] [--keycodes]\n", prgname);
             exit(1);
@@ -272,7 +279,7 @@ int main(int argc, char **argv) {
     const char* prompt_string = "kintex> ";
 
     const char* server_ip = "127.0.0.1"; // Localhost
-    const int server_port = 4002;
+    const int server_port = arg_port > 0 ? arg_port : 4002;
     int server_fd = connect_to_server(server_ip, server_port);
 
     if(server_fd <= 0) {
