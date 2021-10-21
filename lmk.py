@@ -1,6 +1,6 @@
 import re
 import json
-from ceres_fpga_spi import connect_to_local_client, lmk_spi, SPI_Device
+from ceres_fpga_spi import connect_to_fpga, lmk_spi, SPI_Device
 
 # Helper function for getting certain bits from a word
 def _grab_bits_(word, first_bit, last_bit):
@@ -138,7 +138,7 @@ class LMK:
         self.config = dict(lines)
 
     def readback_config(self):
-        conn = connect_to_local_client()
+        conn = connect_to_fpga(port=4003)
         for reg_addr, reg in self.reg_info.items():
             mode = reg["Mode"]
             if("R" not in mode.upper()):
