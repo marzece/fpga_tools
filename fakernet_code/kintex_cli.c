@@ -153,9 +153,8 @@ int handle_line(const int fd, const char* line) {
         return -1;
     }
 
-    // Fills result into response_buffer
+    // Fill result into response_buffer
     int nbytes_read = grab_response(fd);
-
     if(response_buffer[nbytes_read-1] != '\n') {
         printf("%s\n", response_buffer);
     }
