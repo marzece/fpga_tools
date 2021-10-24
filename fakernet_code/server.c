@@ -11,6 +11,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <stdarg.h> // TODO Remove this once _serverPanic & _serverAssert are removed
 #include <stdio.h> // TODO Remove this once _serverPanic & _serverAssert are removed
 
