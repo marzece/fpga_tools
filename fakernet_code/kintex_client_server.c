@@ -313,7 +313,7 @@ int main(int argc, char** argv) {
         }
 
         if(expecting_value) {
-            printf("Did find value for last argument...exiting\n");
+            printf("Did not find value for last argument...exiting\n");
             return 1;
         }
     }
