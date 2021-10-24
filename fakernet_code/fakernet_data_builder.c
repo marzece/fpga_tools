@@ -54,21 +54,34 @@ int reeling = 0;
 // Write Buffer = buffers[buf_state]
 // read_buffer1 = buffers[(buf_state + 1) % 3]
 // read_buffer2 = buffers[(buf_state + 2) % 3 ]
-typedef struct TripleBuffer {
-    char* buffers[3];
-    int buff_idxs[3];
-    int buff_lens[3];
-    int read_finished;
-    int write_finished;
-    int state;
-} TripleBuffer;
+typedef struct RingBuffer {
+    unsigned char* buffer;
+    size_t rpointer;
+    size_t wpointer;
+    int is_empty;
+} RingBuffer;
 
-//TripleBuffer rw_buffers;
+size_t ring_buffer_space_available(RingBuffer* ring_buffer) {
+    ring_buffer->buffer = malloc(BUFFER_SIZE);
+    if(ring_buffer->is_empty) {
+        return BUFFER_SIZE;
+    }
+    if(ring_buffer->wpointer == ring_buffer->rpointer) {
+        return 0;
+    }
+    if(ring_buffer->wpointer < ring_buffer->rpointer) {
+        // If rpointer is "ahead" of the wpointer then it must
+        // mean the write pointer has wrapped around to the start of
+        // the buffer and the read pointer hasn't (yet).
+        return ring_buffer->wpointer + (BUFFER_SIZE - ring_buffer->rpointer);
+    }
+    return ring_buffer->wpointer - ring_buffer->rpointer;
+}
 
 typedef struct FPGA_IF {
     int fd; // File descriptor for tcp connection
     struct fnet_ctrl_client* udp_client; // UDP connection
-    TripleBuffer rw_buffers;
+    RingBuffer ring_buffer;
 } FPGA_IF;
 
 // Re-read Beej's guide on data packaing to try and split clock into a union or
@@ -219,69 +232,15 @@ size_t pull_from_fpga(FPGA_IF* fpga_if) {
     return bytes_recvd;
 }
 
-void shift_buffers(FPGA_IF* fpga) {
-    // This function does the buffer swap where it moves the oldest read buffer
-    // to become the write buffer. The old write buffer becomes the new read buffer,
-    // and the previously "young" read buffer becomes the oldest read buffer.
-    // And finally to make my life easier, I ensure the newest read buffer
-    // ends on a even multiple of 4 bytes. This makes parcelling into 32-bit words
-    // easier.
-    // Any dangling bytes are moved to the start of the new write buffer
-    int buf_state = fpga->rw_buffers.state;
-    int w_bufnum = buf_state;
-    char* w_buffer = fpga->rw_buffers.buffers[w_bufnum];
-    int w_length = fpga->rw_buffers.buff_lens[w_bufnum];
-    int off_by;
-
-    int new_w_bufnum = (buf_state + 1) % 3;
-    char* new_write_buffer = fpga->rw_buffers.buffers[new_w_bufnum];
-
-    // First clear out the "top" read buffer, it will be the new write buffer
-    fpga->rw_buffers.buff_lens[new_w_bufnum] = 0;
-
-    // Move the index for the new read buffer and the new write buffer to zero
-    // for the 'old' read buffer the index doesn't move
-    fpga->rw_buffers.buff_idxs[w_bufnum] = 0;
-    fpga->rw_buffers.buff_idxs[new_w_bufnum] = 0;
-
-    // Now move any dangling bytes at the end of the (old) write_buffer
-    // to the start of the new write buffer
-    off_by = w_length % 4;
-    while(off_by > 0) {
-        new_write_buffer[fpga->rw_buffers.buff_idxs[new_w_bufnum]] = w_buffer[w_length -1 - off_by];
-
-        // Move the new write buffer indices up
-        fpga->rw_buffers.buff_idxs[new_w_bufnum] += 1;
-        fpga->rw_buffers.buff_lens[new_w_bufnum] += 1;
-
-        // Move the old write_buffer length back
-        fpga->rw_buffers.buff_lens[w_bufnum] -= 1;
-
-        off_by -=1;
+void initialize_buffer(RingBuffer* ring_buffer) {
+    ring_buffer->rpointer = 0;
+    ring_buffer->wpointer = 0;
+    ring_buffer->is_empty = 1;
+    ring_buffer->buffer = malloc(BUFFER_SIZE);
+    if(!ring_buffer->buffer) {
+        printf("Could not allocate enough space for data buffer!\n");
+        exit(1);
     }
-
-
-    // And finally update the buffer state
-    fpga->rw_buffers.state = (fpga->rw_buffers.state + 1) % 3;
-    fpga->rw_buffers.read_finished=0;
-    fpga->rw_buffers.write_finished=0;
-}
-
-void initialize_buffers(TripleBuffer* rw_buffers) {
-    int i;
-    for(i=0; i < 3; i++) {
-        rw_buffers->buff_lens[i] = 0;
-        rw_buffers->buff_idxs[i] = 0;
-        rw_buffers->buffers[i] = malloc(BUFFER_SIZE);
-        if(!rw_buffers->buffers[i]) {
-            printf("Could not allocate enough memory!\n");
-            exit(1);
-        }
-    }
-    rw_buffers->state = 0;
-    rw_buffers->write_finished = 0;
-    // Since read buffer is empty to start, we're already done reading
-    rw_buffers->read_finished = 1;
 }
 
 EventInProgress start_event() {
@@ -910,7 +869,7 @@ int main(int argc, char **argv) {
 
     FPGA_IF fpga_if;
     // initialize memory locations
-    initialize_buffers(&(fpga_if.rw_buffers));
+    initialize_buffer(&(fpga_if.ring_buffer));
 
     struct fnet_ctrl_client* udp_client = connect_fakernet_udp_client(ip);
     if(!udp_client) {
