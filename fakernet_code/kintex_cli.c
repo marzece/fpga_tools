@@ -28,7 +28,10 @@ int grab_response(int fd) {
         printf("Response too long...can't handle this\n");
         exit(1);
     }
-
+    if(nbytes_read == 0) {
+        printf("Error: Server disconnected! Exiting\n");
+        exit(1);
+    }
     // Can't expect the response to have a NULL terminator
     response_buffer[nbytes_read] = '\0';
     return nbytes_read;
@@ -139,8 +142,16 @@ int handle_line(const int fd, const char* line) {
     }
 
     // Write the given line (without NULL terminator)
-    write(fd, line, strlen(line));
-    write(fd, "\r\n", 2); // TODO this should be only added if needed!
+    if(write(fd, line, strlen(line)) == -1) {
+        printf("Error sending command to server: %s", strerror(errno));
+        return -1;
+    }
+
+    // TODO this should be only added if needed!
+    if(write(fd, "\r\n", 2) == -1) {
+        printf("Error sending command to server: %s", strerror(errno));
+        return -1;
+    }
 
     // Fills result into response_buffer
     int nbytes_read = grab_response(fd);
