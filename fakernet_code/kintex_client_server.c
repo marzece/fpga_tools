@@ -142,15 +142,19 @@ int write_addr(uint32_t base, uint32_t addr, uint32_t data) {
 void write_addr_command(client* c, int argc, sds* args) {
     UNUSED(argc);
     //write_addr((char*)args[0], 0, args[1]);
-    long long addr;
-    long long val;
-    int valid = string2ll((char*) args[1], sdslen(args[1]), &addr);
-    if(!valid) {
+    long addr;
+    long val;
+    char* valid;
+    addr = strtol(c->argv[1], &valid, 0);
+    // If strtol fails to convert the return is zero and valid is set equal to the given string
+    // (errno should also be set but maybe not on all OSes. Should test (TODO)
+    // Should also test for overflow/underflow too
+    if(addr == 0 && valid == c->argv[1]) {
         addReplyErrorFormat(c, "'%s' is not a valid number", args[1]);
         return;
     }
-    valid = string2ll((char*) args[2], sdslen(args[2]), &val);
-    if(!valid) {
+    val = strtol(c->argv[2], &valid, 0);
+    if(val == 0 && valid == c->argv[2]) {
         addReplyErrorFormat(c, "'%s' is not a valid number", args[2]);
         return;
     }
@@ -161,14 +165,19 @@ void write_addr_command(client* c, int argc, sds* args) {
 
 void read_addr_command(client* c, int argc, sds* args) {
     UNUSED(argc);
-    long long val;
+    long value;
     uint32_t ret;
-    int valid = string2ll((char*) args[1], sdslen(args[1]), &val);
-    if(!valid) {
+    char* valid;
+
+    value = strtol(c->argv[1], &valid, 0);
+    // If strtol fails to convert the return is zero and valid is set equal to the given string
+    // (errno should also be set but maybe not on all OSes. Should test (TODO)
+    // Should also test for overflow/underflow too
+    if(value == 0 && valid == c->argv[1]) {
         addReplyErrorFormat(c, "'%s' is not a valid number", args[1]);
         return;
     }
-    if(double_read_addr(val, 0, &ret)) {
+    if(double_read_addr(value, 0, &ret)) {
         addReplyError(c, "failed to read value from FPGA.");
         return;
     }
