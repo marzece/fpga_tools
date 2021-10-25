@@ -14,36 +14,44 @@
 uint32_t crc32(uint32_t crc, uint32_t * buf, unsigned int len);
 void crc8(unsigned char *crc, unsigned char m);
 
-// Absolute maximum event size is 2^14*16*4 + 16 == 2^20  +16== 1MB +16
-// This limit comes from the FIFO depth on the FPGA.
-// Now lets be real....an event that size ever happening is an error. But
-// it means we're guranteed an event can always fit in 1MB of memory
-
 // FILE handle for writing to disk
 static FILE* fdisk = NULL;
 
 // Variable for deciding to stay in the main loop or not.
 // When loop is zero program should exit soon after.
 int loop = 1;
+
 // If reeling==1 need to search for next trigger header magic value.
 int reeling = 0;
 
-/* okay here's basically what's going on here.
- * We have 3 buffers of some large size,
- * two buffers will be for reading from, one for writing.
- * The reason this is needed rather than just two buffers is b/c I always want
- * to write to an empty buffer, but I dont necessarily want to keep  writing until its full.
- * So we write a bunch of data to a buffer until it's got some small-ish amount
- * of memory left, then shift that buffer to a read buffer.
- * And then start writing the next buffer.
- * Meanwhile, we begin processing data from a read  buffer as soon as it's no longer a write buffer,
- * but with high probability that buffer will end 'in medias res', i.e. in the middle
- * of an event, so we can't throw the buffer out until we've finished off that event
- * and put it into some nice structure. So we need a third buffer so that
- * we ensure we finish off that 'medias res' event before recycling the read
- * buffer as a write buffer.
- * All of this relies on the assumption that an event will never be larger
- * than a single memory buffer.
+/*
+   This program handles getting data from the FPGA and reading it into a
+   buffer, then processing the data by finding the start/end of each event.
+   Also checks the various CRC's to ensure the data is good.
+
+   The primary data structure for storing data while processing it is a ring
+   buffer. There's one slightly non-stanard element to the ring buffer as
+   implemented here, I use two different "read_pointers", one read_pointer only
+   updates by moving from event start to event start, and it should never point
+   to data thats in the middle of an event*. The second read pointer can point
+   anywhere and is used for looking at data while you search for an events end.
+   Once the end of an event is found, the event-by-event read pointer is moved up.
+   Data can only be written into the ring buffer upto the event-by-event read pointer.
+
+   Event data is by just remembering the location of the start in the memory
+   buffer, and the event length. B/c an event can wrap around the end of the
+   memory buffer an event can end up being split, in which case the location of
+   the start is recorded, and the location of the second "start". In principle
+   that second start will always be at memory buffer location 0.
+
+   Once a full event is recorded, the memory for it is dispatched to a redis
+   stream and also written to disk.
+
+   In the event that something bad happens and a new event's header is wrong, or
+   a new event isn't found immediatly after the end of the previous event the program
+   is set into "reeling" mode. In that mode the program just scans through values looking
+   for the start of a new event (demarcated by the 32-bit word 0xFFFFFFFF). Once that is
+   found the program exits "reeling" mode and resumes normal data processing.
  */
 
 #define MAGIC_VALUE 0xFFFFFFFF
@@ -51,41 +59,182 @@ int reeling = 0;
 #define NUM_CHANNELS 16
 #define BUFFER_SIZE (1024*1024) // 1 MB
 
-// Write Buffer = buffers[buf_state]
-// read_buffer1 = buffers[(buf_state + 1) % 3]
-// read_buffer2 = buffers[(buf_state + 2) % 3 ]
 typedef struct RingBuffer {
     unsigned char* buffer;
-    size_t rpointer;
-    size_t wpointer;
+    size_t event_read_pointer;
+    size_t read_pointer;
+    size_t write_pointer;
     int is_empty;
 } RingBuffer;
 
-size_t ring_buffer_space_available(RingBuffer* ring_buffer) {
-    ring_buffer->buffer = malloc(BUFFER_SIZE);
+// TODO could consider merging the contiguous & total space available functions
+// by have both values calculated and returned in argument pointers..and just only fill in
+// the non-NULL ones.
+size_t ring_buffer_contiguous_space_available(RingBuffer* ring_buffer) {
     if(ring_buffer->is_empty) {
+        ring_buffer->event_read_pointer = 0;
+        ring_buffer->read_pointer = 0;
+        ring_buffer->write_pointer = 0;
         return BUFFER_SIZE;
     }
-    if(ring_buffer->wpointer == ring_buffer->rpointer) {
+    if(ring_buffer->write_pointer == ring_buffer->event_read_pointer) {
         return 0;
     }
-    if(ring_buffer->wpointer < ring_buffer->rpointer) {
+    if(ring_buffer->write_pointer < ring_buffer->event_read_pointer) {
+        return ring_buffer->event_read_pointer - ring_buffer->write_pointer;
+    }
+    return BUFFER_SIZE - ring_buffer->write_pointer;
+}
+
+size_t ring_buffer_space_available(RingBuffer* ring_buffer) {
+    if(ring_buffer->is_empty) {
+        ring_buffer->event_read_pointer = 0;
+        ring_buffer->read_pointer = 0;
+        ring_buffer->write_pointer = 0;
+        return BUFFER_SIZE;
+    }
+    if(ring_buffer->write_pointer == ring_buffer->event_read_pointer) {
+        return 0;
+    }
+    if(ring_buffer->write_pointer < ring_buffer->event_read_pointer) {
         // If rpointer is "ahead" of the wpointer then it must
         // mean the write pointer has wrapped around to the start of
         // the buffer and the read pointer hasn't (yet).
-        return ring_buffer->wpointer + (BUFFER_SIZE - ring_buffer->rpointer);
+        return ring_buffer->write_pointer + (BUFFER_SIZE - ring_buffer->event_read_pointer);
     }
-    return ring_buffer->wpointer - ring_buffer->rpointer;
+    return ring_buffer->write_pointer - ring_buffer->event_read_pointer;
+}
+
+size_t ring_buffer_contiguous_readable(RingBuffer* buffer) {
+    /* This is a little bit tricky b/c of the two read pointers...but it's not too bad.
+     * Basically there are two cases where are all three pointers are equal, full or empty,
+     * those cases are disambiguated by the "is_empty" flag.
+     * If the "read_pointer" and the write_pointer are equal that can only happen if we've
+     * read all available data (no more is readable).
+     * Every other case can ignore the event_read_pointer and just do reading like a normal
+     * ring buffer.
+     */
+    if(buffer->is_empty) {
+        return 0;
+    }
+    if(buffer->read_pointer == buffer->write_pointer && buffer->event_read_pointer == buffer->write_pointer) {
+        return BUFFER_SIZE - buffer->read_pointer;
+    }
+
+    if(buffer->read_pointer == buffer->write_pointer) {
+        return 0;
+    }
+    // Okay now that we're here can ignore the event_read_pointer and just act like this
+    // is a normal ring buffer
+    if(buffer->write_pointer < buffer->read_pointer) {
+        return BUFFER_SIZE - buffer->read_pointer;
+    }
+    return buffer->write_pointer - buffer->read_pointer;
+
+}
+
+size_t ring_buffer_readable(RingBuffer* buffer) {
+    // See comment in ring_buffer_contiguous_readable for why this is a bit complicated
+    if(buffer->is_empty) {
+        return 0;
+    }
+
+    if(buffer->read_pointer == buffer->write_pointer && buffer->event_read_pointer == buffer->write_pointer) {
+        // Buffer is full
+        return BUFFER_SIZE;
+    }
+    if(buffer->read_pointer == buffer->write_pointer) {
+        return 0;
+    }
+
+    // Now can treat this like a normal ring_buffer and ignore the event_read_pointer
+    if(buffer->read_pointer > buffer->write_pointer) {
+        // Readable data  wraps around the end of buffer, then upto the write_pointer
+        return buffer->write_pointer  + (BUFFER_SIZE - buffer->read_pointer);
+    }
+    return buffer->write_pointer - buffer->read_pointer;
+}
+
+void ring_buffer_update_write_pntr(RingBuffer* buffer, size_t nbytes) {
+
+    // First if we're writing any data the buffer cannot be emtpy
+    if(nbytes <= ring_buffer_contiguous_space_available(buffer)) {
+        buffer->write_pointer += nbytes;
+    }
+    else if(nbytes <= ring_buffer_space_available(buffer)) {
+        // If here it means the write pointer is gonna go over the "end" of
+        // the buffer and we need to wrap around to the start
+        buffer->write_pointer = nbytes - (BUFFER_SIZE - buffer->write_pointer);
+    }
+    else {
+        // If here it's a pretty serious error. It means the buffer is full and
+        // some data in the "read" chunk of the buffer was probably overwritten.
+        // I'm not sure how this hould be handled, right now I'll just emit a message.
+        // Perhaps I should just flush the buffer and set go into "reeling" mode
+        printf("DATA was overwritten probably!!!!\n"
+                "This error is not handled so you should probably just restart things"
+                "...and figure out how this happened\n");
+    }
+
+    if(nbytes > 0) {
+        buffer->is_empty =0;
+    }
+
+    // Do the wrap if need be
+    if(buffer->write_pointer == BUFFER_SIZE) {
+        buffer->write_pointer = 0;
+    }
+}
+
+void ring_buffer_update_event_read_pntr(RingBuffer* buffer) {
+    // This function assumes the read_pointer is at an event boundary,
+    // should perhaps not rely on that assumption and just let the caller
+    // tell me where to set the event_read_pointer
+
+    buffer->event_read_pointer = buffer->read_pointer;
+    // If the read pointer is now caught up with the write pointer,
+    // make sure to update the "is_empty" state var, and might as well
+    // move everything back to the start of the buffer to maximize contiguous
+    // space available.
+    if(buffer->event_read_pointer == buffer->write_pointer) {
+        buffer->read_pointer = 0;
+        buffer->event_read_pointer = 0;
+        buffer->write_pointer = 0;
+        buffer->is_empty = 1;
+    }
+}
+
+void ring_buffer_update_read_pntr(RingBuffer* buffer, size_t nbytes) {
+    // This only does the read_pointer, not the event_read_pointer
+    // Will not update is_empty either.
+
+    // Fist, do the simple read if possible
+    if(nbytes <= ring_buffer_contiguous_readable(buffer)) {
+        buffer->read_pointer += nbytes;
+    }
+    else if(nbytes <= ring_buffer_readable(buffer)) {
+        // This is the wrap around read
+        buffer->read_pointer = nbytes - (BUFFER_SIZE - buffer->read_pointer);
+    }
+    else {
+        // DATA was read too far, this shouldn't happen ever
+        printf("Invalid data was read!!!\n"
+                "This really should not have happened."
+                " Everything will probably be wrong from here on out\n");
+    }
+
+    // Handle the exact wrap case
+    if(buffer->read_pointer == BUFFER_SIZE) {
+        buffer->read_pointer = 0;
+    }
 }
 
 typedef struct FPGA_IF {
     int fd; // File descriptor for tcp connection
     struct fnet_ctrl_client* udp_client; // UDP connection
-    RingBuffer ring_buffer;
+    RingBuffer ring_buffer; // Data buffer
 } FPGA_IF;
 
-// Re-read Beej's guide on data packaing to try and split clock into a union or
-// something like that
 typedef struct TrigHeader{
     uint32_t magic_number;
     uint32_t trig_number;
@@ -113,6 +262,7 @@ typedef struct Event {
     uint32_t lengths[MAX_SPLITS];
 } Event;
 
+// This handles keeping track of reading an event while in the middle of it
 typedef struct EventInProgress {
     Event event;
     int header_bytes_read;
@@ -121,7 +271,7 @@ typedef struct EventInProgress {
 
 // Open socket to FPGA returns 0 if successful
 int connect_to_fpga(const char* fpga_ip) {
-    const int port = 1;
+    const int port = 1; // FPGA doesn't use ports, so this doesn't matter
     int args;
     int res;
     struct sockaddr_in fpga_addr;
@@ -200,41 +350,37 @@ int connect_to_fpga(const char* fpga_ip) {
 
 error:
     close(fd);
-    //reused adrss
+    // reuse adress
     return -1;
 }
 
 // This is the function that reads data from the FPGA ethernet connection
 size_t pull_from_fpga(FPGA_IF* fpga_if) {
     ssize_t bytes_recvd = 0;
-    size_t space_left;
-    int bufnum = fpga_if->rw_buffers.state;
+    size_t contiguous_space_left;
 
-    int w_buffer_idx = fpga_if->rw_buffers.buff_idxs[bufnum];
+    unsigned char* w_buffer = fpga_if->ring_buffer.buffer;
+    size_t w_buffer_idx = fpga_if->ring_buffer.write_pointer;
 
-    char* w_buffer = fpga_if->rw_buffers.buffers[bufnum];
-    space_left = BUFFER_SIZE - w_buffer_idx;
-    if(space_left > 0) {
-        // TODO this should perhaps be a non-blocking read (don't want to let a single FPGA
-        // frig things up)
-        bytes_recvd = recv(fpga_if->fd, w_buffer + w_buffer_idx, space_left, 0);
+    // TODO could consider checking total_space, not just contiguous space and doing two
+    // recv's, one at the "end" then one at the start of the ring buffer.
+    // That might help if this gets a lot of chump reads that are only like 100 bytes.
+    contiguous_space_left = ring_buffer_contiguous_space_available(&(fpga_if->ring_buffer));
+    if(contiguous_space_left > 0) {
+        bytes_recvd = recv(fpga_if->fd, w_buffer + w_buffer_idx, contiguous_space_left, 0);
         if(bytes_recvd < 0) {
-            printf("Error retrieving data from socket: %s\n", strerror(errno));
+            //printf("Error retrieving data from socket: %s\n", strerror(errno));
             return 0;
         }
-        w_buffer_idx += bytes_recvd;
-        space_left -= bytes_recvd;
-    } else {
-        fpga_if->rw_buffers.write_finished = 1;
+        ring_buffer_update_write_pntr(&fpga_if->ring_buffer, bytes_recvd);
     }
-    fpga_if->rw_buffers.buff_idxs[bufnum] += bytes_recvd;
-    fpga_if->rw_buffers.buff_lens[bufnum] += bytes_recvd;
     return bytes_recvd;
 }
 
 void initialize_buffer(RingBuffer* ring_buffer) {
-    ring_buffer->rpointer = 0;
-    ring_buffer->wpointer = 0;
+    ring_buffer->read_pointer = 0;
+    ring_buffer->event_read_pointer = 0;
+    ring_buffer->write_pointer = 0;
     ring_buffer->is_empty = 1;
     ring_buffer->buffer = malloc(BUFFER_SIZE);
     if(!ring_buffer->buffer) {
@@ -258,7 +404,6 @@ EventInProgress start_event() {
     memset(ev.event.lengths, 0, sizeof(uint32_t)*MAX_SPLITS);
     return ev;
 }
-
 
 uint8_t crc_from_bytes(unsigned char* bytes, int length, unsigned char init) {
     static int is_swapped;
@@ -360,51 +505,39 @@ void write_to_disk(Event* ev) {
     }
 }
 
-// Find the position to start reading from in read buffers
-int find_read_position(TripleBuffer* rw_buffers, int *bufnum, int *idx, int *len) {
-    int _bufnum = (rw_buffers->state + 2) % 3;
-    int r_queue_idx = rw_buffers->buff_idxs[_bufnum];
-    int r_queue_len = rw_buffers->buff_lens[_bufnum];
-    if(r_queue_len == r_queue_idx) {
-        _bufnum = (rw_buffers->state + 1) % 3;
-        r_queue_idx = rw_buffers->buff_idxs[_bufnum];
-        r_queue_len = rw_buffers->buff_lens[_bufnum];
-    }
-
-    if(bufnum) {
-        *bufnum = _bufnum;
-    }
-    if(idx) {
-        *idx = r_queue_idx;
-    }
-    if(len) {
-        *len = r_queue_len;
-    }
-    return *idx==*len;
-}
-
 // Read 32 bits from read buffer
-int pop32(TripleBuffer* rw_buffers, uint32_t* val) {
-    int bufnum, r_queue_idx, r_queue_len;
-    char* r_buffer = NULL;
-    uint32_t* pntr = NULL;
-
+int pop32(RingBuffer* buffer, uint32_t* val) {
+    size_t i;
     // Make sure a NULL pntr wasn't passed in
     if(!val) {
         return -1;
     }
-
-    // Find our current read_position in the read_buffer.
-    // If we're at the end of the buffer, just return;
-    if(find_read_position(rw_buffers, &bufnum, &r_queue_idx, &r_queue_len)) {
-        // Should only return non-zero if at the end of the read buffer
+    size_t contiguous_space = ring_buffer_contiguous_readable(buffer);
+    size_t total_space = ring_buffer_readable(buffer);
+    if(total_space < 4) {
+        // Not enough left to read
         return -1;
     }
+    if(contiguous_space >= 4) {
+        *val = ntohl(*(uint32_t*)(buffer->buffer+buffer->read_pointer));
+    }
+    else if(total_space >= 4) {
+        // Need to read around the wrap (sigh)
+        // Have to do this one byte at a time to ensure I don't read off the edge
+        *val = 0;
+        for(i=0; i< contiguous_space; i++) {
+            *(unsigned char*)val |= *(buffer->buffer + buffer->read_pointer + i);
+            *val = *val << 8;
+        }
+        for(i=0; i< 4-contiguous_space; i++) {
+            *(unsigned char*)val |= *(buffer->buffer + i);
+            *val = *val << 8;
+        }
 
-    r_buffer = rw_buffers->buffers[bufnum];
-    pntr = (uint32_t*)(r_buffer + r_queue_idx);
-    *val = ntohl(*pntr); // TODO fakernet doesn't actually do endian-ness....
-    rw_buffers->buff_idxs[bufnum] += sizeof(uint32_t);
+        *val = ntohl(*val);
+    }
+
+    ring_buffer_update_read_pntr(buffer, 4);
     return 0;
 }
 
@@ -437,8 +570,6 @@ void interpret_header_word(TrigHeader* header, const uint32_t word, const int wh
 }
 
 void handle_bad_header(TrigHeader* header) {
-    // TODO...eventually this should change the state of the databuilder to go
-    // into a header "hunting" mode or something like that
     printf("Likely error found\n");
     printf("Bad magic  =  0x%x\n", header->magic_number);
     printf("Bad trig # =  %i\n", header->trig_number);
@@ -446,50 +577,58 @@ void handle_bad_header(TrigHeader* header) {
     printf("Bad time = %llu\n", (unsigned long long)header->clock);
     printf("Bad channel id = %i\n", header->device_number);
     reeling = 1;
-    //end_loop();
 }
 
 int find_event_start(FPGA_IF* fpga) {
-    // This just searches through the readable memory buffer and tries to find the
-    // magic values (0xFFFFFFFF) that indicates the start of a header
-    // If found this function returns 1 otherwise returns 0. Since it searches through
-    // the rw_buffers it updates the read pointer as it goes.
-    // If the value is found the rw_buffer read pointer is left at the found starting position.
+    /* This just searches through the readable memory buffer and tries to find the
+       magic values (0xFFFFFFFF) that indicates the start of a header
+       If found this function returns 1 otherwise returns 0.
 
+       This function will fail if the bytes for the magic_value are split across the
+       ring_buffer wrap...TODO could try and this to fix that.
+    */
+    size_t i;
     int found = 0;
-    int bufnum, r_queue_idx, r_queue_len;
-    if(find_read_position(&(fpga->rw_buffers), &bufnum, &r_queue_idx, &r_queue_len)) {
-        fpga->rw_buffers.read_finished = 1;
-        return found;
+    size_t contiguous_space = ring_buffer_contiguous_readable(&(fpga->ring_buffer));
+    size_t total_space = ring_buffer_readable(&(fpga->ring_buffer));
+
+    // This is the case where there's not enough data left in the buffer till the end to contain
+    // the MAGIC_VALUE,
+    // nor is there is enough data in the buffer as a whole. In which case we should just leave now
+    // and come back when there's more data to process
+    if(contiguous_space < 4 && (total_space-contiguous_space) < 4) {
+        return 0;
     }
 
-    // It should never be possible for bytes_in_buffer to be less than 4 b/c all buffer reads/writes
-    // should occurr in chunks of 32-bits (4 bytes)
+    if(contiguous_space < 4) {
+        // If there's not enough contiguous data, but there is enough data in the other contiguous
+        // chunk, we should just skip to the start of the next contiguous chunk
+        ring_buffer_update_read_pntr(&fpga->ring_buffer, contiguous_space);
+        contiguous_space = total_space - contiguous_space;
+        total_space = contiguous_space;
+    }
 
-    char* current = fpga->rw_buffers.buffers[bufnum] + r_queue_idx;
-    char* last = current + fpga->rw_buffers.buff_lens[bufnum] - 3;
 
-    while(current < last) {
-        // TODO, could optimize this by checking if any of the bytes (or just
-        // the last byte?) is 0xFF. If none of the bytes are, skip forward 4 bytes.
-        // Also could do SIMD shit if I wanted to be cool
-        if((*((uint32_t*)current)) == MAGIC_VALUE) {
-            // Found a potential HEADER
+    for(i=0; i < contiguous_space-3; i++) {
+        unsigned char* current = fpga->ring_buffer.buffer + fpga->ring_buffer.read_pointer;
+        if(*current == 0xFF && *(current+1) == 0xFF && *(current+2) == 0xFF && *(current+3) == 0xFF) {
             found = 1;
             break;
-
         }
-        // Update the rw_buffer and pointer for searching
-        fpga->rw_buffers.buff_idxs[bufnum] += 1;
-        current += 1;
+        ring_buffer_update_read_pntr(&fpga->ring_buffer, 1);
     }
 
-    // The only way you should get here is if you searched to the end of the buffer
-    // and didn't find an event start...therefore I'm now done reading the buffer
     if(!found) {
-        fpga->rw_buffers.buff_idxs[bufnum] += 3; // Final bump to account for the dangling few bytes
-        fpga->rw_buffers.read_finished = 1;
+        // The only way you should get here is if you searched to the end of the buffer
+        // and didn't find an event start... Need to push the read_pointer to the end of
+        // the buffer
+        ring_buffer_update_read_pntr(&fpga->ring_buffer, 3);
     }
+
+    // Regardless of if you're here b/c the event was found or not, update the
+    // event_read_pointer b/c all the data upto the current read_pointer is useless and
+    // can be trashed.
+    ring_buffer_update_event_read_pntr(&(fpga->ring_buffer));
 
     return found;
 }
@@ -511,11 +650,10 @@ int read_proc(FPGA_IF* fpga, Event* ret) {
         int word = event.header_bytes_read/sizeof(uint32_t);
         TrigHeader* header = &(event.event.header);
 
-        if(pop32(&(fpga->rw_buffers), &val)) {
-            // should only happen if we're at the end of the younger read buffer,
-            // should flag that we're done reading.
-            fpga->rw_buffers.read_finished = 1;
-            return -1;
+        if(pop32(&(fpga->ring_buffer), &val)) {
+            // Should only happen if we don't have enough data available to
+            // read a 32-bit word
+            return 0;
         }
         interpret_header_word(header, val, word);
         event.header_bytes_read += sizeof(uint32_t);
@@ -526,16 +664,8 @@ int read_proc(FPGA_IF* fpga, Event* ret) {
         printf("BAD HEADER HAPPENED");
         handle_bad_header(&(event.event.header));
         event = start_event(); // This event is being trashed, just start a new one.
+        ring_buffer_update_event_read_pntr(&fpga->ring_buffer);
         // (TODO! maybe try and recover the event)
-        return 0;
-    }
-
-    int bufnum;
-    int r_queue_idx;
-    int r_queue_len;
-    if(find_read_position(&(fpga->rw_buffers), &bufnum, &r_queue_idx, &r_queue_len)) {
-        // no more to read
-        fpga->rw_buffers.read_finished = 1;
         return 0;
     }
 
@@ -550,13 +680,14 @@ int read_proc(FPGA_IF* fpga, Event* ret) {
     //samples_to_read += NUM_CHANNELS;
 
     int bytes_remaining = event_total_data_bytes - event.data_bytes_read;
-    uint32_t* read_location = (uint32_t*)(fpga->rw_buffers.buffers[bufnum] + r_queue_idx);
+    unsigned char * read_location = fpga->ring_buffer.buffer + fpga->ring_buffer.read_pointer;
 
-    // This should be guranateed to be evenly divisible by 4 aka sizeof(uin32t)
-    //int samples_in_buffer = (r_queue_len - r_queue_idx)/sizeof(uint32_t);
-    int bytes_in_buffer = (r_queue_len - r_queue_idx);
+    int bytes_in_buffer = ring_buffer_contiguous_readable(&fpga->ring_buffer);
+    if(bytes_in_buffer == 0) {
+        return 0;
+    }
+
     int i;
-
     for(i=0; i<MAX_SPLITS; i++) {
         if(!event.event.locations[i]) {
             break;
@@ -566,25 +697,35 @@ int read_proc(FPGA_IF* fpga, Event* ret) {
         printf("Error that I don't know how to handle!\n");
         exit(1);
     }
-    event.event.locations[i] = read_location;
+
+    // If this new location is going to be contiguous wiht the previous location
+    // then I should just append to that one instead of creating a new "split"
+    if(i>0 && (unsigned char*)event.event.locations[i-1] + event.event.lengths[i-1] == read_location) {
+        i-=1;
+    }
+    else {
+        event.event.locations[i] = (uint32_t*)read_location;
+        event.event.lengths[i] = 0;
+    }
 
     // If the space in the buffer is larger than the data required to finish the event
     // then read enough bytes to finish the event.
     if(bytes_remaining < bytes_in_buffer) {
         // The rest of this event is available in the current read buffer
-        event.event.lengths[i] = bytes_remaining;
+        event.event.lengths[i] += bytes_remaining;
         event.data_bytes_read += bytes_remaining;
-        fpga->rw_buffers.buff_idxs[bufnum] += bytes_remaining;
+        ring_buffer_update_read_pntr(&fpga->ring_buffer, bytes_remaining);
         // Now that the event is finished I need to tell someone!
         *ret = event.event;
         event = start_event();
+        ring_buffer_update_event_read_pntr(&fpga->ring_buffer);
         return 1;
     }
     // else this buffer doesn't have enough data to finish the event
 
-    event.event.lengths[i] = bytes_in_buffer;
+    event.event.lengths[i] += bytes_in_buffer;
     event.data_bytes_read += bytes_in_buffer;
-    fpga->rw_buffers.buff_idxs[bufnum] += bytes_in_buffer;
+    ring_buffer_update_read_pntr(&fpga->ring_buffer, bytes_in_buffer);
     return 0;
 }
 
@@ -614,6 +755,7 @@ char* copy_event(const Event* event) {
         mem = malloc(MEM_SIZE);
     }
     // TODO, instead of putting byte count increments by hand should do sizeof()
+    // TODO this needs to protect itself from overflows!!!!!
     //memcpy(mem, &(event->header), sizeof(TrigHeader));
     memcpy(mem, &(event->header.magic_number), sizeof(uint32_t));
     byte_count += 4;
@@ -659,7 +801,6 @@ void redis_publish_event(redisContext*c, const Event event) {
     if(!r) {
         printf("Redis error!\n");
     }
-
 }
 
 struct fnet_ctrl_client* connect_fakernet_udp_client(const char* fnet_hname) {
@@ -911,11 +1052,6 @@ int main(int argc, char **argv) {
     struct timeval prev_time;
     gettimeofday(&prev_time, NULL);
 
-    // TODO, I should have the reader update this to make sure the next "new"
-    // buffer will have enough bytes to finish off the event!
-    const int SWAP_THRESHOLD = 0.20*BUFFER_SIZE;
-    //const int SWAP_THRESHOLD = 10000;
-
     redisContext* redis = create_redis_conn();
 
     signal(SIGINT, sig_handler);
@@ -924,42 +1060,15 @@ int main(int argc, char **argv) {
     printf("Entering main loop\n");
     uint32_t calculated_crcs[NUM_CHANNELS];
     uint32_t given_crcs[NUM_CHANNELS];
+    event_ready = 0;
     while(loop) {
-        // Would like to ensure that no more than one read proc or write proc
-        // happens in each loop. I.e. you can read once and write once but if you
-        // want/need to read or write again, you should just loop. This
-        // ensure no event is "skipped" in readout
-        // TODO, probably should make it so either a read or a write happens in
-        // a single loop, not both.
 
-        event_ready = 0;
-        int write_buf_fullness = fpga_if.rw_buffers.buff_lens[fpga_if.rw_buffers.state];
-
-        if(!fpga_if.rw_buffers.write_finished) {
-            pull_from_fpga(&fpga_if);
-        }
-
-        if(reeling && !fpga_if.rw_buffers.read_finished) {
+        pull_from_fpga(&fpga_if);
+        if(reeling) {
             printf("Reeeling\n");
             reeling = !find_event_start(&fpga_if);
         }
-        if(!fpga_if.rw_buffers.read_finished) {
-            event_ready = read_proc(&fpga_if, &event);
-        }
-
-        if(write_buf_fullness >= SWAP_THRESHOLD && fpga_if.rw_buffers.read_finished) {
-
-            // If we're done reading, do a swap...TODO in principle this could
-            // be done before reading is "finished" we just need to complete
-            // the last event from the "elder" buffer. Once that's done we can
-            // do a swap if need be. But for now it's a bit easier to just do
-            // a swap only when reading is fully done
-            //
-            // (Shower thought) maybe I should implement a refence counter type
-            // system for each buffer so when an event uses memory it keeps a reference
-            // count, but when that event gets fully read out it removes a count...
-            shift_buffers(&fpga_if);
-        }
+        event_ready = read_proc(&fpga_if, &event);
 
         if(event_ready) {
             // TODO add more fun things
