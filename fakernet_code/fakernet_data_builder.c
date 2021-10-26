@@ -67,6 +67,22 @@ typedef struct RingBuffer {
     int is_empty;
 } RingBuffer;
 
+typedef struct ProcessingStats {
+    unsigned int event_count;
+    unsigned int trigger_id;
+    double start_time; // In microseconds (since Epoch start)
+    double uptime; // In microseconds
+    unsigned int pid;
+    int connected_to_fpga;
+    int fifo_rpointer;
+    int fifo_event_rpointer;
+    int fifo_wpointer;
+
+    // Would like to add these but its a bit of a pain
+    //unsigned int bytes_read;
+    //unsigned int bytes_written;
+} ProcessingStats;
+
 // TODO could consider merging the contiguous & total space available functions
 // by have both values calculated and returned in argument pointers..and just only fill in
 // the non-NULL ones.
@@ -341,13 +357,13 @@ int connect_to_fpga(const char* fpga_ip) {
 
     // Set it back to blocking mode
     // Idk if it's necessary to get args again, but that's how it's done on stack overflow
-    args  = fcntl(fd, F_GETFL, NULL);
-    if(args < 0) {
-        printf("Error getting socket opts2\n");
-        goto error;
+    //args  = fcntl(fd, F_GETFL, NULL);
+    //if(args < 0) {
+    //    printf("Error getting socket opts2\n");
+    //    goto error;
 
-    }
-    args &= (~O_NONBLOCK);
+    //}
+    //args &= (~O_NONBLOCK);
 
     if(fcntl(fd, F_SETFL, args) < 0) {
         printf("Error setting socket opts2\n");
@@ -669,6 +685,8 @@ int read_proc(FPGA_IF* fpga, Event* ret) {
     } // Done reading header
 
     // Check the header's CRC
+    // TODO this if_statement will get called whenver a read is done...should only
+    // happen just after the header is completely read
     if(event.event.header.crc != calc_trig_header_crc(&event.event.header)) {
         printf("BAD HEADER HAPPENED");
         handle_bad_header(&(event.event.header));
@@ -763,7 +781,7 @@ char* copy_event(const Event* event) {
     if(!mem) {
         mem = malloc(MEM_SIZE);
     }
-    // TODO, instead of putting byte count increments by hand should do sizeof()
+
     // TODO this needs to protect itself from overflows!!!!!
     //memcpy(mem, &(event->header), sizeof(TrigHeader));
     memcpy(mem, &(event->header.magic_number), sizeof(uint32_t));
@@ -783,8 +801,6 @@ char* copy_event(const Event* event) {
             break;
         }
         memcpy(mem+byte_count, event->locations[i], event->lengths[i]);
-
-
         byte_count += event->lengths[i];
     }
     return mem;
@@ -809,6 +825,36 @@ void redis_publish_event(redisContext*c, const Event event) {
     r = redisCommandArgv(c, 3,  args,  arglens);
     if(!r) {
         printf("Redis error!\n");
+    }
+}
+
+void redis_publish_stats(redisContext* c, const ProcessingStats* stats) {
+    if(!c) {
+        return;
+    }
+
+    redisReply* r;
+    size_t arglens[3];
+    const char* args[3];
+
+    char buf[1024];
+
+    args[0] = "PUBLISH";
+    arglens[0] = strlen(args[0]);
+
+    args[1] = "builder_stats";
+    arglens[1] = strlen(args[1]);
+
+    arglens[2] = snprintf(buf, 1024, "%i %u %i %i %i %i", stats->event_count,
+                                                          stats->trigger_id,
+                                                          stats->fifo_event_rpointer,
+                                                          stats->fifo_rpointer,
+                                                          stats->fifo_wpointer,
+                                                          (int)(stats->uptime/1e6));
+    args[2] = buf;
+    r = redisCommandArgv(c, 3,  args,  arglens);
+    if(!r) {
+        printf("Error sending stats update to redis\n");
     }
 }
 
@@ -954,14 +1000,42 @@ int calculate_channel_crcs(Event* event, uint32_t *calculated_crcs, uint32_t* gi
     return 0;
 }
 
+void initialize_stats(ProcessingStats* stats) {
+    struct timeval tv;
+    stats->event_count = 0;
+    stats->trigger_id = 0;
+    stats->pid = (unsigned int)getpid();
+    stats->uptime = 0;
+    stats->connected_to_fpga = 0;
+    stats->fifo_event_rpointer = 0;
+    stats->fifo_rpointer = 0;
+    stats->fifo_wpointer = 0;
+    //stats->bytes_read = 0;
+    //stats->bytes_written = 0;
+
+    gettimeofday(&tv, NULL);
+    stats->start_time = tv.tv_sec*1e6 + tv.tv_usec;
+}
+
 int main(int argc, char **argv) {
     int i;
-    int num_events = 0;
-    int event_count = 0;
+    unsigned int num_events = 0;
     const char* ip = "192.168.1.192";
     enum ArgIDs expecting_value;
     int do_not_save = 0;
     const char* FOUT_FILENAME = "fpga_data.dat";
+    int event_ready;
+    struct timeval prev_time, current_time;
+    uint32_t calculated_crcs[NUM_CHANNELS];
+    uint32_t given_crcs[NUM_CHANNELS];
+    const double REDIS_DATA_STREAM_COOLDOWN = 200e3; // In micro-seconds
+    const double REDIS_STATS_COOLDOWN = 1e6; // 1-second in micro-seconds
+    double last_status_update_time;
+    ProcessingStats the_stats;
+    Event event;
+
+    initialize_stats(&the_stats);
+    last_status_update_time = 0;
 
     if(argc > 1 ) {
         expecting_value = 0;
@@ -992,7 +1066,7 @@ int main(int argc, char **argv) {
             } else {
                 switch(expecting_value) {
                     case ARG_NUM_EVENTS:
-                        num_events = atoi(argv[i]);
+                        num_events = strtoul(argv[i], NULL, 0);
                         printf("Will be exiting after %i events\n", num_events);
                         break;
                     case ARG_FILENAME:
@@ -1043,6 +1117,7 @@ int main(int argc, char **argv) {
         }
     } while(fpga_if.fd < 0);
     printf("FPGA TCP connection made\n");
+    the_stats.connected_to_fpga = 1;
 
     // Open file to write events to
     if(!do_not_save) {
@@ -1056,19 +1131,13 @@ int main(int argc, char **argv) {
     }
 
 
-    Event event;
-    int event_ready;
-    struct timeval prev_time;
     gettimeofday(&prev_time, NULL);
-
     redisContext* redis = create_redis_conn();
-
     signal(SIGINT, sig_handler);
     signal(SIGKILL, sig_handler);
+
     // Main readout loop
     printf("Entering main loop\n");
-    uint32_t calculated_crcs[NUM_CHANNELS];
-    uint32_t given_crcs[NUM_CHANNELS];
     event_ready = 0;
     while(loop) {
 
@@ -1079,6 +1148,17 @@ int main(int argc, char **argv) {
         }
         event_ready = read_proc(&fpga_if, &event);
 
+        gettimeofday(&current_time, NULL);
+        the_stats.uptime = (current_time.tv_sec*1e6 + current_time.tv_usec) - the_stats.start_time;
+
+        if((the_stats.uptime - last_status_update_time) > REDIS_STATS_COOLDOWN) {
+            the_stats.fifo_wpointer = fpga_if.ring_buffer.write_pointer;
+            the_stats.fifo_event_rpointer = fpga_if.ring_buffer.event_read_pointer;
+            the_stats.fifo_rpointer = fpga_if.ring_buffer.read_pointer;
+            redis_publish_stats(redis, &the_stats);
+            last_status_update_time = the_stats.uptime;
+        }
+
         if(event_ready) {
             // TODO add more fun things
             calculate_channel_crcs(&event, calculated_crcs, given_crcs);
@@ -1088,20 +1168,19 @@ int main(int argc, char **argv) {
                     printf("Calculated = 0x%x, Given = 0x%x\n", calculated_crcs[i], given_crcs[i]);
                 }
             }
-            struct timeval this_time;
-            gettimeofday(&this_time, NULL);
-            if(((this_time.tv_sec - prev_time.tv_sec)*1e6 + (this_time.tv_usec - prev_time.tv_usec) ) > 200e3) {
+            if(((current_time.tv_sec - prev_time.tv_sec)*1e6 + (current_time.tv_usec - prev_time.tv_usec)) > REDIS_DATA_STREAM_COOLDOWN) {
                 redis_publish_event(redis, event);
-                prev_time = this_time;
+                prev_time = current_time;
             }
             display_event(&event);
             if(!do_not_save) {
                 write_to_disk(&event);
             }
-            event_count++;
+            the_stats.event_count++;
+            the_stats.trigger_id = event.header.trig_number;
 
-            if(num_events != 0 && event_count >= num_events) {
-                printf("Collected %i events...exiting\n", event_count);
+            if(num_events != 0 && the_stats.event_count >= num_events) {
+                printf("Collected %i events...exiting\n", the_stats.event_count);
                 end_loop();
             }
         }
