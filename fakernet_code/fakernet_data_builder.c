@@ -157,6 +157,11 @@ size_t ring_buffer_readable(RingBuffer* buffer) {
 
 void ring_buffer_update_write_pntr(RingBuffer* buffer, size_t nbytes) {
 
+    // Handle the trivial case
+    if(nbytes == 0) {
+        return;
+    }
+
     // First if we're writing any data the buffer cannot be emtpy
     if(nbytes <= ring_buffer_contiguous_space_available(buffer)) {
         buffer->write_pointer += nbytes;
@@ -176,9 +181,8 @@ void ring_buffer_update_write_pntr(RingBuffer* buffer, size_t nbytes) {
                 "...and figure out how this happened\n");
     }
 
-    if(nbytes > 0) {
-        buffer->is_empty =0;
-    }
+    // If we wrote a non-zero number of bytes, the buffer is not empty
+    buffer->is_empty = 0;
 
     // Do the wrap if need be
     if(buffer->write_pointer == BUFFER_SIZE) {
@@ -207,6 +211,11 @@ void ring_buffer_update_event_read_pntr(RingBuffer* buffer) {
 void ring_buffer_update_read_pntr(RingBuffer* buffer, size_t nbytes) {
     // This only does the read_pointer, not the event_read_pointer
     // Will not update is_empty either.
+
+    // First handle the trival case
+    if(nbytes == 0) {
+        return;
+    }
 
     // Fist, do the simple read if possible
     if(nbytes <= ring_buffer_contiguous_readable(buffer)) {
@@ -683,7 +692,7 @@ int read_proc(FPGA_IF* fpga, Event* ret) {
     unsigned char * read_location = fpga->ring_buffer.buffer + fpga->ring_buffer.read_pointer;
 
     int bytes_in_buffer = ring_buffer_contiguous_readable(&fpga->ring_buffer);
-    if(bytes_in_buffer == 0) {
+    if(bytes_in_buffer == 0 && bytes_remaining != 0) {
         return 0;
     }
 
@@ -710,7 +719,7 @@ int read_proc(FPGA_IF* fpga, Event* ret) {
 
     // If the space in the buffer is larger than the data required to finish the event
     // then read enough bytes to finish the event.
-    if(bytes_remaining < bytes_in_buffer) {
+    if(bytes_remaining <= bytes_in_buffer) {
         // The rest of this event is available in the current read buffer
         event.event.lengths[i] += bytes_remaining;
         event.data_bytes_read += bytes_remaining;
