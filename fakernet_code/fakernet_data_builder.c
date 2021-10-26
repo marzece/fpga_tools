@@ -758,7 +758,7 @@ int read_proc(FPGA_IF* fpga, Event* ret) {
 
 // Connect to redis database
 redisContext* create_redis_conn() {
-    static const char* redis_hostname = "127.0.0.1";
+    static const char* redis_hostname = "192.168.84.99";
     printf("Opening Redis Connection\n");
 
     redisContext* c;
