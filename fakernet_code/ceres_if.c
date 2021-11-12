@@ -19,8 +19,9 @@
 #define  GPIO2_AXI_ADDR          0x3000
 #define  GPIO3_AXI_ADDR          0xC000
 
-#define  LMK_A_AXI_ADDR           0x5000
-#define  LMK_B_AXI_ADDR           0xB000
+#define  LMK_A_AXI_ADDR          0x5000
+#define  LMK_B_AXI_ADDR          0xB000
+#define  CERES_LMK_AXI_ADDR      0x13000
 
 #define  IIC_AXI_ADDR            0x4000
 #define  CLKGEN_IIC_AXI_ADDR     0xD000
@@ -30,10 +31,10 @@
 #define  JESD_C_AXI_ADDR         0x9000
 #define  JESD_D_AXI_ADDR         0xA000
 
-#define  JESD_PHY_A_AXI_ADDR         0xE000
-#define  JESD_PHY_B_AXI_ADDR         0x20000
-#define  JESD_PHY_C_AXI_ADDR         0xF000
-#define  JESD_PHY_D_AXI_ADDR         0x11000
+#define  JESD_PHY_A_AXI_ADDR     0xE000
+#define  JESD_PHY_B_AXI_ADDR     0x20000
+#define  JESD_PHY_C_AXI_ADDR     0xF000
+#define  JESD_PHY_D_AXI_ADDR     0x11000
 
 #define  DATA_PIPELINE_0_ADDR    0x6000
 
@@ -44,6 +45,7 @@ const uint32_t CERES_SAFE_READ_ADDRESS = GPIO0_AXI_ADDR;
 struct CERES_IF {
     AXI_QSPI* lmk_a;
     AXI_QSPI* lmk_b;
+    AXI_QSPI* ceres_lmk;
     AXI_QSPI* adc_a;
     AXI_QSPI* adc_b;
     AXI_QSPI* adc_c;
@@ -102,6 +104,7 @@ static struct CERES_IF* get_ceres_handle() {
         ceres = malloc(sizeof(struct CERES_IF));
         ceres->lmk_a = new_lmk_spi("lmk_a", LMK_A_AXI_ADDR);
         ceres->lmk_b = new_lmk_spi("lmk_b", LMK_B_AXI_ADDR);
+        ceres->ceres_lmk = new_lmk_spi("ceres_lmk", CERES_LMK_AXI_ADDR);
         ceres->adc_a = new_ads_spi("adc_a", ADC_A_AXI_ADDR);
         ceres->adc_b = new_ads_spi("adc_b", ADC_B_AXI_ADDR);
         ceres->adc_c = new_ads_spi("adc_c", ADC_C_AXI_ADDR);
@@ -260,6 +263,9 @@ AXI_QSPI* lmk_switch(uint32_t which_lmk) {
             break;
         case(1):
             this_lmk = get_ceres_handle()->lmk_b;
+            break;
+        case(2):
+            this_lmk = get_ceres_handle()->ceres_lmk;
             break;
         default:
             // TODO really need to add an error string!

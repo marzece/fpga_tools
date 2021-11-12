@@ -49,6 +49,9 @@ def do_programming(server, adcs, instructions):
         lmks.append(SPI_Device.LMK_A)
     if(SPI_Device.ADC_C in adcs or SPI_Device.ADC_D in adcs):
         lmks.append(SPI_Device.LMK_B)
+    if(SPI_Device.CERES_LMK in adcs):
+        lmks.append(SPI_Device.CERES_LMK)
+        adcs.remove(SPI_Device.CERES_LMK)
 
     for device, addr, value in instructions:
         if(addr == "sleep"):
@@ -121,6 +124,7 @@ def main():
     parser.add_argument("--adc_b", action="store_true", help="send commands to ADC B")
     parser.add_argument("--adc_c", action="store_true", help="send commands to ADC C")
     parser.add_argument("--adc_d", action="store_true", help="send commands to ADC D")
+    parser.add_argument("--ceres_lmk", action="store_true", help="send commands to CERES LMK")
     parser.add_argument("--port", type=int, default=4002, help="Port to connect to server on")
     parser.add_argument("--ti", action="store_true", help="Use commands for TI board")
     parser.add_argument("--do_reset", action="store_true", help="Do hard reset (applies to both ADCs)")
@@ -137,7 +141,8 @@ def main():
     devices = [SPI_Device.ADC_A if args.adc_a else None,
                SPI_Device.ADC_B if args.adc_b else None,
                SPI_Device.ADC_C if args.adc_c else None,
-               SPI_Device.ADC_D if args.adc_d else None]
+               SPI_Device.ADC_D if args.adc_d else None,
+               SPI_Device.CERES_LMK if args.ceres_lmk else None]
 
     print(devices)
     if(args.do_reset):

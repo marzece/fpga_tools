@@ -10,13 +10,15 @@ class SPI_Device(Enum):
     ADC_D = auto()
     LMK_A = auto()
     LMK_B = auto()
+    CERES_LMK = auto()
     TI_ADC = auto()
 
 # Map from enum to server id
 server_device_ids = { SPI_Device.ADC_A: 0, SPI_Device.ADC_B:1,
                       SPI_Device.ADC_C:2, SPI_Device.ADC_D:3,
                       SPI_Device.LMK_A:0, SPI_Device.LMK_B:1,
-                      SPI_Device.TI_ADC:0}
+                      SPI_Device.TI_ADC:0,
+                      SPI_Device.CERES_LMK: 2}
 
 def connect_to_fpga(ip="localhost", port=4002):
     fpga_conn = socket.create_connection((ip, port))
@@ -40,6 +42,9 @@ def decode_data(data):
     data = int(data, 16) # assumes response is in hex
     return data
 
+def is_lmk_device(device):
+    return device in [ SPI_Device.LMK_A, SPI_Device.LMK_B, SPI_Device.CERES_LMK]
+
 def spi_command(server, device, *args):
     adc_write_command = "write_adc_spi %i" % server_device_ids[device]
     adc_pop_cmd = "ads_spi_pop %i\r\n" % server_device_ids[device]
@@ -47,9 +52,9 @@ def spi_command(server, device, *args):
     lmk_pop_cmd = "lmk_spi_data_pop %i\r\n" % server_device_ids[device]
 
     arg_string = " ".join([hex(x) for x in args])
-    write_command = lmk_write_command if (device == SPI_Device.LMK_A or device == SPI_Device.LMK_B) else adc_write_command
+    write_command = lmk_write_command if is_lmk_device(device) else adc_write_command
     write_command = "%s %s\r\n" % (write_command, arg_string)
-    pop_command = lmk_pop_cmd if (device == SPI_Device.LMK_A or device == SPI_Device.LMK_B) else adc_pop_cmd
+    pop_command = lmk_pop_cmd if is_lmk_device(device) else adc_pop_cmd
 
     write_command = write_command.encode("ascii")
     pop_command = pop_command.encode("ascii")
