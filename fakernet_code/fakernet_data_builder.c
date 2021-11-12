@@ -826,6 +826,7 @@ void redis_publish_event(redisContext*c, const Event event) {
     if(!r) {
         printf("Redis error!\n");
     }
+    freeReplyObject(r);
 }
 
 void redis_publish_stats(redisContext* c, const ProcessingStats* stats) {
@@ -856,6 +857,7 @@ void redis_publish_stats(redisContext* c, const ProcessingStats* stats) {
     if(!r) {
         printf("Error sending stats update to redis\n");
     }
+    freeReplyObject(r);
 }
 
 struct fnet_ctrl_client* connect_fakernet_udp_client(const char* fnet_hname) {
