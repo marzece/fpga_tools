@@ -18,7 +18,7 @@ kintex_cli: kintex_cli.o
 	$(CC) -ggdb3 -o $@ $(CFLAGS) -Ilinenoise/ linenoise/linenoise.c $^
 
 fakernet_data_builder: fakernet_data_builder.c crc32.o crc8.o
-	$(CC) -Wall $(CFLAGS) -O -ggdb3 -o $@ $^ fnet_client.o hiredis/libhiredis.a
+	$(CC) -Wall $(CFLAGS) -O0 -ggdb3 -o $@ $^ fnet_client.o hiredis/libhiredis.a
 #$(CC) -Wall -pedantic -O -g -o $@ $^ 
 
 kintex_client_server.o: kintex_client_server.c
