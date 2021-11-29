@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
 #include <sys/time.h>
 #include <sys/socket.h>
@@ -16,6 +17,9 @@ void crc8(unsigned char *crc, unsigned char m);
 
 // FILE handle for writing to disk
 static FILE* fdisk = NULL;
+
+#define DEFAULT_ERROR_LOG_FILENAME "data_builder_error_log.log"
+static FILE* ferror_log = NULL;
 
 // Variable for deciding to stay in the main loop or not.
 // When loop is zero program should exit soon after.
@@ -82,6 +86,24 @@ typedef struct ProcessingStats {
     //unsigned int bytes_read;
     //unsigned int bytes_written;
 } ProcessingStats;
+
+void errlog(const char* restrict format, ...) {
+    static char buffer[128];
+    struct tm* tm_time;
+    struct timeval tv_time;
+    va_list arglist;
+    gettimeofday(&tv_time, NULL);
+    tm_time = localtime(&tv_time.tv_sec);
+    strftime(buffer, 128, "%D %T", tm_time);
+    va_start(arglist, format);
+    if(ferror_log) {
+        fprintf(ferror_log, "Error %s: ", buffer);
+        vfprintf(ferror_log, format, arglist);
+    }
+    printf("Error %s: ", buffer);
+    vprintf(format, arglist);
+    va_end(arglist);
+}
 
 // TODO could consider merging the contiguous & total space available functions
 // by have both values calculated and returned in argument pointers..and just only fill in
@@ -192,7 +214,7 @@ void ring_buffer_update_write_pntr(RingBuffer* buffer, size_t nbytes) {
         // some data in the "read" chunk of the buffer was probably overwritten.
         // I'm not sure how this hould be handled, right now I'll just emit a message.
         // Perhaps I should just flush the buffer and set go into "reeling" mode
-        printf("DATA was overwritten probably!!!!\n"
+        errlog("DATA was overwritten probably!!!!\n"
                 "This error is not handled so you should probably just restart things"
                 "...and figure out how this happened\n");
     }
@@ -243,7 +265,7 @@ void ring_buffer_update_read_pntr(RingBuffer* buffer, size_t nbytes) {
     }
     else {
         // DATA was read too far, this shouldn't happen ever
-        printf("Invalid data was read!!!\n"
+        errlog("Invalid data was read!!!\n"
                 "This really should not have happened."
                 " Everything will probably be wrong from here on out\n");
     }
@@ -477,6 +499,10 @@ void clean_up() {
         printf("Closing data file\n");
         fclose(fdisk);
     }
+    if(ferror_log) {
+        errlog("Closing error log file\n");
+        fclose(ferror_log);
+    }
     // TODO close the redis connection too
 }
 
@@ -511,7 +537,7 @@ void write_to_disk(Event* ev) {
     }
     if(nwritten != 6) {
         // TODO check errno (does fwrite set errno?)
-        printf("Error writing event header!\n");
+        errlog("Error writing event header!\n");
         // TODO do I want to close the file here?
         return;
     }
@@ -523,7 +549,7 @@ void write_to_disk(Event* ev) {
         nwritten = fwrite(ev->locations[i], 1, ev->lengths[i], fdisk);
         if(nwritten != ev->lengths[i]) {
             // TODO check errno
-            printf("Error writing event\n");
+            errlog("Error writing event\n");
             // TODO close the file??
             return;
         }
@@ -595,12 +621,12 @@ void interpret_header_word(TrigHeader* header, const uint32_t word, const int wh
 }
 
 void handle_bad_header(TrigHeader* header) {
-    printf("Likely error found\n");
-    printf("Bad magic  =  0x%x\n", header->magic_number);
-    printf("Bad trig # =  %i\n", header->trig_number);
-    printf("Bad length = %i\n", header->length);
-    printf("Bad time = %llu\n", (unsigned long long)header->clock);
-    printf("Bad channel id = %i\n", header->device_number);
+    errlog("Likely error found\n");
+    errlog("Bad magic  =  0x%x\n", header->magic_number);
+    errlog("Bad trig # =  %i\n", header->trig_number);
+    errlog("Bad length = %i\n", header->length);
+    errlog("Bad time = %llu\n", (unsigned long long)header->clock);
+    errlog("Bad channel id = %i\n", header->device_number);
     reeling = 1;
 }
 
@@ -688,7 +714,7 @@ int read_proc(FPGA_IF* fpga, Event* ret) {
     // TODO this if_statement will get called whenver a read is done...should only
     // happen just after the header is completely read
     if(event.event.header.crc != calc_trig_header_crc(&event.event.header)) {
-        printf("BAD HEADER HAPPENED");
+        errlog("BAD HEADER HAPPENED");
         handle_bad_header(&(event.event.header));
         event = start_event(); // This event is being trashed, just start a new one.
         ring_buffer_update_event_read_pntr(&fpga->ring_buffer);
@@ -721,7 +747,7 @@ int read_proc(FPGA_IF* fpga, Event* ret) {
         }
     }
     if(event.event.locations[i] != NULL) {
-        printf("Error that I don't know how to handle!\n");
+        errlog("Error that I don't know how to handle!\n");
         exit(1);
     }
 
@@ -758,13 +784,14 @@ int read_proc(FPGA_IF* fpga, Event* ret) {
 
 // Connect to redis database
 redisContext* create_redis_conn() {
-    static const char* redis_hostname = "192.168.84.99";
+    static const char* redis_hostname = "127.0.0.1";
+    //static const char* redis_hostname = "192.168.84.99";
     printf("Opening Redis Connection\n");
 
     redisContext* c;
     c = redisConnect(redis_hostname, 6379);
     if(c == NULL || c->err) {
-        printf("Redis connection error %s\n", c->errstr);
+        errlog("Redis connection error %s\n", c->errstr);
         redisFree(c);
         return NULL;
     }
@@ -824,7 +851,7 @@ void redis_publish_event(redisContext*c, const Event event) {
 
     r = redisCommandArgv(c, 3,  args,  arglens);
     if(!r) {
-        printf("Redis error!\n");
+        errlog("Redis error!\n");
     }
     freeReplyObject(r);
 }
@@ -855,7 +882,7 @@ void redis_publish_stats(redisContext* c, const ProcessingStats* stats) {
     args[2] = buf;
     r = redisCommandArgv(c, 3,  args,  arglens);
     if(!r) {
-        printf("Error sending stats update to redis\n");
+        errlog("Error sending stats update to redis\n");
     }
     freeReplyObject(r);
 }
@@ -895,6 +922,7 @@ enum ArgIDs {
     ARG_NONE=0,
     ARG_NUM_EVENTS,
     ARG_FILENAME,
+    ARG_ERR_FILENAME,
     ARG_IP
 };
 
@@ -940,7 +968,7 @@ int calculate_channel_crcs(Event* event, uint32_t *calculated_crcs, uint32_t* gi
         if(go_to_next_split) {
             i += 1;
             if(i >= MAX_SPLITS) {
-                printf("Reached the end of memory before finding all CRCs!\n");
+                errlog("Reached the end of memory before finding all CRCs!\n");
                 break;
             }
             go_to_next_split = 0;
@@ -1026,6 +1054,7 @@ int main(int argc, char **argv) {
     enum ArgIDs expecting_value;
     int do_not_save = 0;
     const char* FOUT_FILENAME = "fpga_data.dat";
+    const char* ERROR_FILENAME = DEFAULT_ERROR_LOG_FILENAME;
     int event_ready;
     struct timeval prev_time, current_time;
     uint32_t calculated_crcs[NUM_CHANNELS];
@@ -1061,6 +1090,9 @@ int main(int argc, char **argv) {
                     print_help_message();
                     return 0;
                 }
+                else if((strcmp(argv[i], "--err") == 0) ) {
+                    expecting_value = ARG_ERR_FILENAME;
+                }
                 else {
                     printf("Unrecognized option \"%s\"\n", argv[i]);
                     return 0;
@@ -1079,6 +1111,9 @@ int main(int argc, char **argv) {
                         ip = argv[i];
                         printf("FPGA IP set to %s\n", ip);
                         break;
+                    case ARG_ERR_FILENAME:
+                        printf("Error log file set to %s\n", argv[i]);
+                        ERROR_FILENAME = argv[i];
                     case ARG_NONE:
                     default:
                         break;
@@ -1132,6 +1167,10 @@ int main(int argc, char **argv) {
         }
     }
 
+    ferror_log = fopen(ERROR_FILENAME, "w");
+    if(!ferror_log) {
+        printf("Error opening error log file: %s\n", strerror(errno));
+    }
 
     gettimeofday(&prev_time, NULL);
     redisContext* redis = create_redis_conn();
@@ -1145,7 +1184,7 @@ int main(int argc, char **argv) {
 
         pull_from_fpga(&fpga_if);
         if(reeling) {
-            printf("Reeeling\n");
+            errlog("Reeeling\n");
             reeling = !find_event_start(&fpga_if);
         }
         event_ready = read_proc(&fpga_if, &event);
@@ -1166,8 +1205,8 @@ int main(int argc, char **argv) {
             calculate_channel_crcs(&event, calculated_crcs, given_crcs);
             for(i=0; i < NUM_CHANNELS; i++) {
                 if(calculated_crcs[i] != given_crcs[i]) {
-                    printf("Event %i Channel %i CRC does not match\n", event.header.trig_number, i);
-                    printf("Calculated = 0x%x, Given = 0x%x\n", calculated_crcs[i], given_crcs[i]);
+                    errlog("Event %i Channel %i CRC does not match\n", event.header.trig_number, i);
+                    errlog("Calculated = 0x%x, Given = 0x%x\n", calculated_crcs[i], given_crcs[i]);
                 }
             }
             if(((current_time.tv_sec - prev_time.tv_sec)*1e6 + (current_time.tv_usec - prev_time.tv_usec)) > REDIS_DATA_STREAM_COOLDOWN) {
