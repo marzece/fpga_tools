@@ -1,4 +1,6 @@
 /*
+Author: Eric Marzec <marzece@gmail.com>
+
    This program handles getting data from the FPGA and reading it into a
    buffer, then processing the data by finding the start/end of each event.
    Also checks the various CRC's to ensure the data is good.
@@ -7,19 +9,19 @@
    buffer. There's one slightly non-stanard element to the ring buffer as
    implemented here, I use two different "read_pointers", one read_pointer only
    updates by moving from event start to event start, and it should never point
-   to data thats in the middle of an event*. The second read pointer can point
+   to data thats in the middle of an event. The second read pointer can point
    anywhere and is used for looking at data while you search for an events end.
    Once the end of an event is found, the event-by-event read pointer is moved up.
    Data can only be written into the ring buffer upto the event-by-event read pointer.
 
-   Event data is by just remembering the location of the start in the memory
+   Event data is handled by just remembering the location of the start in the memory
    buffer, and the event length. B/c an event can wrap around the end of the
    memory buffer an event can end up being split, in which case the location of
    the start is recorded, and the location of the second "start". In principle
    that second start will always be at memory buffer location 0.
 
-   Once a full event is recorded, the memory for it is dispatched to a redis
-   stream and also written to disk.
+   Once a full event is recorded, the data for it is dispatched to a redis
+   pub-sub stream and also written to disk.
 
    In the event that something bad happens and a new event's header is wrong, or
    a new event isn't found immediatly after the end of the previous event the program
