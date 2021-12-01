@@ -879,6 +879,19 @@ void redis_publish_event(redisContext*c, const Event event) {
         builder_log(LOG_ERROR, "Redis error!\n");
     }
     freeReplyObject(r);
+
+    // Also publish the header in a seperate stream
+    args[1] = "header_stream";
+    arglens[1] = strlen(args[1]);
+
+    // args[2] already contains the whole event, including the header.
+    // So just send the first HEADER_SIZE of the event
+    arglens[2] = HEADER_SIZE;
+    r = redisCommandArgv(c, 3,  args,  arglens);
+    if(!r) {
+        builder_log(LOG_ERROR, "Redis error!\n");
+    }
+    freeReplyObject(r);
 }
 
 void redis_publish_stats(redisContext* c, const ProcessingStats* stats) {
