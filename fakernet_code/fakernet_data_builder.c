@@ -1,33 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-#include <sys/time.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <sys/types.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <signal.h>
-#include "hiredis/hiredis.h"
-#include "fnet_client.h"
-
-uint32_t crc32(uint32_t crc, uint32_t * buf, unsigned int len);
-void crc8(unsigned char *crc, unsigned char m);
-
-// FILE handle for writing to disk
-static FILE* fdisk = NULL;
-
-#define DEFAULT_ERROR_LOG_FILENAME "data_builder_error_log.log"
-static FILE* ferror_log = NULL;
-
-// Variable for deciding to stay in the main loop or not.
-// When loop is zero program should exit soon after.
-int loop = 1;
-
-// If reeling==1 need to search for next trigger header magic value.
-int reeling = 0;
-
 /*
    This program handles getting data from the FPGA and reading it into a
    buffer, then processing the data by finding the start/end of each event.
@@ -57,11 +27,52 @@ int reeling = 0;
    for the start of a new event (demarcated by the 32-bit word 0xFFFFFFFF). Once that is
    found the program exits "reeling" mode and resumes normal data processing.
  */
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <string.h>
+#include <sys/time.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <signal.h>
+#include "hiredis/hiredis.h"
+#include "fnet_client.h"
+
+#define LOG_DEBUG 0
+#define LOG_INFO 1
+#define LOG_WARN 2
+#define LOG_ERROR 3
+
+static const char* log_levels[4] = {"DEBUG", "INFO", "WARN", "ERROR"};
+int log_to_stdout = 1;
+int log_to_redis = 0;
+#define LOG_MESSAGE_MAX 1024
+
+#define DEFAULT_REDIS_HOST  "127.0.0.1"
+#define DEFAULT_ERROR_LOG_FILENAME "data_builder_error_log.log"
 
 #define MAGIC_VALUE 0xFFFFFFFF
 #define HEADER_SIZE 20 // 128-bits aka 16 bytes
 #define NUM_CHANNELS 16
 #define BUFFER_SIZE (1024*1024) // 1 MB
+
+uint32_t crc32(uint32_t crc, uint32_t * buf, unsigned int len);
+void crc8(unsigned char *crc, unsigned char m);
+
+// FILE handle for writing to disk
+static FILE* fdisk = NULL;
+
+static FILE* ferror_log = NULL;
+
+// Variable for deciding to stay in the main loop or not.
+// When loop is zero program should exit soon after.
+int loop = 1;
+
+// If reeling==1 need to search for next trigger header magic value.
+int reeling = 0;
 
 typedef struct RingBuffer {
     unsigned char* buffer;
@@ -87,22 +98,33 @@ typedef struct ProcessingStats {
     //unsigned int bytes_written;
 } ProcessingStats;
 
-void errlog(const char* restrict format, ...) {
-    static char buffer[128];
+void builder_log(int level, const char* restrict format, ...) {
+    static char message[LOG_MESSAGE_MAX];
+    va_list arglist;
+    int offset;
     struct tm* tm_time;
     struct timeval tv_time;
-    va_list arglist;
+    const char *tag = (level >= LOG_DEBUG && level <= LOG_ERROR) ? log_levels[level] : "???";
+
     gettimeofday(&tv_time, NULL);
     tm_time = localtime(&tv_time.tv_sec);
-    strftime(buffer, 128, "%D %T", tm_time);
+
+    offset = strftime(message, LOG_MESSAGE_MAX, "%D %T", tm_time);
+    offset += snprintf(message+offset, LOG_MESSAGE_MAX-offset, " [%s]: ", tag);
+
     va_start(arglist, format);
-    if(ferror_log) {
-        fprintf(ferror_log, "Error %s: ", buffer);
-        vfprintf(ferror_log, format, arglist);
-    }
-    printf("Error %s: ", buffer);
-    vprintf(format, arglist);
+        vsnprintf(message+offset, LOG_MESSAGE_MAX-offset, format, arglist);
     va_end(arglist);
+
+    if(ferror_log) {
+        fprintf(ferror_log, "%s", message);
+    }
+    if(log_to_stdout) {
+        printf("%s", message);
+    }
+    if(log_to_redis) {
+        // TODO
+    }
 }
 
 // TODO could consider merging the contiguous & total space available functions
@@ -214,7 +236,7 @@ void ring_buffer_update_write_pntr(RingBuffer* buffer, size_t nbytes) {
         // some data in the "read" chunk of the buffer was probably overwritten.
         // I'm not sure how this hould be handled, right now I'll just emit a message.
         // Perhaps I should just flush the buffer and set go into "reeling" mode
-        errlog("DATA was overwritten probably!!!!\n"
+        builder_log(LOG_ERROR, "DATA was overwritten probably!!!!\n"
                 "This error is not handled so you should probably just restart things"
                 "...and figure out how this happened\n");
     }
@@ -265,7 +287,7 @@ void ring_buffer_update_read_pntr(RingBuffer* buffer, size_t nbytes) {
     }
     else {
         // DATA was read too far, this shouldn't happen ever
-        errlog("Invalid data was read!!!\n"
+        builder_log(LOG_ERROR, "Invalid data was read!!!\n"
                 "This really should not have happened."
                 " Everything will probably be wrong from here on out\n");
     }
@@ -328,14 +350,14 @@ int connect_to_fpga(const char* fpga_ip) {
 
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     if(fd < 0) {
-        printf("Error creating TCP socket: %s\n", strerror(errno));
+        builder_log(LOG_ERROR, "Error creating TCP socket: %s\n", strerror(errno));
         return fd;
     }
 
     // Set the socket to non-block before connecting
     args  = fcntl(fd, F_GETFL, NULL);
     if(args < 0) {
-        printf("Error getting socket opts\n");
+        builder_log(LOG_ERROR, "Error getting socket opts\n");
         goto error;
 
     }
@@ -346,7 +368,7 @@ int connect_to_fpga(const char* fpga_ip) {
     //setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
 
     if(fcntl(fd, F_SETFL, args) < 0) {
-        printf("Error setting socket opts\n");
+        builder_log(LOG_ERROR, "Error setting socket opts\n");
         goto error;
     }
     fd_set myset;
@@ -370,7 +392,7 @@ int connect_to_fpga(const char* fpga_ip) {
                 }
                 break;
             }
-            printf("Error connecting TCP socket: %s\n", strerror(errno));
+            builder_log(LOG_ERROR, "Error connecting TCP socket: %s\n", strerror(errno));
             sleep(5);
             continue;
         }
@@ -388,7 +410,7 @@ int connect_to_fpga(const char* fpga_ip) {
     //args &= (~O_NONBLOCK);
 
     if(fcntl(fd, F_SETFL, args) < 0) {
-        printf("Error setting socket opts2\n");
+        builder_log(LOG_ERROR, "Error setting socket opts2\n");
         goto error;
 
     }
@@ -431,7 +453,7 @@ void initialize_buffer(RingBuffer* ring_buffer) {
     ring_buffer->is_empty = 1;
     ring_buffer->buffer = malloc(BUFFER_SIZE);
     if(!ring_buffer->buffer) {
-        printf("Could not allocate enough space for data buffer!\n");
+        builder_log(LOG_ERROR, "Could not allocate enough space for data buffer!\n");
         exit(1);
     }
 }
@@ -486,21 +508,23 @@ uint8_t calc_trig_header_crc(TrigHeader* header) {
 }
 
 void display_event(Event* ev) {
-    printf("Event trig number =  %u\n", ev->header.trig_number);
-    printf("Event length = %u\n", ev->header.length);
-    printf("Event time = %llu\n", ev->header.clock);
-    printf("device id = %u\n", ev->header.device_number);
-    printf("CRC  = 0x%x\n", ev->header.crc);
+    builder_log(LOG_INFO, "Event trig number =  %u\n"
+                          "Event length = %u\n"
+                          "Event time = %llu\n"
+                          "device id = %u\n"
+                          "CRC  = 0x%x\n", ev->header.trig_number, ev->header.length,
+                                           ev->header.clock, ev->header.device_number,
+                                           ev->header.crc);
 }
 
 void clean_up() {
-    printf("Cleaning up\n");
+    builder_log(LOG_INFO, "Cleaning up\n");
     if(fdisk) {
-        printf("Closing data file\n");
+        builder_log(LOG_INFO, "Closing data file\n");
         fclose(fdisk);
     }
     if(ferror_log) {
-        errlog("Closing error log file\n");
+        builder_log(LOG_INFO, "Closing error log file\n");
         fclose(ferror_log);
     }
     // TODO close the redis connection too
@@ -512,7 +536,7 @@ void end_loop() {
 
 void sig_handler(int signum) {
     // TODO think of more signals that would be useful
-    printf("Sig recieved %i\n", signum);
+    builder_log(LOG_WARN, "Sig recieved %i\n", signum);
     static int num_kills = 0;
     if(signum == SIGINT || signum == SIGKILL) {
         num_kills +=1;
@@ -537,7 +561,7 @@ void write_to_disk(Event* ev) {
     }
     if(nwritten != 6) {
         // TODO check errno (does fwrite set errno?)
-        errlog("Error writing event header!\n");
+        builder_log(LOG_ERROR, "Error writing event header!\n");
         // TODO do I want to close the file here?
         return;
     }
@@ -549,11 +573,12 @@ void write_to_disk(Event* ev) {
         nwritten = fwrite(ev->locations[i], 1, ev->lengths[i], fdisk);
         if(nwritten != ev->lengths[i]) {
             // TODO check errno
-            errlog("Error writing event\n");
+            builder_log(LOG_ERROR, "Error writing event\n");
             // TODO close the file??
             return;
         }
     }
+    fflush(fdisk);
 }
 
 // Read 32 bits from read buffer
@@ -616,17 +641,19 @@ void interpret_header_word(TrigHeader* header, const uint32_t word, const int wh
                 break;
             default:
                 // Should never get here...should flag an error. TODO
-                printf("This should never happen, call Tony\n");
+                builder_log(LOG_ERROR, "This should never happen, call Tony\n");
         }
 }
 
 void handle_bad_header(TrigHeader* header) {
-    errlog("Likely error found\n");
-    errlog("Bad magic  =  0x%x\n", header->magic_number);
-    errlog("Bad trig # =  %i\n", header->trig_number);
-    errlog("Bad length = %i\n", header->length);
-    errlog("Bad time = %llu\n", (unsigned long long)header->clock);
-    errlog("Bad channel id = %i\n", header->device_number);
+    builder_log(LOG_ERROR, "Likely error found\n"
+                           "Bad magic  =  0x%x\n"
+                           "Bad trig # =  %i\n"
+                           "Bad length = %i\n"
+                           "Bad time = %llu\n"
+                           "Bad channel id = %i\n", header->magic_number, header->trig_number,
+                                                    header->length, (unsigned long long) header->clock,
+                                                    header->device_number);
     reeling = 1;
 }
 
@@ -714,7 +741,7 @@ int read_proc(FPGA_IF* fpga, Event* ret) {
     // TODO this if_statement will get called whenver a read is done...should only
     // happen just after the header is completely read
     if(event.event.header.crc != calc_trig_header_crc(&event.event.header)) {
-        errlog("BAD HEADER HAPPENED");
+        builder_log(LOG_ERROR, "BAD HEADER HAPPENED");
         handle_bad_header(&(event.event.header));
         event = start_event(); // This event is being trashed, just start a new one.
         ring_buffer_update_event_read_pntr(&fpga->ring_buffer);
@@ -747,7 +774,7 @@ int read_proc(FPGA_IF* fpga, Event* ret) {
         }
     }
     if(event.event.locations[i] != NULL) {
-        errlog("Error that I don't know how to handle!\n");
+        builder_log(LOG_ERROR, "Error that I don't know how to handle!\n");
         exit(1);
     }
 
@@ -791,7 +818,7 @@ redisContext* create_redis_conn() {
     redisContext* c;
     c = redisConnect(redis_hostname, 6379);
     if(c == NULL || c->err) {
-        errlog("Redis connection error %s\n", c->errstr);
+        builder_log(LOG_ERROR, "Redis connection error %s\n", c->errstr);
         redisFree(c);
         return NULL;
     }
@@ -851,7 +878,7 @@ void redis_publish_event(redisContext*c, const Event event) {
 
     r = redisCommandArgv(c, 3,  args,  arglens);
     if(!r) {
-        errlog("Redis error!\n");
+        builder_log(LOG_ERROR, "Redis error!\n");
     }
     freeReplyObject(r);
 }
@@ -882,7 +909,7 @@ void redis_publish_stats(redisContext* c, const ProcessingStats* stats) {
     args[2] = buf;
     r = redisCommandArgv(c, 3,  args,  arglens);
     if(!r) {
-        errlog("Error sending stats update to redis\n");
+        builder_log(LOG_ERROR, "Error sending stats update to redis\n");
     }
     freeReplyObject(r);
 }
@@ -895,11 +922,11 @@ struct fnet_ctrl_client* connect_fakernet_udp_client(const char* fnet_hname) {
     while(!fnet_client) {
         fnet_client = fnet_ctrl_connect(fnet_hname, reliable, &err_string, NULL);
         if(!fnet_client) {
-            printf("ERROR Connecting on UDP channel: %s.\nWill retry\n", err_string);
+            builder_log(LOG_ERROR, "ERROR Connecting on UDP channel: %s.\nWill retry\n", err_string);
             sleep(3);
         }
     }
-    printf("UDP channel connected\n");
+    builder_log(LOG_INFO, "UDP channel connected\n");
     return fnet_client;
 }
 
@@ -912,7 +939,7 @@ int send_tcp_reset(struct fnet_ctrl_client* client) {
     send_buf[0].data = htonl(0);
     ret = fnet_ctrl_send_recv_regacc(client, 1);
     if(ret == 0) {
-        printf("Error happened while doing TCP-Reset\n");
+        builder_log(LOG_ERROR, "Error happened while doing TCP-Reset\n");
         return -1;
     }
     return 0;
@@ -968,7 +995,7 @@ int calculate_channel_crcs(Event* event, uint32_t *calculated_crcs, uint32_t* gi
         if(go_to_next_split) {
             i += 1;
             if(i >= MAX_SPLITS) {
-                errlog("Reached the end of memory before finding all CRCs!\n");
+                builder_log(LOG_ERROR, "Reached the end of memory before finding all CRCs!\n");
                 break;
             }
             go_to_next_split = 0;
@@ -1134,7 +1161,7 @@ int main(int argc, char **argv) {
 
     struct fnet_ctrl_client* udp_client = connect_fakernet_udp_client(ip);
     if(!udp_client) {
-        printf("couldn't make UDP client\n");
+        builder_log(LOG_ERROR, "couldn't make UDP client\n");
         return 1;
     }
 
@@ -1142,34 +1169,34 @@ int main(int argc, char **argv) {
     do {
         // Send a TCP reset_command
         if(send_tcp_reset(udp_client)) {
-            printf("Error sending TCP reset. Will retry.\n");
+            builder_log(LOG_ERROR, "Error sending TCP reset. Will retry.\n");
             sleep(5);
             continue;
         }
         fpga_if.fd = connect_to_fpga(ip);
 
         if(fpga_if.fd < 0) {
-            printf("error ocurred connecting to FPGA. Will retry.\n");
+            builder_log(LOG_ERROR, "error ocurred connecting to FPGA. Will retry.\n");
             sleep(5);
         }
     } while(fpga_if.fd < 0);
-    printf("FPGA TCP connection made\n");
+    builder_log(LOG_INFO, "FPGA TCP connection made\n");
     the_stats.connected_to_fpga = 1;
 
     // Open file to write events to
     if(!do_not_save) {
-        printf("Opening %s for saving data\n", FOUT_FILENAME);
+        builder_log(LOG_INFO, "Opening %s for saving data\n", FOUT_FILENAME);
         fdisk = fopen(FOUT_FILENAME, "wb");
 
         if(!fdisk) {
-            printf("error opening file: %s\n", strerror(errno));
+            builder_log(LOG_ERROR, "error opening file: %s\n", strerror(errno));
             return 0;
         }
     }
 
     ferror_log = fopen(ERROR_FILENAME, "w");
     if(!ferror_log) {
-        printf("Error opening error log file: %s\n", strerror(errno));
+        builder_log(LOG_ERROR,"Error opening error log file: %s\n", strerror(errno));
     }
 
     gettimeofday(&prev_time, NULL);
@@ -1178,13 +1205,13 @@ int main(int argc, char **argv) {
     signal(SIGKILL, sig_handler);
 
     // Main readout loop
-    printf("Entering main loop\n");
+    builder_log(LOG_INFO, "Entering main loop\n");
     event_ready = 0;
     while(loop) {
 
         pull_from_fpga(&fpga_if);
         if(reeling) {
-            errlog("Reeeling\n");
+            builder_log(LOG_ERROR, "Reeeling\n");
             reeling = !find_event_start(&fpga_if);
         }
         event_ready = read_proc(&fpga_if, &event);
@@ -1205,8 +1232,8 @@ int main(int argc, char **argv) {
             calculate_channel_crcs(&event, calculated_crcs, given_crcs);
             for(i=0; i < NUM_CHANNELS; i++) {
                 if(calculated_crcs[i] != given_crcs[i]) {
-                    errlog("Event %i Channel %i CRC does not match\n", event.header.trig_number, i);
-                    errlog("Calculated = 0x%x, Given = 0x%x\n", calculated_crcs[i], given_crcs[i]);
+                    builder_log(LOG_ERROR, "Event %i Channel %i CRC does not match\n", event.header.trig_number, i);
+                    builder_log(LOG_ERROR, "Calculated = 0x%x, Given = 0x%x\n", calculated_crcs[i], given_crcs[i]);
                 }
             }
             if(((current_time.tv_sec - prev_time.tv_sec)*1e6 + (current_time.tv_usec - prev_time.tv_usec)) > REDIS_DATA_STREAM_COOLDOWN) {
@@ -1221,7 +1248,7 @@ int main(int argc, char **argv) {
             the_stats.trigger_id = event.header.trig_number;
 
             if(num_events != 0 && the_stats.event_count >= num_events) {
-                printf("Collected %i events...exiting\n", the_stats.event_count);
+                builder_log(LOG_INFO, "Collected %i events...exiting\n", the_stats.event_count);
                 end_loop();
             }
         }
