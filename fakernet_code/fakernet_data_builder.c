@@ -47,6 +47,7 @@ Author: Eric Marzec <marzece@gmail.com>
 #define LOG_INFO 1
 #define LOG_WARN 2
 #define LOG_ERROR 3
+#define DEFAULT_VERBOSITY LOG_INFO
 
 static const char* log_levels[4] = {"DEBUG", "INFO", "WARN", "ERROR"};
 int log_to_stdout = 1;
@@ -55,6 +56,10 @@ int log_to_redis = 0;
 
 #define DEFAULT_REDIS_HOST  "127.0.0.1"
 #define DEFAULT_ERROR_LOG_FILENAME "data_builder_error_log.log"
+
+// TODO I should perhaps have two verbosity levels, one for outputting to
+// file/stdout, the other for outputting to redis
+int verbosity = DEFAULT_VERBOSITY;
 
 #define MAGIC_VALUE 0xFFFFFFFF
 #define HEADER_SIZE 20 // 128-bits aka 16 bytes
@@ -101,6 +106,9 @@ typedef struct ProcessingStats {
 } ProcessingStats;
 
 void builder_log(int level, const char* restrict format, ...) {
+    if(level < verbosity) {
+        return;
+    }
     static char message[LOG_MESSAGE_MAX];
     va_list arglist;
     int offset;
