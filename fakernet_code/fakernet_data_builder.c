@@ -49,6 +49,9 @@ Author: Eric Marzec <marzece@gmail.com>
 #define LOG_WARN 3
 #define LOG_ERROR 4
 
+// TODO need to capture some of these global state variables into a struct
+// or soemthing that of nature
+
 static const char* log_levels[5] = {"", "DEBUG", "INFO", "WARN", "ERROR"};
 
 int verbosity_stdout = LOG_INFO;
@@ -59,6 +62,7 @@ int verbosity_file = LOG_INFO;
 
 #define DEFAULT_REDIS_HOST  "127.0.0.1"
 #define DEFAULT_ERROR_LOG_FILENAME "data_builder_error_log.log"
+#define DEFAULT_REDIS_LOG_STREAM_ID "daq_log"
 
 
 #define MAGIC_VALUE 0xFFFFFFFF
@@ -71,8 +75,11 @@ void crc8(unsigned char *crc, unsigned char m);
 
 // FILE handle for writing to disk
 static FILE* fdisk = NULL;
-
+// Log file
 static FILE* ferror_log = NULL;
+
+// Redis connection for logging & data (TODO could seperate those functionalities)
+redisContext* redis = NULL;
 
 // Variable for deciding to stay in the main loop or not.
 // When loop is zero program should exit soon after.
@@ -105,6 +112,21 @@ typedef struct ProcessingStats {
     //unsigned int bytes_written;
 } ProcessingStats;
 
+void redis_log_message(char* message) {
+    // TODO, right now this can/will block,
+    // I REALLY don't want it to block at all so I need to fix that
+    // I probably will have to use hiredis's ASYNC context.
+    // TODO it'd be cool to to have this send the verbosity level & time
+    // as seperate key-value pairs instead of all bundled up in the message
+    const char* name = "fakernet_data_builder";
+    redisReply* reply;
+    reply = redisCommand(redis, "XADD %s MAXLEN ~ 500 * logger_ID %s message %s",
+                                DEFAULT_REDIS_LOG_STREAM_ID, name, message);
+    // I could check the reply to make sure the command succeeded, but right
+    // now I'll just have this fail silently
+    freeReplyObject(reply);
+}
+
 void builder_log(int level, const char* restrict format, ...) {
     if(level < verbosity_file && level < verbosity_redis && level < verbosity_stdout) {
         return;
@@ -132,10 +154,11 @@ void builder_log(int level, const char* restrict format, ...) {
     if(verbosity_stdout >= level) {
         printf("%s", message);
     }
-    if(verbosity_file >= level) {
-        // TODO
+    if(redis && level >= verbosity_redis) {
+        redis_log_message(message);
     }
 }
+
 
 // TODO could consider merging the contiguous & total space available functions
 // by have both values calculated and returned in argument pointers..and just only fill in
@@ -226,7 +249,6 @@ size_t ring_buffer_readable(RingBuffer* buffer) {
 }
 
 void ring_buffer_update_write_pntr(RingBuffer* buffer, size_t nbytes) {
-
     // Handle the trivial case
     if(nbytes == 0) {
         return;
@@ -537,7 +559,8 @@ void clean_up() {
         builder_log(LOG_INFO, "Closing error log file\n");
         fclose(ferror_log);
     }
-    // TODO close the redis connection too
+    redisFree(redis);
+    redis = NULL;
 }
 
 void end_loop() {
@@ -1231,7 +1254,7 @@ int main(int argc, char **argv) {
     }
 
     gettimeofday(&prev_time, NULL);
-    redisContext* redis = create_redis_conn(redis_host);
+    redis = create_redis_conn(redis_host);
     signal(SIGINT, sig_handler);
     signal(SIGKILL, sig_handler);
 
