@@ -810,13 +810,11 @@ int read_proc(FPGA_IF* fpga, Event* ret) {
 }
 
 // Connect to redis database
-redisContext* create_redis_conn() {
-    static const char* redis_hostname = "127.0.0.1";
-    //static const char* redis_hostname = "192.168.84.99";
-    printf("Opening Redis Connection\n");
+redisContext* create_redis_conn(const char* hostname) {
+    builder_log(LOG_INFO, "Opening Redis Connection\n");
 
     redisContext* c;
-    c = redisConnect(redis_hostname, 6379);
+    c = redisConnect(hostname, 6379);
     if(c == NULL || c->err) {
         builder_log(LOG_ERROR, "Redis connection error %s\n", c->errstr);
         redisFree(c);
@@ -950,6 +948,7 @@ enum ArgIDs {
     ARG_NUM_EVENTS,
     ARG_FILENAME,
     ARG_ERR_FILENAME,
+    ARG_REDIS_HOST,
     ARG_IP
 };
 
@@ -1082,6 +1081,7 @@ int main(int argc, char **argv) {
     int do_not_save = 0;
     const char* FOUT_FILENAME = "fpga_data.dat";
     const char* ERROR_FILENAME = DEFAULT_ERROR_LOG_FILENAME;
+    const char* redis_host = DEFAULT_REDIS_HOST;
     int event_ready;
     struct timeval prev_time, current_time;
     uint32_t calculated_crcs[NUM_CHANNELS];
@@ -1120,6 +1120,9 @@ int main(int argc, char **argv) {
                 else if((strcmp(argv[i], "--err") == 0) ) {
                     expecting_value = ARG_ERR_FILENAME;
                 }
+                else if((strcmp(argv[i], "--redis") == 0) ) {
+                    expecting_value = ARG_REDIS_HOST;
+                }
                 else {
                     printf("Unrecognized option \"%s\"\n", argv[i]);
                     return 0;
@@ -1141,6 +1144,11 @@ int main(int argc, char **argv) {
                     case ARG_ERR_FILENAME:
                         printf("Error log file set to %s\n", argv[i]);
                         ERROR_FILENAME = argv[i];
+                        break;
+                    case ARG_REDIS_HOST:
+                        printf("Redis hostname set to %s\n", argv[i]);
+                        redis_host = argv[i];
+                        break;
                     case ARG_NONE:
                     default:
                         break;
@@ -1200,7 +1208,7 @@ int main(int argc, char **argv) {
     }
 
     gettimeofday(&prev_time, NULL);
-    redisContext* redis = create_redis_conn();
+    redisContext* redis = create_redis_conn(redis_host);
     signal(SIGINT, sig_handler);
     signal(SIGKILL, sig_handler);
 
