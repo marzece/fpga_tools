@@ -658,7 +658,7 @@ static uint32_t set_trigger_params_command(uint32_t* args) {
         return -1;
     }
 
-    rate = 100e6 / rate; // Idk if 100e6 is the right value here, but its close enough probably
+    rate = 250e6 / rate; // Idk if 100e6 is the right value here, but its close enough probably
     uint32_t ret = 0;
     ret = write_local_trigger_length(get_ceres_handle()->pipeline, length);
     ret |= write_local_trigger_count_reset_value(get_ceres_handle()->pipeline, rate);
