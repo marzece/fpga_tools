@@ -15,7 +15,7 @@
  */
 
 // Log levels
-#define LL_DEBUGk 0
+#define LL_DEBUG 0
 #define LL_VERBOSE 1
 #define LL_NOTICE 2
 #define LL_WARNING 3

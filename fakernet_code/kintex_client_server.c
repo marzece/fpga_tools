@@ -51,8 +51,31 @@ enum BOARD_SWITCH {
     CERES
 };
 
-
+// This serverLog function should ONLY be called by code that I stole from
+// redis. No one else should use it.
 void serverLog(int level, const char *fmt, ...) {
+    // This is a bit of a mess, but the daq_logger uses levels that I (Eric  Marzec)
+    // came up with, and the server code uses log levels that
+    // Antirez/Redis came up with.  But I want to get log messages from the
+    // server code and shove those into my logger code.  So I need to do a bit
+    // of fiddling to get the log message prioty values to line up in a
+    // sensible way.
+    switch(level){
+        case(LL_DEBUG):
+            level=LOG_DEBUG;
+            break;
+        case(LL_VERBOSE):
+            level=LOG_INFO;
+            break;
+        case(LL_NOTICE):
+            level=LOG_WARN;
+            break;
+        case(LL_WARNING):
+            level=LOG_ERROR;
+            break;
+        default:
+            level = LOG_ERROR;
+    }
     va_list arglist;
     va_start(arglist, fmt);
         daq_log_raw(level, fmt, arglist);
@@ -78,7 +101,7 @@ int setup_udp(const char* ip) {
 
     fnet_client = fnet_ctrl_connect(ip, reliable, &err_string, NULL);
     if(!fnet_client) {
-        serverLog(LOG_ERROR, "ERROR Connecting!\n");
+        daq_log(LOG_ERROR, "ERROR Connecting!\n");
         return -1;
     }
     return 0;
@@ -342,7 +365,7 @@ int main(int argc, char** argv) {
 
     // First connect to FPGA
     if(setup_udp(ip)) {
-        serverLog(LOG_ERROR, "error ocurred connecting to fpga\n");
+        daq_log(LOG_ERROR, "error ocurred connecting to fpga\n");
         //return 1;
     }
 
@@ -376,7 +399,7 @@ int main(int argc, char** argv) {
     aeMain(server.el);
     aeDeleteEventLoop(server.el);
 
-    serverLog(LOG_WARN,"Cntrl-C found, quitting\n");
+    daq_log(LOG_WARN,"Cntrl-C found, quitting\n");
     cleanup_logger();
     return 0;
 }
