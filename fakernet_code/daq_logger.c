@@ -32,6 +32,7 @@ void setup_logger(const char* logID, const char* redis_host, const char* log_fil
         logger->redis = NULL;
         verbosity_redis = LOG_NEVER;
     }
+    logger->add_newlines = 0;
 
     // The daq_logger code will use "the_logger"
     the_logger = logger;
@@ -109,13 +110,16 @@ void daq_log_raw(int level, const char* format, va_list args) {
 
     vsnprintf(the_logger->message_buffer+offset, the_logger->message_max_length-offset, format, args);
 
+    const char* my_format_string = the_logger->add_newlines ? "%s\n" : "%s";
     if(the_logger->file && level >= the_logger->verbosity_file) {
-        fprintf(the_logger->file, "%s", the_logger->message_buffer);
+        fprintf(the_logger->file, my_format_string, the_logger->message_buffer);
     }
     if(level >= the_logger->verbosity_stdout) {
-        printf("%s", the_logger->message_buffer);
+        printf(my_format_string, the_logger->message_buffer);
     }
     if(the_logger->redis && level >= the_logger->verbosity_redis) {
         redis_log_message(the_logger->message_buffer);
     }
+
+
 }

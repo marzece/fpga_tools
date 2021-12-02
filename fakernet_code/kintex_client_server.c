@@ -362,11 +362,12 @@ int main(int argc, char** argv) {
     setup_logger(LOGGER_NAME, DEFAULT_REDIS_HOST, LOG_FILENAME,
                  verbosity_stdout, verbosity_file, verbosity_redis,
                  LOG_MESSAGE_MAX);
+    the_logger->add_newlines = 1;
 
     // First connect to FPGA
     if(setup_udp(ip)) {
-        daq_log(LOG_ERROR, "error ocurred connecting to fpga\n");
-        //return 1;
+        daq_log(LOG_ERROR, "error ocurred connecting to fpga");
+        return 1;
     }
 
     memset(resp_buffer, 0, BUFFER_SIZE);
@@ -399,7 +400,7 @@ int main(int argc, char** argv) {
     aeMain(server.el);
     aeDeleteEventLoop(server.el);
 
-    daq_log(LOG_WARN,"Cntrl-C found, quitting\n");
+    daq_log(LOG_WARN,"Cntrl-C found, quitting");
     cleanup_logger();
     return 0;
 }

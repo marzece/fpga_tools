@@ -19,13 +19,13 @@ typedef struct Logger {
     int verbosity_file;
     char* message_buffer;
     int message_max_length;
+    int add_newlines;
 } Logger;
 
 extern Logger* the_logger;
 void setup_logger(const char* logID, const char* redis_host, const char* log_filename,
                   int verbosity_stdout, int verbosity_file, int verbosity_redis, size_t buffer_size);
 void cleanup_logger(void);
-
 void daq_log_raw(int level, const char* format, va_list args);
 
 // The below __attribute__ thingy tells the GNU compiler to avoid throw an
