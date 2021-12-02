@@ -42,23 +42,18 @@ Author: Eric Marzec <marzece@gmail.com>
 #include <signal.h>
 #include "hiredis/hiredis.h"
 #include "fnet_client.h"
+#include "daq_logger.h"
 
-#define LOG_NEVER 0
-#define LOG_DEBUG 1
-#define LOG_INFO 2
-#define LOG_WARN 3
-#define LOG_ERROR 4
 
 // TODO need to capture some of these global state variables into a struct
 // or soemthing that of nature
 
-static const char* log_levels[5] = {"", "DEBUG", "INFO", "WARN", "ERROR"};
-
 int verbosity_stdout = LOG_INFO;
 int verbosity_redis = LOG_WARN;
-int verbosity_file = LOG_INFO;
+int verbosity_file = LOG_WARN;
 
 #define LOG_MESSAGE_MAX 1024
+char log_buffer[LOG_MESSAGE_MAX];
 
 #define DEFAULT_REDIS_HOST  "127.0.0.1"
 #define DEFAULT_ERROR_LOG_FILENAME "data_builder_error_log.log"
@@ -76,7 +71,6 @@ void crc8(unsigned char *crc, unsigned char m);
 // FILE handle for writing to disk
 static FILE* fdisk = NULL;
 // Log file
-static FILE* ferror_log = NULL;
 
 // Redis connection for logging & data (TODO could seperate those functionalities)
 redisContext* redis = NULL;
@@ -87,6 +81,53 @@ int loop = 1;
 
 // If reeling==1 need to search for next trigger header magic value.
 int reeling = 0;
+
+void(*builder_log)(int, const char* restrict, ...) = &daq_log;
+void setup_logger(const char* logID, const char* redis_host, const char* log_filename) {
+    Logger* logger = malloc(sizeof(Logger));
+
+    logger->name = logID;
+    logger->verbosity_stdout = verbosity_stdout;
+    logger->message_buffer = log_buffer;
+    logger->message_max_length = LOG_MESSAGE_MAX;
+
+    if(log_filename) {
+        logger->file = fopen(log_filename, "a");;
+        logger->verbosity_file = verbosity_file;
+    } else {
+        logger->file = NULL;
+        logger->verbosity_file = LOG_NEVER;
+    }
+    if(redis_host) {
+        logger->redis = redisConnect(redis_host, 6379);
+        logger->verbosity_redis = verbosity_redis;
+    } else {
+        logger->redis = NULL;
+        verbosity_redis = LOG_NEVER;
+    }
+
+    // The daq_logger code will use "the_logger"
+    the_logger = logger;
+
+    // If there were errors connecting/opening, handle those now.
+    if(logger->file == NULL) {
+        logger->verbosity_file = LOG_NEVER;
+        builder_log(LOG_ERROR, "Could not open log file!\n");
+    }
+    if(logger->redis == NULL) {
+        logger->verbosity_redis = LOG_NEVER;
+        builder_log(LOG_ERROR, "Could not connect to redis for logging!\n");
+    }
+}
+
+void cleanup_logger() {
+    redisFree(the_logger->redis);
+    the_logger->redis = NULL;
+    fclose(the_logger->file);
+    the_logger->file = NULL;
+    free(the_logger);
+    the_logger = NULL;
+}
 
 typedef struct RingBuffer {
     unsigned char* buffer;
@@ -112,52 +153,6 @@ typedef struct ProcessingStats {
     //unsigned int bytes_written;
 } ProcessingStats;
 
-void redis_log_message(char* message) {
-    // TODO, right now this can/will block,
-    // I REALLY don't want it to block at all so I need to fix that
-    // I probably will have to use hiredis's ASYNC context.
-    // TODO it'd be cool to to have this send the verbosity level & time
-    // as seperate key-value pairs instead of all bundled up in the message
-    const char* name = "fakernet_data_builder";
-    redisReply* reply;
-    reply = redisCommand(redis, "XADD %s MAXLEN ~ 500 * logger_ID %s message %s",
-                                DEFAULT_REDIS_LOG_STREAM_ID, name, message);
-    // I could check the reply to make sure the command succeeded, but right
-    // now I'll just have this fail silently
-    freeReplyObject(reply);
-}
-
-void builder_log(int level, const char* restrict format, ...) {
-    if(level < verbosity_file && level < verbosity_redis && level < verbosity_stdout) {
-        return;
-    }
-    static char message[LOG_MESSAGE_MAX];
-    va_list arglist;
-    int offset;
-    struct tm* tm_time;
-    struct timeval tv_time;
-    const char *tag = (level >= LOG_DEBUG && level <= LOG_ERROR) ? log_levels[level] : "???";
-
-    gettimeofday(&tv_time, NULL);
-    tm_time = localtime(&tv_time.tv_sec);
-
-    offset = strftime(message, LOG_MESSAGE_MAX, "%D %T", tm_time);
-    offset += snprintf(message+offset, LOG_MESSAGE_MAX-offset, " [%s]: ", tag);
-
-    va_start(arglist, format);
-        vsnprintf(message+offset, LOG_MESSAGE_MAX-offset, format, arglist);
-    va_end(arglist);
-
-    if(ferror_log && level >= verbosity_file) {
-        fprintf(ferror_log, "%s", message);
-    }
-    if(verbosity_stdout >= level) {
-        printf("%s", message);
-    }
-    if(redis && level >= verbosity_redis) {
-        redis_log_message(message);
-    }
-}
 
 
 // TODO could consider merging the contiguous & total space available functions
@@ -550,15 +545,12 @@ void display_event(Event* ev) {
 }
 
 void clean_up() {
-    builder_log(LOG_INFO, "Cleaning up\n");
+    builder_log(LOG_INFO, "Closing and cleaning up\n");
     if(fdisk) {
         builder_log(LOG_INFO, "Closing data file\n");
         fclose(fdisk);
     }
-    if(ferror_log) {
-        builder_log(LOG_INFO, "Closing error log file\n");
-        fclose(ferror_log);
-    }
+    cleanup_logger();
     redisFree(redis);
     redis = NULL;
 }
@@ -849,7 +841,7 @@ redisContext* create_redis_conn(const char* hostname) {
     redisContext* c;
     c = redisConnect(hostname, 6379);
     if(c == NULL || c->err) {
-        builder_log(LOG_ERROR, "Redis connection error %s\n", c->errstr);
+        builder_log(LOG_ERROR, "Redis connection error %s\n", (c ? c->errstr : ""));
         redisFree(c);
         return NULL;
     }
@@ -1219,6 +1211,8 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    setup_logger("fakernet_data_builder", redis_host, ERROR_FILENAME);
+
     // connect to FPGA
     do {
         // Send a TCP reset_command
@@ -1246,11 +1240,6 @@ int main(int argc, char **argv) {
             builder_log(LOG_ERROR, "error opening file: %s\n", strerror(errno));
             return 0;
         }
-    }
-
-    ferror_log = fopen(ERROR_FILENAME, "w");
-    if(!ferror_log) {
-        builder_log(LOG_ERROR,"Error opening error log file: %s\n", strerror(errno));
     }
 
     gettimeofday(&prev_time, NULL);
