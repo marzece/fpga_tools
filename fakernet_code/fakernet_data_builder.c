@@ -1135,7 +1135,7 @@ int main(int argc, char **argv) {
                         printf("FPGA IP set to %s\n", ip);
                         break;
                     case ARG_ERR_FILENAME:
-                        printf("Error log file set to %s\n", argv[i]);
+                        printf("Log file set to %s\n", argv[i]);
                         ERROR_FILENAME = argv[i];
                         break;
                     case ARG_REDIS_HOST:
