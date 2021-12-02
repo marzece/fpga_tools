@@ -112,7 +112,7 @@ void daq_log_raw(int level, const char* format, va_list args) {
     if(the_logger->file && level >= the_logger->verbosity_file) {
         fprintf(the_logger->file, "%s", the_logger->message_buffer);
     }
-    if(the_logger->verbosity_stdout >= level) {
+    if(level >= the_logger->verbosity_stdout) {
         printf("%s", the_logger->message_buffer);
     }
     if(the_logger->redis && level >= the_logger->verbosity_redis) {
