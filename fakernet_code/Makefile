@@ -5,11 +5,14 @@ CFLAGS += -O0 -std=gnu99 -Wall -W -Wshadow -Wwrite-strings \
 
 LDLIBS += -lm
 
-all: fnetctrl kintex_client_server kintex_cli fakernet_data_builder
+all: fnetctrl kintex_client_server kintex_cli fakernet_data_builder tail_daq_log
 
 fnetctrl: fnetctrl.o fnet_client.o
 
 fnetctrl.o fnet_client.o: fakernet.h fnet_client.h
+
+tail_daq_log: tail_daq_log.o hiredis/libhiredis.a
+	$(CC) -ggdb3 -o $@ $(CFLAGS) $^
 
 kintex_client_server: kintex_client_server.o hermes_if.o gpio.o lmk_if.o ads_if.o iic.o fnet_client.o dac_if.o axi_qspi.o ti_board_if.o jesd.o jesd_phy.o adc_sample_fanout.o channel_trigger.o data_pipeline.o ceres_if.o server.o ae.o sds.o adlist.o connection.o anet.o networking.o util.o daq_logger.o hiredis/libhiredis.a
 	$(CC) -ggdb3 -o $@ $(CFLAGS) $^
@@ -26,6 +29,9 @@ kintex_client_server.o: kintex_client_server.c
 
 kintex_cli.o:kintex_cli.c
 	$(CC) -ggdb3 -o $@ -c $(CFLAGS) -Ilinenoise/ $^
+
+tail_daq_log.o: tail_daq_log.c
+	$(CC) -ggdb3 -o $@ -c $(CFLAGS) $^
 
 hermes_if.o: hermes_if.c
 	$(CC) -ggdb3 -o $@ -c $(CFLAGS) $^
