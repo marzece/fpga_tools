@@ -64,7 +64,7 @@ void redis_log_message(char* message) {
     // I probably will have to use hiredis's ASYNC context.
     // TODO it'd be cool to to have this send the verbosity level & time
     // as seperate key-value pairs instead of all bundled up in the message
-    const char* name = "fakernet_data_builder";
+    const char* name = the_logger->name;
     redisReply* reply;
     reply = redisCommand(the_logger->redis, "XADD %s MAXLEN ~ 500 * logger_ID %s message %s",
                                             DEFAULT_REDIS_LOG_STREAM_ID, name, message);
