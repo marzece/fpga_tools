@@ -47,19 +47,6 @@ void daemonize(void) {
     }
 }
 
-#define MAX_LOGMSG_LEN 1024
-void serverLog(int level, const char* fmt, ...) {
-    UNUSED(level);
-    va_list ap;
-    char msg[MAX_LOGMSG_LEN];
-
-    va_start(ap, fmt);
-    vsnprintf(msg, sizeof(msg), fmt, ap);
-    va_end(ap);
-
-    printf("Server Log: %s\n", msg);
-    //logger(level,msg);
-}
 
 // TODO! these assert & panic functions should be implemented by the "final" program.
 // Not here, I.e. the actual DAQ server program with the 'int main' should define these functions!

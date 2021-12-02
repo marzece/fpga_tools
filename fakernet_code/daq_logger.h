@@ -22,6 +22,11 @@ typedef struct Logger {
 } Logger;
 
 extern Logger* the_logger;
+void setup_logger(const char* logID, const char* redis_host, const char* log_filename,
+                  int verbosity_stdout, int verbosity_file, int verbosity_redis, size_t buffer_size);
+void cleanup_logger(void);
+
+void daq_log_raw(int level, const char* format, va_list args);
 
 // The below __attribute__ thingy tells the GNU compiler to avoid throw an
 // error/warning if the format and ensuing parameters don't match up.
@@ -31,4 +36,5 @@ void daq_log(int level, const char* format, ...)
 #else
 void daq_log(int level, const char* format, ...);
 #endif
+
 #endif

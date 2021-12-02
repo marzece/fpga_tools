@@ -11,13 +11,13 @@ fnetctrl: fnetctrl.o fnet_client.o
 
 fnetctrl.o fnet_client.o: fakernet.h fnet_client.h
 
-kintex_client_server: kintex_client_server.o hermes_if.o gpio.o lmk_if.o ads_if.o iic.o fnet_client.o dac_if.o axi_qspi.o ti_board_if.o jesd.o jesd_phy.o adc_sample_fanout.o channel_trigger.o data_pipeline.o ceres_if.o server.o ae.o sds.o adlist.o connection.o anet.o networking.o util.o
+kintex_client_server: kintex_client_server.o hermes_if.o gpio.o lmk_if.o ads_if.o iic.o fnet_client.o dac_if.o axi_qspi.o ti_board_if.o jesd.o jesd_phy.o adc_sample_fanout.o channel_trigger.o data_pipeline.o ceres_if.o server.o ae.o sds.o adlist.o connection.o anet.o networking.o util.o daq_logger.o hiredis/libhiredis.a
 	$(CC) -ggdb3 -o $@ $(CFLAGS) $^
 
 kintex_cli: kintex_cli.o
 	$(CC) -ggdb3 -o $@ $(CFLAGS) -Ilinenoise/ linenoise/linenoise.c $^
 
-fakernet_data_builder: fakernet_data_builder.c crc32.o crc8.o
+fakernet_data_builder: fakernet_data_builder.c crc32.o crc8.o daq_logger.o
 	$(CC) -Wall $(CFLAGS) -O0 -ggdb3 -o $@ $^ fnet_client.o hiredis/libhiredis.a
 #$(CC) -Wall -pedantic -O -g -o $@ $^ 
 
@@ -97,6 +97,9 @@ jesd_phy.o: jesd_phy.c
 	$(CC) -ggdb3 -o $@ -c $(CFLAGS) $^
 
 util.o: util.c
+	$(CC) -ggdb3 -o $@ -c $(CFLAGS) $^
+
+daq_logger.o: daq_logger.c
 	$(CC) -ggdb3 -o $@ -c $(CFLAGS) $^
 
 clean:

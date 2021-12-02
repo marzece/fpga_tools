@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <signal.h>
+#include <stdarg.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,16 +18,26 @@
 #include "ti_board_if.h"
 #include "ceres_if.h"
 #include "resp.h"
+#include "daq_logger.h"
 
 // For doing "double" reads the 2nd read should be from this register
 #define BUFFER_SIZE 2048
 #define DEFAULT_IP  "192.168.1.192"
 
+#define LOGGER_NAME "kintex_server"
+#define DEFAULT_REDIS_HOST "127.0.0.1"
+#define LOG_FILENAME "kintex_server.log"
+#define LOG_MESSAGE_MAX 1024
+
+int verbosity_stdout = LOG_WARN;
+int verbosity_file = LOG_INFO;
+int verbosity_redis = LOG_WARN;
+
+
 int dummy_mode = 0;
 uint32_t SAFE_READ_ADDRESS;
 
 struct fnet_ctrl_client* fnet_client;
-FILE* debug_file;
 char* fpga_cli_hint_str = NULL;
 
 char command_buffer[BUFFER_SIZE];
@@ -40,20 +51,12 @@ enum BOARD_SWITCH {
     CERES
 };
 
-int setup_udp(const char* ip) {
-    debug_file = fopen("fakernet_debug_log.txt", "r");
-    int reliable = 0; // wtf does this do?
-    const char* err_string = NULL;
-    if(dummy_mode) {
-        return 0;
-    }
 
-    fnet_client = fnet_ctrl_connect(ip, reliable, &err_string, debug_file);
-    if(!fnet_client) {
-        printf("ERROR Connecting!\n");
-        return -1;
-    }
-    return 0;
+void serverLog(int level, const char *fmt, ...) {
+    va_list arglist;
+    va_start(arglist, fmt);
+        daq_log_raw(level, fmt, arglist);
+    va_end(arglist);
 }
 
 void sig_handler(int dummy) {
@@ -63,8 +66,22 @@ void sig_handler(int dummy) {
         server.shutdown_asap=1;
         return;
     }
-    // Want to make sure these pipes get cleaned up no matter what
     exit(0);
+}
+
+int setup_udp(const char* ip) {
+    int reliable = 0; // wtf does this do?
+    const char* err_string = NULL;
+    if(dummy_mode) {
+        return 0;
+    }
+
+    fnet_client = fnet_ctrl_connect(ip, reliable, &err_string, NULL);
+    if(!fnet_client) {
+        serverLog(LOG_ERROR, "ERROR Connecting!\n");
+        return -1;
+    }
+    return 0;
 }
 
 int read_addr(uint32_t base, uint32_t addr, uint32_t* result) {
@@ -318,9 +335,14 @@ int main(int argc, char** argv) {
         }
     }
 
+    // TODO these parameters should be user settable somehow
+    setup_logger(LOGGER_NAME, DEFAULT_REDIS_HOST, LOG_FILENAME,
+                 verbosity_stdout, verbosity_file, verbosity_redis,
+                 LOG_MESSAGE_MAX);
+
     // First connect to FPGA
     if(setup_udp(ip)) {
-        printf("error ocurred connecting to fpga\n");
+        serverLog(LOG_ERROR, "error ocurred connecting to fpga\n");
         //return 1;
     }
 
@@ -354,6 +376,7 @@ int main(int argc, char** argv) {
     aeMain(server.el);
     aeDeleteEventLoop(server.el);
 
-    printf("Cntrl-C found, quitting\n");
+    serverLog(LOG_WARN,"Cntrl-C found, quitting\n");
+    cleanup_logger();
     return 0;
 }

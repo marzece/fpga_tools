@@ -53,7 +53,6 @@ int verbosity_redis = LOG_WARN;
 int verbosity_file = LOG_WARN;
 
 #define LOG_MESSAGE_MAX 1024
-char log_buffer[LOG_MESSAGE_MAX];
 
 #define DEFAULT_REDIS_HOST  "127.0.0.1"
 #define DEFAULT_ERROR_LOG_FILENAME "data_builder_error_log.log"
@@ -82,52 +81,8 @@ int loop = 1;
 // If reeling==1 need to search for next trigger header magic value.
 int reeling = 0;
 
+// Alias the daq_logger log function to builder_log just b/c I like that name more
 void(*builder_log)(int, const char* restrict, ...) = &daq_log;
-void setup_logger(const char* logID, const char* redis_host, const char* log_filename) {
-    Logger* logger = malloc(sizeof(Logger));
-
-    logger->name = logID;
-    logger->verbosity_stdout = verbosity_stdout;
-    logger->message_buffer = log_buffer;
-    logger->message_max_length = LOG_MESSAGE_MAX;
-
-    if(log_filename) {
-        logger->file = fopen(log_filename, "a");;
-        logger->verbosity_file = verbosity_file;
-    } else {
-        logger->file = NULL;
-        logger->verbosity_file = LOG_NEVER;
-    }
-    if(redis_host) {
-        logger->redis = redisConnect(redis_host, 6379);
-        logger->verbosity_redis = verbosity_redis;
-    } else {
-        logger->redis = NULL;
-        verbosity_redis = LOG_NEVER;
-    }
-
-    // The daq_logger code will use "the_logger"
-    the_logger = logger;
-
-    // If there were errors connecting/opening, handle those now.
-    if(logger->file == NULL) {
-        logger->verbosity_file = LOG_NEVER;
-        builder_log(LOG_ERROR, "Could not open log file!\n");
-    }
-    if(logger->redis == NULL) {
-        logger->verbosity_redis = LOG_NEVER;
-        builder_log(LOG_ERROR, "Could not connect to redis for logging!\n");
-    }
-}
-
-void cleanup_logger() {
-    redisFree(the_logger->redis);
-    the_logger->redis = NULL;
-    fclose(the_logger->file);
-    the_logger->file = NULL;
-    free(the_logger);
-    the_logger = NULL;
-}
 
 typedef struct RingBuffer {
     unsigned char* buffer;
@@ -1211,7 +1166,9 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    setup_logger("fakernet_data_builder", redis_host, ERROR_FILENAME);
+    setup_logger("fakernet_data_builder", redis_host, ERROR_FILENAME,
+                 verbosity_stdout, verbosity_file, verbosity_redis,
+                 LOG_MESSAGE_MAX);
 
     // connect to FPGA
     do {
