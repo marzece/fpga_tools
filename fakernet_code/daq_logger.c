@@ -59,7 +59,7 @@ void cleanup_logger() {
     the_logger = NULL;
 }
 
-void redis_log_message(char* message) {
+void redis_log_message(int level, struct timeval tv, char* message) {
     // TODO, right now this can/will block,
     // I REALLY don't want it to block at all so I need to fix that
     // I probably will have to use hiredis's ASYNC context.
@@ -67,8 +67,11 @@ void redis_log_message(char* message) {
     // as seperate key-value pairs instead of all bundled up in the message
     const char* name = the_logger->name;
     redisReply* reply;
-    reply = redisCommand(the_logger->redis, "XADD %s MAXLEN ~ 500 * logger_ID %s message %s",
-                                            DEFAULT_REDIS_LOG_STREAM_ID, name, message);
+    reply = redisCommand(the_logger->redis, "XADD %s MAXLEN ~ 500 * logger_ID %s "
+                                            "tag %i tv_sec %ld tv_usec %ld message %s",
+                                            DEFAULT_REDIS_LOG_STREAM_ID, name,
+                                            level, tv.tv_sec, tv.tv_usec,
+                                            message);
     // I could check the reply to make sure the command succeeded, but right
     // now I'll just have this fail silently
     freeReplyObject(reply);
@@ -118,8 +121,6 @@ void daq_log_raw(int level, const char* format, va_list args) {
         printf(my_format_string, the_logger->message_buffer);
     }
     if(the_logger->redis && level >= the_logger->verbosity_redis) {
-        redis_log_message(the_logger->message_buffer);
+        redis_log_message(level, tv_time, the_logger->message_buffer + offset);
     }
-
-
 }

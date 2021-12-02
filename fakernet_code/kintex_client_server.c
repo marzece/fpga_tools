@@ -101,7 +101,7 @@ int setup_udp(const char* ip) {
 
     fnet_client = fnet_ctrl_connect(ip, reliable, &err_string, NULL);
     if(!fnet_client) {
-        daq_log(LOG_ERROR, "ERROR Connecting!\n");
+        daq_log(LOG_ERROR, "ERROR Connecting!");
         return -1;
     }
     return 0;

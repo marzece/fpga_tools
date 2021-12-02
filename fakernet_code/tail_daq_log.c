@@ -1,12 +1,23 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "hiredis/hiredis.h"
 
 typedef struct DAQMessage {
     const char* message_id;
     const char* logger_id;
     const char* message;
+    int tag;
+    struct timeval tv;
 } DAQMessage;
+
+static const char* tag_to_str[] = {"", "🐛", "ℹ️", "🤔", "⚠️"};
+
+#ifdef __GNUC__
+void logit(const char* format, ...)
+    __attribute__((format(printf, 1, 2)));
+#endif
 
 void logit(const char* restrict format, ...) {
     va_list arglist;
@@ -37,6 +48,8 @@ int main(int argc, char** argv) {
     redisContext* redis = create_redis_conn(redis_host);
     int loop = 1;
     size_t i,j;
+    char time_buffer[128];
+    struct tm* local_time;
 
     redisReply* reply = NULL;
     while(loop) {
@@ -80,11 +93,23 @@ int main(int argc, char** argv) {
                 else if(strcmp(key, "message") == 0) {
                     message.message = value;
                 }
+                else if(strcmp(key, "tag") == 0) {
+                    message.tag = strtol(value, NULL, 10);
+                }
+                else if(strcmp(key, "tv_sec") == 0) {
+                    message.tv.tv_sec = strtoll(value, NULL, 10);
+                }
+                else if(strcmp(key, "tv_usec") == 0) {
+                    message.tv.tv_usec = strtoll(value, NULL, 10);
+                }
                 else {
-                    // Unknown...just ignore it ??
+                    // Unknown...just ignore it ?? idk
                 }
             }
-            logit("[%s]: %s\n", message.logger_id, message.message);
+
+            local_time = localtime(&message.tv.tv_sec);
+            strftime(time_buffer, 128, "%x %X", local_time);
+            logit("%s  [%s] [%s]: %s\n", tag_to_str[message.tag], time_buffer,  message.logger_id, message.message);
             strcpy(latest_id, message.message_id);
         }
     }
