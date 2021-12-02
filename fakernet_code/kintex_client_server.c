@@ -29,7 +29,7 @@
 #define LOG_FILENAME "kintex_server.log"
 #define LOG_MESSAGE_MAX 1024
 
-int verbosity_stdout = LOG_WARN;
+int verbosity_stdout = LOG_INFO;
 int verbosity_file = LOG_INFO;
 int verbosity_redis = LOG_WARN;
 

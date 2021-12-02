@@ -47,7 +47,6 @@ void daemonize(void) {
     }
 }
 
-
 // TODO! these assert & panic functions should be implemented by the "final" program.
 // Not here, I.e. the actual DAQ server program with the 'int main' should define these functions!
 void _serverAssert(const char *estr, const char *file, int line) {
@@ -428,7 +427,7 @@ void call(client *c, int flags) {
     duration = ustime()-start;
 
     if(flags & CMD_CALL_LOG) {
-        serverLog(LL_NOTICE, "Command %s executed", c->cmd->name);
+        serverLog(LL_VERBOSE, "Command %s executed", c->cmd->name);
     }
 
 
@@ -496,7 +495,7 @@ void initServer(void) {
         exit(1);
     }
 
-    /* Create the Redis databases, and initialize other internal state. */
+    /* initialize internal state. */
     server.cronloops = 0;
     //server.dirty = 0;
 
