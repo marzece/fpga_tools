@@ -39,6 +39,7 @@ void logit(const char* restrict format, ...) {
     va_start(arglist, format);
         vprintf(format, arglist);
     va_end(arglist);
+    fflush(stdout);
 }
 
 redisContext* create_redis_conn(const char* hostname) {
@@ -128,7 +129,7 @@ int main(int argc, char** argv) {
                 }
             }
 
-            if(message_valid == 0xF) {
+            if((message_valid &0xF) == 0xF) {
                 local_time = localtime(&message.tv.tv_sec);
                 strftime(time_buffer, 128, "%x %X", local_time);
                 const char* tag_str = (message.tag > 0 && message.tag < NUM_TAGS) ? tag_to_str[message.tag] : "???";
