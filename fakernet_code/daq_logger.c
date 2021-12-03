@@ -26,8 +26,11 @@ void setup_logger(const char* logID, const char* redis_host, const char* log_fil
         logger->verbosity_file = LOG_NEVER;
     }
     if(redis_host) {
-        logger->redis = redisConnect(redis_host, 6379);
+        logger->redis = redisConnectNonBlock(redis_host, 6379);
         logger->verbosity_redis = verbosity_redis;
+        if(logger->redis->err) {
+            logger->redis = NULL;
+        }
     } else {
         logger->redis = NULL;
         verbosity_redis = LOG_NEVER;
@@ -40,9 +43,10 @@ void setup_logger(const char* logID, const char* redis_host, const char* log_fil
     // If there were errors connecting/opening, handle those now.
     if(logger->file == NULL) {
         logger->verbosity_file = LOG_NEVER;
-        daq_log(LOG_ERROR, "Could not open log file!\n");
+        printf("Did not open any log file!\n");
     }
     if(logger->redis == NULL) {
+        // TODO, should copy redis->errstr for this messge
         logger->verbosity_redis = LOG_NEVER;
         daq_log(LOG_ERROR, "Could not connect to redis for logging!\n");
     }
@@ -60,21 +64,23 @@ void cleanup_logger() {
 }
 
 void redis_log_message(int level, struct timeval tv, char* message) {
-    // TODO, right now this can/will block,
-    // I REALLY don't want it to block at all so I need to fix that
-    // I probably will have to use hiredis's ASYNC context.
-    // TODO it'd be cool to to have this send the verbosity level & time
-    // as seperate key-value pairs instead of all bundled up in the message
     const char* name = the_logger->name;
-    redisReply* reply;
-    reply = redisCommand(the_logger->redis, "XADD %s MAXLEN ~ 500 * logger_ID %s "
+    int done;
+    redisReply* reply = NULL;
+    do {
+        redisBufferRead(the_logger->redis);
+        redisGetReply(the_logger->redis, (void**)&reply);
+        freeReplyObject(reply);
+    } while(reply);
+
+    redisAppendCommand(the_logger->redis, "XADD %s MAXLEN ~ 500 * logger_ID %s "
                                             "tag %i tv_sec %ld tv_usec %ld message %s",
                                             DEFAULT_REDIS_LOG_STREAM_ID, name,
                                             level, tv.tv_sec, tv.tv_usec,
                                             message);
-    // I could check the reply to make sure the command succeeded, but right
-    // now I'll just have this fail silently
-    freeReplyObject(reply);
+    do {
+        redisBufferWrite(the_logger->redis, &done);
+    } while(!done);
 }
 
 void daq_log(int level, const char* restrict format, ...) {
@@ -116,9 +122,11 @@ void daq_log_raw(int level, const char* format, va_list args) {
     const char* my_format_string = the_logger->add_newlines ? "%s\n" : "%s";
     if(the_logger->file && level >= the_logger->verbosity_file) {
         fprintf(the_logger->file, my_format_string, the_logger->message_buffer);
+        fflush(the_logger->file);
     }
     if(level >= the_logger->verbosity_stdout) {
         printf(my_format_string, the_logger->message_buffer);
+        fflush(stdout);
     }
     if(the_logger->redis && level >= the_logger->verbosity_redis) {
         redis_log_message(level, tv_time, the_logger->message_buffer + offset);
