@@ -56,7 +56,6 @@ int verbosity_file = LOG_WARN;
 
 #define DEFAULT_REDIS_HOST  "127.0.0.1"
 #define DEFAULT_ERROR_LOG_FILENAME "data_builder_error_log.log"
-#define DEFAULT_REDIS_LOG_STREAM_ID "daq_log"
 
 
 #define MAGIC_VALUE 0xFFFFFFFF
