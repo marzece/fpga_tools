@@ -13,6 +13,7 @@ typedef struct DAQMessage {
 } DAQMessage;
 
 static const char* tag_to_str[] = {"", "🐛", "ℹ️", "🤔", "⚠️"};
+const int NUM_TAGS = sizeof(tag_to_str)/sizeof(tag_to_str[0]);
 
 #ifdef __GNUC__
 void logit(const char* format, ...)
@@ -115,7 +116,8 @@ int main(int argc, char** argv) {
             if(message_valid == 0xF) {
                 local_time = localtime(&message.tv.tv_sec);
                 strftime(time_buffer, 128, "%x %X", local_time);
-                logit("%s  [%s] [%s]: %s\n", tag_to_str[message.tag], time_buffer,  message.logger_id, message.message);
+                const char* tag_str = (message.tag > 0 && message.tag < NUM_TAGS) ? tag_to_str[message.tag] : "???";
+                logit("%s  [%s] [%s]: %s\n", tag_str, time_buffer,  message.logger_id, message.message);
             }
             strcpy(latest_id, message.message_id);
         }
