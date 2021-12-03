@@ -68,8 +68,12 @@ void redis_log_message(int level, struct timeval tv, char* message) {
     int done;
     redisReply* reply = NULL;
     do {
-        redisBufferRead(the_logger->redis);
-        redisGetReply(the_logger->redis, (void**)&reply);
+        if(redisBufferRead(the_logger->redis) == REDIS_ERR) {
+            // TODO should handle this better
+        }
+        if(redisGetReply(the_logger->redis, (void**)&reply) == REDIS_ERR) {
+            // TODO, should handle this better
+        }
         freeReplyObject(reply);
     } while(reply);
 
@@ -79,7 +83,11 @@ void redis_log_message(int level, struct timeval tv, char* message) {
                                             level, tv.tv_sec, tv.tv_usec,
                                             message);
     do {
-        redisBufferWrite(the_logger->redis, &done);
+        if(redisBufferWrite(the_logger->redis, &done) == REDIS_ERR) {
+            // Not sure how this ought to be handled probably should disconnect
+            // and setup some system to try and re-connect
+            return;
+        }
     } while(!done);
 }
 
