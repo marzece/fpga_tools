@@ -78,6 +78,7 @@ int main(int argc, char** argv) {
         for(i=0; i< reply3->elements; i++) {
             redisReply* message_reply = reply3->element[i];
             DAQMessage message;
+            int message_valid = 0;
 
             // 4th level of reply is a 2 element array first element is the stream item ID
             // 2nd element is the message contents
@@ -91,27 +92,31 @@ int main(int argc, char** argv) {
                 const char* value = kv_reply->element[j+1]->str;
                 if(strcmp(key, "logger_ID") == 0) {
                     message.logger_id = value;
+                    message_valid |= 0x1;
                 }
                 else if(strcmp(key, "message") == 0) {
                     message.message = value;
+                    message_valid |= 0x2;
                 }
                 else if(strcmp(key, "tag") == 0) {
                     message.tag = strtol(value, NULL, 10);
+                    message_valid |= 0x4;
                 }
                 else if(strcmp(key, "tv_sec") == 0) {
                     message.tv.tv_sec = strtoll(value, NULL, 10);
+                    message_valid |= 0x8;
                 }
                 else if(strcmp(key, "tv_usec") == 0) {
                     message.tv.tv_usec = strtoll(value, NULL, 10);
-                }
-                else {
-                    // Unknown...just ignore it ?? idk
+                    message_valid |= 0x10;
                 }
             }
 
-            local_time = localtime(&message.tv.tv_sec);
-            strftime(time_buffer, 128, "%x %X", local_time);
-            logit("%s  [%s] [%s]: %s\n", tag_to_str[message.tag], time_buffer,  message.logger_id, message.message);
+            if(message_valid == 0xF) {
+                local_time = localtime(&message.tv.tv_sec);
+                strftime(time_buffer, 128, "%x %X", local_time);
+                logit("%s  [%s] [%s]: %s\n", tag_to_str[message.tag], time_buffer,  message.logger_id, message.message);
+            }
             strcpy(latest_id, message.message_id);
         }
     }
