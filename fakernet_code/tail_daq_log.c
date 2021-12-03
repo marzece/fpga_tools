@@ -53,7 +53,7 @@ redisContext* create_redis_conn(const char* hostname) {
     logit("Opening Redis Connection\n");
 
     redisContext* c;
-    c = redisConnect(hostname, 6379);
+    c = redisConnectNonBlock(hostname, 6379);
     if(c == NULL || c->err) {
         logit("Redis connection error: %s\n", (c ? c->errstr : ""));
         redisFree(c);
@@ -69,13 +69,19 @@ enum ArgValues {
 
 int main(int argc, char** argv) {
     const char* redis_host = "127.0.0.1";
-    const char* get_messages_command = "XREAD BLOCK 1 COUNT 50 streams daq_log %s";
+    const char* get_messages_command = "XREAD BLOCK 0 COUNT 50 streams daq_log %s";
     char latest_id[256];
     strcpy(latest_id, "0");
     size_t i,j;
     char time_buffer[128];
     struct tm* local_time;
     redisReply* reply = NULL;
+    int done;
+
+    // Sleep for 0.2 seconds each loop to reduce CPU load
+    struct timespec sleep_time;
+    sleep_time.tv_sec = 0;
+    sleep_time.tv_nsec = (long)2e8; // 0.2s;
 
     // Parse command line args
     enum ArgValues expecting_value = ARG_NONE;
@@ -99,15 +105,32 @@ int main(int argc, char** argv) {
     redisContext* redis = create_redis_conn(redis_host);
     if(!redis) { return 1; }
 
+    redisAppendCommand(redis, get_messages_command, latest_id);
     while(loop) {
-        freeReplyObject(reply);
-        reply = redisCommand(redis, get_messages_command, latest_id);
-        if(!reply) {
-            printf("tail_daq_log: Connection to redis database lost\n");
-            // TODO this should try and re-establish database connection
+        if(reply) {
+            freeReplyObject(reply);
+            reply = NULL;
+            redisAppendCommand(redis, get_messages_command, latest_id);
+        }
+
+        if(redisBufferWrite(redis, &done) == REDIS_ERR) {
+            // Not sure how this ought to be handled probably should disconnect
+            // and setup some system to try and re-connect
+            printf("I think redis got disconnected...exiting\n");
             return 1;
         }
-        if(reply->type != REDIS_REPLY_ARRAY) {
+
+        if(redisBufferRead(redis) == REDIS_ERR) {
+            printf("Error while getting redis reply...exiting\n");
+            return 1;
+        }
+        if(redisGetReply(redis, (void**)&reply) == REDIS_ERR) {
+            printf("Error while handling redis reply...exiting\n");
+            return 1;
+        }
+
+        if(!reply || reply->type != REDIS_REPLY_ARRAY) {
+            nanosleep(&sleep_time, NULL);
             continue;
         }
 
