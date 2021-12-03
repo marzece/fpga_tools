@@ -56,7 +56,9 @@ int main(int argc, char** argv) {
         freeReplyObject(reply);
         reply = redisCommand(redis, get_messages_command, latest_id);
         if(!reply) {
-            // Not sure how to handle this
+            printf("tail_daq_log: Connection to redis database lost\n");
+            // TODO this should try and re-establish database connection
+            return 1;
         }
         if(reply->type != REDIS_REPLY_ARRAY) {
             printf("BAD REPLY!\n");
