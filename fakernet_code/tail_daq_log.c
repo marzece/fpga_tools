@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 #include <time.h>
 #include "hiredis/hiredis.h"
 
@@ -14,11 +15,24 @@ typedef struct DAQMessage {
 
 static const char* tag_to_str[] = {"", "🐛", "ℹ️", "🤔", "⚠️"};
 const int NUM_TAGS = sizeof(tag_to_str)/sizeof(tag_to_str[0]);
+int loop = 1;
 
 #ifdef __GNUC__
 void logit(const char* format, ...)
     __attribute__((format(printf, 1, 2)));
 #endif
+
+void signal_handler(int signum) {
+    printf("Stop signal recieved. Exiting...\n");
+    static int num_kills = 0;
+    if(signum == SIGINT || signum == SIGKILL) {
+        num_kills +=1;
+        loop = 0;
+    }
+    if(num_kills >= 2) {
+        exit(1);
+    }
+}
 
 void logit(const char* restrict format, ...) {
     va_list arglist;
@@ -43,16 +57,18 @@ redisContext* create_redis_conn(const char* hostname) {
 int main(int argc, char** argv) {
 
     const char* redis_host = "127.0.0.1";
-    const char* get_messages_command = "XREAD BLOCK 0 COUNT 50 streams daq_log %s";
+    const char* get_messages_command = "XREAD BLOCK 1 COUNT 50 streams daq_log %s";
     char latest_id[256];
     strcpy(latest_id, "0");
     redisContext* redis = create_redis_conn(redis_host);
-    int loop = 1;
     size_t i,j;
     char time_buffer[128];
     struct tm* local_time;
-
     redisReply* reply = NULL;
+
+    signal(SIGINT, signal_handler);
+    signal(SIGKILL, signal_handler);
+
     while(loop) {
         freeReplyObject(reply);
         reply = redisCommand(redis, get_messages_command, latest_id);
@@ -62,14 +78,13 @@ int main(int argc, char** argv) {
             return 1;
         }
         if(reply->type != REDIS_REPLY_ARRAY) {
-            printf("BAD REPLY!\n");
             continue;
         }
 
         // From here on out no checks are done against the the reply data, if you've
         // made it here the reply SHOULD be well formatted as a stream response.
         // So the rest of the reply handling code will assume it is in fact well formatted.
-        
+
         // 2nd level of reply is 2 element array where element 1 is the stream name ("daq_log"),
         // element two is an array. Here the 2nd level gets skipped over.
         // 3rd level of reply is N length array each element of the array
