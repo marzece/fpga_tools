@@ -55,27 +55,49 @@ redisContext* create_redis_conn(const char* hostname) {
     redisContext* c;
     c = redisConnect(hostname, 6379);
     if(c == NULL || c->err) {
-        logit("Redis connection error %s\n", (c ? c->errstr : ""));
+        logit("Redis connection error: %s\n", (c ? c->errstr : ""));
         redisFree(c);
         return NULL;
     }
     return c;
 }
 
-int main(int argc, char** argv) {
+enum ArgValues {
+    REDIS_HOST_ARG,
+    ARG_NONE
+};
 
+int main(int argc, char** argv) {
     const char* redis_host = "127.0.0.1";
     const char* get_messages_command = "XREAD BLOCK 1 COUNT 50 streams daq_log %s";
     char latest_id[256];
     strcpy(latest_id, "0");
-    redisContext* redis = create_redis_conn(redis_host);
     size_t i,j;
     char time_buffer[128];
     struct tm* local_time;
     redisReply* reply = NULL;
 
+    // Parse command line args
+    enum ArgValues expecting_value = ARG_NONE;
+    for(i=1; i<(size_t)argc; i++) {
+        if(expecting_value != ARG_NONE) {
+            if(expecting_value == REDIS_HOST_ARG) {
+                redis_host = argv[i];
+            }
+            expecting_value = ARG_NONE;
+        }
+        else {
+            if(strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--host") == 0) {
+                expecting_value = REDIS_HOST_ARG;
+            }
+        }
+    }
+
     signal(SIGINT, signal_handler);
     signal(SIGKILL, signal_handler);
+
+    redisContext* redis = create_redis_conn(redis_host);
+    if(!redis) { return 1; }
 
     while(loop) {
         freeReplyObject(reply);
