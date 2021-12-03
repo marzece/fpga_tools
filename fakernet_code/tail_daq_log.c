@@ -5,6 +5,13 @@
 #include <time.h>
 #include "hiredis/hiredis.h"
 
+#define MESSAGE_LOGGER_ID_BIT 0x1
+#define MESSAGE_MESSAGE_BIT 0x2
+#define MESSAGE_TAG_BIT 0x4
+#define MESSAGE_TV_SEC_BIT 0x8
+#define MESSAGE_TV_USEC_BIT 0x10
+#define MESSAGE_VALID_MASK (MESSAGE_LOGGER_ID_BIT | MESSAGE_TAG_BIT | MESSAGE_MESSAGE_BIT | MESSAGE_TV_SEC_BIT)
+
 typedef struct DAQMessage {
     const char* message_id;
     const char* logger_id;
@@ -129,7 +136,7 @@ int main(int argc, char** argv) {
                 }
             }
 
-            if((message_valid &0xF) == 0xF) {
+            if((message_valid & MESSAGE_VALID_MASK) == MESSAGE_VALID_MASK) {
                 local_time = localtime(&message.tv.tv_sec);
                 strftime(time_buffer, 128, "%x %X", local_time);
                 const char* tag_str = (message.tag > 0 && message.tag < NUM_TAGS) ? tag_to_str[message.tag] : "???";
