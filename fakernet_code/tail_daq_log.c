@@ -103,6 +103,9 @@ int main(int argc, char** argv) {
     signal(SIGKILL, signal_handler);
 
     redisContext* redis = create_redis_conn(redis_host);
+     // This sleep is here to make sure the non-blocking connect actually happens
+     // it'd be better to just check that the FD is writable though...
+    nanosleep(&sleep_time, NULL);
     if(!redis) { return 1; }
 
     redisAppendCommand(redis, get_messages_command, latest_id);
