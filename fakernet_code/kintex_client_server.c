@@ -297,7 +297,7 @@ void print_help_message() {
 
 int main(int argc, char** argv) {
 
-    int which_board = HE2TER;
+    int which_board = CERES;
     const char* ip = DEFAULT_IP;
     int port = -1;
     if(argc > 1 ) {
@@ -316,11 +316,9 @@ int main(int argc, char** argv) {
                     dummy_mode = 1;
                 }
                 else if(strcmp(argv[i], "--ti") == 0 || strcmp(argv[1], "--TI") ==0) {
-                    printf("Using TI board commands\n");
                     which_board = TI;
                 }
                 else if(strcmp(argv[i], "--ceres") == 0 || strcmp(argv[1], "--CERES") ==0) {
-                    printf("Using CERES board commands\n");
                     which_board = CERES;
                 }
 
@@ -356,6 +354,19 @@ int main(int argc, char** argv) {
             printf("Did not find value for last argument...exiting\n");
             return 1;
         }
+    }
+    if(which_board == CERES) {
+        printf("Using CERES board commands and address table\n");
+    }
+    else if(which_board == TI) {
+        printf("Using TI board commands and address table\n");
+    }
+    else if( which_board == HE2TER) {
+        printf("Using HE2TER board commands and address table\n");
+    }
+    else {
+        printf("Specified board not known...dying\n");
+        return 1;
     }
 
     // TODO these parameters should be user settable somehow
