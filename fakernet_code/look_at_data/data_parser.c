@@ -25,6 +25,10 @@ int  read_header(FILE* fin, TrigHeader* header) {
     if(!fread(&(header->crc), sizeof(uint8_t), 1, fin)) {
         return -1;
     }
+    header->magic_number = ntohl(header->magic_number);
+    header->trig_number = ntohl(header->trig_number);
+    header->clock = ntohll(header->clock);
+    header->length = ntohs(header->length);
     assert(header->magic_number == 0xFFFFFFFF);
     return 0;
 }
@@ -162,11 +166,9 @@ int read_event(FILE*fin, uint16_t nsamples, uint16_t *samples) {
             return -1;
         }
 
-        // Data is stored big-endian..if system is little endian do swap
-        if(is_little_endian) {
-            for(j=0; j<nsamples; j++) {
-                samples[j] = short_byte_swap(samples[j]);
-            }
+        // Data is stored network byte order
+        for(j=0; j<nsamples; j++) {
+            samples[j] = ntohs(samples[j]);
         }
 
         //Read channel trailer (CRC)

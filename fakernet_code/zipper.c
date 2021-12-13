@@ -214,7 +214,7 @@ void recieve_waveform__from_redis(redisContext* redis) {
     assert(rr_dat->type == REDIS_REPLY_STRING);
     assert(rr_dat->len >= DATA_HEADER_NBYTES); // Header should always be 20 bytes
 
-    uint32_t event_number = htonl(*((uint32_t*) (rr_dat->str+4)));
+    uint32_t event_number = ntohl(*((uint32_t*) (rr_dat->str+4)));
     uint32_t device_id = *((uint8_t*) (rr_dat->str+18));
     printf("%i %i\n", event_number, device_id);
 
