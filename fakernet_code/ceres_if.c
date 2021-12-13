@@ -359,9 +359,9 @@ uint32_t write_lmk_spi(AXI_QSPI* lmk, uint32_t rw, uint32_t addr, uint32_t data)
     addr = addr & 0x1FFF;
     data = data & 0xFF;
 
-    uint32_t word1 = (rw << 5) | (addr >> 8);
-    uint32_t word2 = addr & 0xFF;
-    uint32_t word3 = data & 0xFF;
+    uint8_t word1 = (rw << 5) | (addr >> 8);
+    uint8_t word2 = addr & 0xFF;
+    uint8_t word3 = data & 0xFF;
 
     uint8_t word_buf[3] = {word1, word2, word3};
     // Bit 0 of the SSR is the LMK select line, pull it low to start SPI data transfer
