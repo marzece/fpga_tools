@@ -529,16 +529,26 @@ void sig_handler(int signum) {
 void write_to_disk(Event* ev) {
     size_t nwritten;
     int i;
+    unsigned int byte_count = 0;
     // Write header
     {
-        nwritten = fwrite(&(ev->header.magic_number), sizeof(uint32_t), 1, fdisk);
-        nwritten += fwrite(&(ev->header.trig_number), sizeof(uint32_t), 1, fdisk);
-        nwritten += fwrite(&(ev->header.clock), sizeof(uint64_t), 1, fdisk);
-        nwritten += fwrite(&(ev->header.length), sizeof(uint16_t), 1, fdisk);
-        nwritten += fwrite(&(ev->header.device_number), sizeof(uint8_t), 1, fdisk);
-        nwritten += fwrite(&(ev->header.crc), sizeof(uint8_t), 1, fdisk);
+        unsigned char header_mem[20];
+        *((uint32_t*)header_mem) = htonl(ev->header.magic_number);
+        byte_count += 4;
+        *((uint32_t*)(header_mem + byte_count)) = htonl(ev->header.trig_number);
+        byte_count += 4;
+        *((uint64_t*)(header_mem + byte_count)) = htonll(ev->header.clock);
+        byte_count += 8;
+        *((uint16_t*)(header_mem + byte_count)) = htons(ev->header.length);
+        byte_count += 2;
+        *((uint8_t*)(header_mem + byte_count)) = ev->header.device_number;
+        byte_count += 1;
+        *((uint8_t*)(header_mem + byte_count)) = ev->header.crc;
+        byte_count += 1;
+        nwritten = fwrite(header_mem, 1, byte_count, fdisk);
     }
-    if(nwritten != 6) {
+
+    if(nwritten != byte_count) {
         // TODO check errno (does fwrite set errno?)
         builder_log(LOG_ERROR, "Error writing event header!");
         // TODO do I want to close the file here?
@@ -814,19 +824,19 @@ char* copy_event(const Event* event) {
     }
 
     // TODO this needs to protect itself from overflows!!!!!
-    //memcpy(mem, &(event->header), sizeof(TrigHeader));
-    memcpy(mem, &(event->header.magic_number), sizeof(uint32_t));
+    *((uint32_t*)mem) = htonl(event->header.magic_number);
     byte_count += 4;
-    memcpy(mem + byte_count, &(event->header.trig_number), sizeof(uint32_t));
+    *((uint32_t*)(mem + byte_count)) = htonl(event->header.trig_number);
     byte_count += 4;
-    memcpy(mem + byte_count, &(event->header.clock), sizeof(uint64_t));
+    *((uint64_t*)(mem + byte_count)) = htonll(event->header.clock);
     byte_count += 8;
-    memcpy(mem + byte_count, &(event->header.length), sizeof(uint16_t));
+    *((uint16_t*)(mem + byte_count)) = htons(event->header.length);
     byte_count += 2;
-    memcpy(mem + byte_count, &(event->header.device_number), sizeof(uint8_t));
+    *((uint8_t*)(mem + byte_count)) = event->header.device_number;
     byte_count += 1;
-    memcpy(mem + byte_count, &(event->header.crc), sizeof(uint8_t));
+    *((uint8_t*)(mem + byte_count)) = event->header.crc;
     byte_count += 1;
+
     for(i=0;i < MAX_SPLITS; i++) {
         if(!event->locations[i]) {
             break;

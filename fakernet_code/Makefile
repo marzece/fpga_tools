@@ -5,11 +5,14 @@ CFLAGS += -O0 -std=gnu99 -Wall -W -Wshadow -Wwrite-strings \
 
 LDLIBS += -lm
 
-all: fnetctrl kintex_client_server kintex_cli fakernet_data_builder tail_daq_log
+all: fnetctrl kintex_client_server kintex_cli fakernet_data_builder tail_daq_log zipper
 
 fnetctrl: fnetctrl.o fnet_client.o
 
 fnetctrl.o fnet_client.o: fakernet.h fnet_client.h
+
+zipper: zipper.c hiredis/libhiredis.a
+	$(CC) -ggdb3 -O0 -o $@ $(CFLAGS) $^
 
 tail_daq_log: tail_daq_log.o hiredis/libhiredis.a
 	$(CC) -ggdb3 -o $@ $(CFLAGS) $^
