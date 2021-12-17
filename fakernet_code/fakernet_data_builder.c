@@ -52,6 +52,8 @@ int verbosity_stdout = LOG_INFO;
 int verbosity_redis = LOG_WARN;
 int verbosity_file = LOG_WARN;
 
+int NUM_CHANNELS = 16;
+
 #define LOG_MESSAGE_MAX 1024
 
 #define DEFAULT_REDIS_HOST  "127.0.0.1"
@@ -60,7 +62,6 @@ int verbosity_file = LOG_WARN;
 
 #define MAGIC_VALUE 0xFFFFFFFF
 #define HEADER_SIZE 20 // 128-bits aka 16 bytes
-#define NUM_CHANNELS 16
 #define BUFFER_SIZE (1024*1024) // 1 MB
 
 uint32_t crc32(uint32_t crc, uint32_t * buf, unsigned int len);
@@ -951,7 +952,8 @@ enum ArgIDs {
     ARG_FILENAME,
     ARG_ERR_FILENAME,
     ARG_REDIS_HOST,
-    ARG_IP
+    ARG_IP,
+    ARG_NUM_CHANNELS_
 };
 
 void print_help_message() {
@@ -1110,6 +1112,9 @@ int main(int argc, char **argv) {
                 else if(strcmp(argv[i], "--ip") == 0) {
                     expecting_value = ARG_IP;
                 }
+                else if((strcmp(argv[i], "--num_channels") == 0) || (strcmp(argv[i], "--nchan") == 0)) {
+                    expecting_value = ARG_NUM_CHANNELS_;
+                }
                 else if(strcmp(argv[i], "--no-save") == 0) {
                     do_not_save = 1;
                     expecting_value = 0;
@@ -1141,6 +1146,10 @@ int main(int argc, char **argv) {
                         break;
                     case ARG_IP:
                         ip = argv[i];
+                        printf("FPGA IP set to %s\n", ip);
+                        break;
+                    case ARG_NUM_CHANNELS_:
+                        NUM_CHANNELS = strtoul(argv[i], NULL, 0);
                         printf("FPGA IP set to %s\n", ip);
                         break;
                     case ARG_ERR_FILENAME:
@@ -1197,6 +1206,8 @@ int main(int argc, char **argv) {
     } while(fpga_if.fd < 0);
     builder_log(LOG_INFO, "FPGA TCP connection made");
     the_stats.connected_to_fpga = 1;
+
+    builder_log(LOG_INFO, "Expecting %i channels of data per event.", NUM_CHANNELS);
 
     // Open file to write events to
     if(!do_not_save) {
