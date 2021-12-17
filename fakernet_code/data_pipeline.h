@@ -11,6 +11,8 @@ typedef struct AXI_DATA_PIPELINE {
 AXI_DATA_PIPELINE* new_data_pipeline_if(const char* name, uint32_t axi_addr);
 uint32_t read_data_pipeline_value(AXI_DATA_PIPELINE *dp_axi, uint32_t offset);
 uint32_t write_data_pipeline_value(AXI_DATA_PIPELINE* dp_axi, uint32_t offset, uint32_t data);
+uint32_t write_trig_sum_width(AXI_DATA_PIPELINE* dp_axi, uint32_t value);
+uint32_t read_trig_sum_width(AXI_DATA_PIPELINE* dp_axi);
 uint32_t read_threshold(AXI_DATA_PIPELINE* dp_axi);
 uint32_t write_threshold(AXI_DATA_PIPELINE* dp_axi, uint32_t data) ;
 uint32_t read_channel_depth(AXI_DATA_PIPELINE* dp_axi, int channel);

@@ -628,6 +628,15 @@ static uint32_t write_data_pipeline_local_trigger_length_command(uint32_t* args)
     uint32_t length = args[0];
     return write_local_trigger_length(get_ceres_handle()->pipeline, length);
 }
+static uint32_t read_data_pipeline_trigger_sum_width_command(uint32_t* args) {
+    UNUSED(args);
+    return read_trig_sum_width(get_ceres_handle()->pipeline);
+}
+
+static uint32_t write_data_pipeline_trigger_sum_width_command(uint32_t* args) {
+    uint32_t length = args[0];
+    return write_trig_sum_width(get_ceres_handle()->pipeline, length);
+}
 
 static uint32_t read_data_pipeline_trigger_count_reset_value_command(uint32_t* args) {
     UNUSED(args);
@@ -892,6 +901,8 @@ ServerCommand ceres_commands[] = {
 {"write_data_pipeline_local_trigger_mode",NULL,    write_data_pipeline_local_trigger_mode_command,         2,  1, 0, 0},
 {"read_data_pipeline_local_trigger_length",NULL,   read_data_pipeline_local_trigger_length_command,        1,  1, 0, 0},
 {"write_data_pipeline_local_trigger_length",NULL,  write_data_pipeline_local_trigger_length_command,       2,  1, 0, 0},
+{"read_data_pipeline_trigger_sum_width",NULL,      read_data_pipeline_trigger_sum_width_command,           1,  1, 0, 0},
+{"write_data_pipeline_trigger_sum_width",NULL,     write_data_pipeline_trigger_sum_width_command,          2,  1, 0, 0},
 {"read_data_pipeline_trigger_count_reset_value",NULL,   read_data_pipeline_trigger_count_reset_value_command,   1,  1, 0, 0},
 {"write_data_pipeline_trigger_count_reset_value",NULL,  write_data_pipeline_trigger_count_reset_value_command,  2,  1, 0, 0},
 {"read_data_pipeline_trigger_enable",NULL,         read_data_pipeline_trigger_enable_command,              1,  1, 0, 0},

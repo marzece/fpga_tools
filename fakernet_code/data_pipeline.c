@@ -45,6 +45,14 @@ uint32_t write_data_pipeline_value(AXI_DATA_PIPELINE* dp_axi, uint32_t offset, u
     return write_addr(dp_axi->axi_addr, offset, data);
 }
 
+uint32_t read_trig_sum_width(AXI_DATA_PIPELINE* dp_axi) {
+    return read_data_pipeline_value(dp_axi, TRIGGER_SUM_WIDTH_OFFSET);
+}
+
+uint32_t write_trig_sum_width(AXI_DATA_PIPELINE* dp_axi, uint32_t value) {
+    return write_data_pipeline_value(dp_axi, TRIGGER_SUM_WIDTH_OFFSET, value);
+}
+
 uint32_t read_threshold(AXI_DATA_PIPELINE* dp_axi) {
     return read_data_pipeline_value(dp_axi, THRESHOLD_REG_OFFSET);
 }
