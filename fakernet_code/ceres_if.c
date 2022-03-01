@@ -7,6 +7,7 @@
 #include "ads_if.h"
 #include "jesd.h"
 #include "jesd_phy.h"
+#include "reset_gen_if.h"
 #include "data_pipeline.h"
 
 #define  ADC_A_AXI_ADDR             0x100100
@@ -37,6 +38,11 @@
 #define  DATA_PIPELINE_0_ADDR       0x0
 #define  CLKGEN_IIC_ADDR            0xD0
 
+#define RESET_GEN_PIPELINE_BIT 1
+#define RESET_GEN_JESD_BIT 0
+#define RESET_GEN_AXI_BIT 2
+#define RESET_GEN_AURORA_BIT 3
+
 const uint32_t CERES_SAFE_READ_ADDRESS = GPIO_AXI_ADDR;
 
 struct CERES_IF {
@@ -48,6 +54,7 @@ struct CERES_IF {
     AXI_QSPI* adc_c;
     AXI_QSPI* adc_d;
     AXI_GPIO* axi_gpio;
+    AXI_RESET_GEN* reset_gen;
     AXI_IIC* iic_main;
     AXI_IIC* clk_gen_iic;
     AXI_JESD* jesd_a;
@@ -104,6 +111,7 @@ static struct CERES_IF* get_ceres_handle() {
         ceres->adc_c = new_ads_spi("adc_c", ADC_C_AXI_ADDR);
         ceres->adc_d = new_ads_spi("adc_d", ADC_D_AXI_ADDR);
         ceres->axi_gpio = new_gpio("gpio", GPIO_AXI_ADDR);
+        ceres->reset_gen = new_reset_gen("reset_gen", RESET_GEN_AXI_ADDR);
         ceres->iic_main = new_iic("iic_main", IIC_AXI_ADDR,1, 1);
         ceres->clk_gen_iic = new_iic("clkgen_iic", CLKGEN_IIC_AXI_ADDR, 2, 2);
         ceres->jesd_a = new_jesd("jesd_a", JESD_A_AXI_ADDR);
@@ -407,13 +415,33 @@ static uint32_t jesd_reset_command(uint32_t* args) {
     return jesd_reset(jesd);
 }
 
+static void generic_sys_reset(uint32_t bit_mask) {
+    write_reset_gen_mask(get_ceres_handle()->reset_gen, bit_mask);
+    write_reset_gen_length(get_ceres_handle()->reset_gen, 5000);
+    reset_gen_do_reset(get_ceres_handle()->reset_gen);
+}
+
+static uint32_t pipeline_sys_reset_command(uint32_t* args) {
+    UNUSED(args);
+    generic_sys_reset(1<<RESET_GEN_PIPELINE_BIT);
+    return 0;
+}
+
+static uint32_t aurora_sys_reset_command(uint32_t* args) {
+    UNUSED(args);
+    generic_sys_reset(1<<RESET_GEN_AURORA_BIT);
+    return 0;
+}
+
 static uint32_t jesd_sys_reset_command(uint32_t* args) {
     UNUSED(args);
-    uint32_t GPIO_DATA_OFFSET = 0x0;
-    // Just toggle the signal up then down...should do a reset
-    write_gpio_value(get_ceres_handle()->gpio2, GPIO_DATA_OFFSET, 0x1);
-    usleep(200);
-    write_gpio_value(get_ceres_handle()->gpio2, GPIO_DATA_OFFSET, 0x0);
+    generic_sys_reset(1<<RESET_GEN_JESD_BIT);
+    return 0;
+}
+
+static uint32_t axi_sys_reset_command(uint32_t* args) {
+    UNUSED(args);
+    generic_sys_reset(1<<RESET_GEN_AXI_BIT);
     return 0;
 }
 
@@ -564,11 +592,6 @@ static uint32_t read_data_pipeline_status_command(uint32_t* args) {
     return read_fifo_status_reg(get_ceres_handle()->pipeline);
 }
 
-static uint32_t write_data_pipeline_reset_command(uint32_t* args) {
-    uint32_t mask = args[0];
-    return write_reset_reg(get_ceres_handle()->pipeline, mask);
-}
-
 static uint32_t read_data_pipeline_local_trigger_enable_command(uint32_t *args) {
     UNUSED(args);
     return read_local_trigger_enable(get_ceres_handle()->pipeline);
@@ -598,6 +621,7 @@ static uint32_t write_data_pipeline_local_trigger_length_command(uint32_t* args)
     uint32_t length = args[0];
     return write_local_trigger_length(get_ceres_handle()->pipeline, length);
 }
+
 static uint32_t read_data_pipeline_trigger_sum_width_command(uint32_t* args) {
     UNUSED(args);
     return read_trig_sum_width(get_ceres_handle()->pipeline);
@@ -841,7 +865,10 @@ ServerCommand ceres_commands[] = {
 {"jesd_error_count",NULL,                          jesd_error_count_command,                               2,  4, 0, 0},
 {"jesd_error_rate",NULL,                           jesd_error_rate_command,                                2,  4, 0, 0},
 {"jesd_reset",NULL,                                jesd_reset_command,                                     2,  1, 0, 0},
+{"pipeline_sys_reset",NULL,                        pipeline_sys_reset_command,                             1,  1, 0, 0},
+{"aurora_sys_reset",NULL,                          aurora_sys_reset_command,                               1,  1, 0, 0},
 {"jesd_sys_reset",NULL,                            jesd_sys_reset_command,                                 1,  1, 0, 0},
+{"axi_sys_reset",NULL,                             axi_sys_reset_command,                                  1,  1, 0, 0},
 {"jesd_is_synced",NULL,                            jesd_is_synced_command,                                 2,  1, 0, 0},
 {"jesd_set_sync_error_reporting",NULL,             jesd_set_sync_error_reporting_command,                  3,  1, 0, 0},
 //{"read_all_error_rates",NULL,                    read_all_error_rates_command,                           1,  1, 0, 00},
@@ -858,7 +885,6 @@ ServerCommand ceres_commands[] = {
 {"read_data_pipeline",NULL,                        read_data_pipeline_command,                             2,  1, 0, 0},
 {"read_data_pipeline_invalid_count",NULL,          read_data_pipeline_invalid_count_command,               1,  1, 0, 0},
 {"read_data_pipeline_status",NULL,                 read_data_pipeline_status_command,                      1,  1, 0, 0},
-{"write_data_pipeline_reset",NULL,                 write_data_pipeline_reset_command,                      2,  1, 0, 0},
 {"read_data_pipeline_local_trigger_enable",NULL,   read_data_pipeline_local_trigger_enable_command,        1,  1, 0, 0},
 {"write_data_pipeline_local_trigger_enable",NULL,  write_data_pipeline_local_trigger_enable_command,       2,  1, 0, 0},
 {"read_data_pipeline_local_trigger_mode",NULL,     read_data_pipeline_local_trigger_mode_command,          1,  1, 0, 0},
