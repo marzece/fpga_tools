@@ -9,38 +9,35 @@
 #include "jesd_phy.h"
 #include "data_pipeline.h"
 
-#define  ADC_A_AXI_ADDR          0x0000
-#define  ADC_B_AXI_ADDR          0x10000
-#define  ADC_C_AXI_ADDR          0x80
-#define  ADC_D_AXI_ADDR          0x100
+#define  ADC_A_AXI_ADDR             0x100100
+#define  ADC_B_AXI_ADDR             0x100200
+#define  ADC_C_AXI_ADDR             0x100400
+#define  ADC_D_AXI_ADDR             0x100500
 
-#define  GPIO0_AXI_ADDR          0x1000
-#define  GPIO1_AXI_ADDR          0x2000
-#define  GPIO2_AXI_ADDR          0x3000
-#define  GPIO3_AXI_ADDR          0xC000
+#define  GPIO_AXI_ADDR              0x400000
+#define  GPIO_HERMES_POWER_OFFSET   0
+#define  GPIO_ADC_RESET_OFFSET      1
+#define  GPIO_ADC_PDN_OFFSET        2
+#define  GPIO_LMK_RESET_OFFSET      3
 
-#define  LMK_A_AXI_ADDR          0x5000
-#define  LMK_B_AXI_ADDR          0xB000
-#define  CERES_LMK_AXI_ADDR      0x13000
+#define  LMK_A_AXI_ADDR             0x100000
+#define  LMK_B_AXI_ADDR             0x100300
+#define  CERES_LMK_AXI_ADDR         0x100600
+#define  RESET_GEN_AXI_ADDR         0x500000
+#define  IIC_AXI_ADDR               0x300000
+#define  CLKGEN_IIC_AXI_ADDR        0xD000
+#define  JESD_A_AXI_ADDR            0x204000
+#define  JESD_B_AXI_ADDR            0x205000
+#define  JESD_C_AXI_ADDR            0x206000
+#define  JESD_D_AXI_ADDR            0x207000
+#define  JESD_PHY_A_AXI_ADDR        0x200000
+#define  JESD_PHY_B_AXI_ADDR        0x201000
+#define  JESD_PHY_C_AXI_ADDR        0x202000
+#define  JESD_PHY_D_AXI_ADDR        0x203000
+#define  DATA_PIPELINE_0_ADDR       0x0
+#define  CLKGEN_IIC_ADDR            0xD0
 
-#define  IIC_AXI_ADDR            0x4000
-#define  CLKGEN_IIC_AXI_ADDR     0xD000
-
-#define  JESD_A_AXI_ADDR         0x7000
-#define  JESD_B_AXI_ADDR         0x8000
-#define  JESD_C_AXI_ADDR         0x9000
-#define  JESD_D_AXI_ADDR         0xA000
-
-#define  JESD_PHY_A_AXI_ADDR     0xE000
-#define  JESD_PHY_B_AXI_ADDR     0x20000
-#define  JESD_PHY_C_AXI_ADDR     0xF000
-#define  JESD_PHY_D_AXI_ADDR     0x11000
-
-#define  DATA_PIPELINE_0_ADDR    0x6000
-
-#define CLKGEN_IIC_ADDR          0xD0
-
-const uint32_t CERES_SAFE_READ_ADDRESS = GPIO0_AXI_ADDR;
+const uint32_t CERES_SAFE_READ_ADDRESS = GPIO_AXI_ADDR;
 
 struct CERES_IF {
     AXI_QSPI* lmk_a;
@@ -50,10 +47,7 @@ struct CERES_IF {
     AXI_QSPI* adc_b;
     AXI_QSPI* adc_c;
     AXI_QSPI* adc_d;
-    AXI_GPIO* gpio0;
-    AXI_GPIO* gpio1;
-    AXI_GPIO* gpio2;
-    AXI_GPIO* gpio3;
+    AXI_GPIO* axi_gpio;
     AXI_IIC* iic_main;
     AXI_IIC* clk_gen_iic;
     AXI_JESD* jesd_a;
@@ -109,10 +103,7 @@ static struct CERES_IF* get_ceres_handle() {
         ceres->adc_b = new_ads_spi("adc_b", ADC_B_AXI_ADDR);
         ceres->adc_c = new_ads_spi("adc_c", ADC_C_AXI_ADDR);
         ceres->adc_d = new_ads_spi("adc_d", ADC_D_AXI_ADDR);
-        ceres->gpio0 = new_gpio("power_up_cntrl", GPIO0_AXI_ADDR);
-        ceres->gpio1 = new_gpio("gpio_sync_counter", GPIO1_AXI_ADDR);
-        ceres->gpio2 = new_gpio("gpio_reset", GPIO2_AXI_ADDR);
-        ceres->gpio3 = new_gpio("gpio_pdn", GPIO3_AXI_ADDR);
+        ceres->axi_gpio = new_gpio("gpio", GPIO_AXI_ADDR);
         ceres->iic_main = new_iic("iic_main", IIC_AXI_ADDR,1, 1);
         ceres->clk_gen_iic = new_iic("clkgen_iic", CLKGEN_IIC_AXI_ADDR, 2, 2);
         ceres->jesd_a = new_jesd("jesd_a", JESD_A_AXI_ADDR);
@@ -128,35 +119,9 @@ static struct CERES_IF* get_ceres_handle() {
     return ceres;
 }
 
-static uint32_t write_gpio_0_command(uint32_t *args) {
-    return write_gpio_value(get_ceres_handle()->gpio0, args[0], args[1]);
-}
-
-static uint32_t read_gpio_0_command(uint32_t *args) {
-    return read_gpio_value(get_ceres_handle()->gpio0, args[0]);
-}
-
-static uint32_t write_gpio_1_command(uint32_t *args) {
-    return write_gpio_value(get_ceres_handle()->gpio1, args[0], args[1]);
-}
-
-static uint32_t read_gpio_1_command(uint32_t *args) {
-    return read_gpio_value(get_ceres_handle()->gpio1, args[0]);
-}
-
-static uint32_t write_gpio_2_command(uint32_t *args) {
-    return write_gpio_value(get_ceres_handle()->gpio2, args[0], args[1]);
-}
-//
-static uint32_t read_gpio_2_command(uint32_t *args) {
-    return read_gpio_value(get_ceres_handle()->gpio2, args[0]);
-}
-
 static uint32_t set_adc_power_command(uint32_t *args) {
     uint32_t val = args[0];
-
-    write_gpio_value(get_ceres_handle()->gpio0, 0x0, val);
-    return 0;
+    return write_gpio_value(get_ceres_handle()->axi_gpio, GPIO_HERMES_POWER_OFFSET, val);
 }
 
 // IIC commands
@@ -456,16 +421,19 @@ static uint32_t jesd_sys_reset_command(uint32_t* args) {
 // binary counter that counts clock ticks while SYNC is low. 
 // Count is reset by JESD SYS Reset
 // TODO, copy/pasted the code for A & B...dry it out!
+/*
 static uint32_t jesd_a_sync_rate_command(uint32_t *args) {
     UNUSED(args);
     uint32_t GPIO_DATA1_ADDR = 0x0;
     uint32_t first = read_gpio_value(get_ceres_handle()->gpio1, GPIO_DATA1_ADDR);
+    write_gpio_value(get_ceres_handle()->reset_gen,
     usleep(500e3);
     uint32_t second = read_gpio_value(get_ceres_handle()->gpio1, GPIO_DATA1_ADDR);
     // Don't need to worry about rollover, subtraction handles it okay even
     // accross the 32-bit rollover.
     return second - first;
 }
+*/
 
 /*
 static uint32_t read_all_error_rates_command(uint32_t* resp) {
@@ -529,17 +497,19 @@ static uint32_t jesd_set_sync_error_reporting_command(uint32_t* args) {
 }
 
 static uint32_t set_adc_pdn_command(uint32_t* args) {
-    return write_gpio_value(get_ceres_handle()->gpio3, 0, args[0]);
+    uint32_t mask = args[0];
+    return write_gpio_value(get_ceres_handle()->axi_gpio, GPIO_ADC_PDN_OFFSET, mask);
 }
 
 static uint32_t get_adc_pdn_command(uint32_t* args) {
     UNUSED(args);
-    return read_gpio_value(get_ceres_handle()->gpio3, 0);
+    return read_gpio_value(get_ceres_handle()->axi_gpio, GPIO_ADC_PDN_OFFSET);
 }
 
 static uint32_t adc_reset_command(uint32_t* args) {
     uint32_t mask = args[0];
-    return write_gpio_value(get_ceres_handle()->gpio2, 1, mask);
+    write_gpio_value(get_ceres_handle()->axi_gpio, GPIO_ADC_RESET_OFFSET, mask);
+    return 0;
 }
 
 static uint32_t read_data_pipeline_command(uint32_t* args) {
@@ -855,12 +825,6 @@ ServerCommand ceres_commands[] = {
 {"write_clkgen_gpio",NULL,                         write_clkgen_gpio_command,                              2,  1, 0, 0},
 {"write_clkgen_register",NULL,                     write_clkgen_register_command,                          3,  1, 0, 0},
 {"read_clkgen_register",NULL,                      read_clkgen_register_command,                           2,  1, 0, 0},
-{"read_gpio0",NULL,                                read_gpio_0_command,                                    2,  1, 0, 0},
-{"write_gpio0",NULL,                               write_gpio_0_command,                                   3,  1, 0, 0},
-{"read_gpio1",NULL,                                read_gpio_1_command,                                    2,  1, 0, 0},
-{"write_gpio1",NULL,                               write_gpio_1_command,                                   3,  1, 0, 0},
-{"read_gpio2",NULL,                                read_gpio_2_command,                                    2,  1, 0, 0},
-{"write_gpio2",NULL,                               write_gpio_2_command,                                   3,  1, 0, 0},
 {"set_adc_power",NULL,                             set_adc_power_command,                                  2,  1, 0, 0},
 {"read_ads",NULL,                                  read_ads_if_command,                                    3,  1, 0, 0},
 {"write_ads",NULL,                                 write_ads_if_command,                                   4,  1, 0, 0},

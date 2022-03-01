@@ -19,7 +19,7 @@ int write_addr(uint32_t, uint32_t, uint32_t);
 #define  LOCAL_TRIGGER_LENGTH_OFFSET      0x20
 #define  LOCAL_TRIGGER_COUNT_RESET_OFFST  0x24
 #define  TRIGGER_ENABLE_OFFSET            0x28
-#define  TRIGGER_SUM_WIDTH_OFFSET         0x28
+#define  TRIGGER_SUM_WIDTH_OFFSET         0x2C
 #define  DEPTH_ADDR_OFFSET                0x100
 #define  DEPTH_ADDR_WIDTH                 0x4
 //#define REGISTER_FILE_STATUS_OFFSET       0x800
