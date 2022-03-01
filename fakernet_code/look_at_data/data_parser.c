@@ -6,6 +6,34 @@
 
 #include "data_parser.h"
 
+uint16_t _bswap16(uint16_t a)
+{
+  a = ((a & 0x00FF) << 8) | ((a & 0xFF00) >> 8);
+  return a;
+}
+
+uint32_t _bswap32(uint32_t a)
+{
+  a = ((a & 0x000000FF) << 24) |
+      ((a & 0x0000FF00) <<  8) |
+      ((a & 0x00FF0000) >>  8) |
+      ((a & 0xFF000000) >> 24);
+  return a;
+}
+
+uint64_t _bswap64(uint64_t a)
+{
+  a = ((a & 0x00000000000000FFULL) << 56) |
+      ((a & 0x000000000000FF00ULL) << 40) |
+      ((a & 0x0000000000FF0000ULL) << 24) |
+      ((a & 0x00000000FF000000ULL) <<  8) |
+      ((a & 0x000000FF00000000ULL) >>  8) |
+      ((a & 0x0000FF0000000000ULL) >> 24) |
+      ((a & 0x00FF000000000000ULL) >> 40) |
+      ((a & 0xFF00000000000000ULL) >> 56);
+  return a;
+}
+
 int  read_header(FILE* fin, TrigHeader* header) {
     if(!fread(&(header->magic_number), sizeof(uint32_t), 1, fin)) {
         return -1;
@@ -25,10 +53,14 @@ int  read_header(FILE* fin, TrigHeader* header) {
     if(!fread(&(header->crc), sizeof(uint8_t), 1, fin)) {
         return -1;
     }
-    header->magic_number = ntohl(header->magic_number);
-    header->trig_number = ntohl(header->trig_number);
-    header->clock = ntohll(header->clock);
-    header->length = ntohs(header->length);
+   header->magic_number = _bswap32(header->magic_number);
+   header->trig_number = _bswap32(header->trig_number);
+   header->clock = _bswap64(header->clock);
+   header->length = _bswap16(header->length);
+   // header->magic_number = ntohl(header->magic_number);
+   // header->trig_number = ntohl(header->trig_number);
+   // header->clock = ntohll(header->clock);
+   // header->length = ntohs(header->length);
     assert(header->magic_number == 0xFFFFFFFF);
     return 0;
 }
@@ -168,7 +200,8 @@ int read_event(FILE*fin, uint16_t nsamples, uint16_t *samples) {
 
         // Data is stored network byte order
         for(j=0; j<nsamples; j++) {
-            samples[j] = ntohs(samples[j]);
+            //samples[j] = ntohs(samples[j]);
+            samples[j] = _bswap16(samples[j]);
         }
 
         //Read channel trailer (CRC)
