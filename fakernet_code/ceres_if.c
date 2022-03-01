@@ -325,7 +325,7 @@ static uint32_t read_lmk_if_command(uint32_t* args) {
     return read_lmk_if(lmk, args[1]);
 }
 
-uint32_t write_lmk_spi(AXI_QSPI* lmk, uint32_t rw, uint32_t addr, uint32_t data) {
+static uint32_t write_lmk_spi(AXI_QSPI* lmk, uint32_t rw, uint32_t addr, uint32_t data) {
     // RW is 3 bits and the bottom bits are always zero (pretty sure)
     // so RW only has two valid values.
     rw = rw ? 0x4 : 0x0;
