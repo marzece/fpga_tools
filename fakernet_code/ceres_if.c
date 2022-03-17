@@ -3,7 +3,6 @@
 #include "gpio.h"
 #include "iic.h"
 #include "lmk_if.h"
-#include "dac_if.h"
 #include "ads_if.h"
 #include "jesd.h"
 #include "jesd_phy.h"
@@ -242,6 +241,7 @@ AXI_QSPI* lmk_switch(uint32_t which_lmk) {
             break;
         default:
             // TODO really need to add an error string!
+            printf("Invalid LMK given\n");
             return NULL;
     }
     return this_lmk;

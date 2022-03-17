@@ -80,11 +80,6 @@ uint32_t read_channel_depth(AXI_DATA_PIPELINE* dp_axi, int channel) {
     return read_data_pipeline_value(dp_axi, offset);
 }
 
-uint32_t write_reset_reg(AXI_DATA_PIPELINE* dp_axi, int reset_mask) {
-    uint32_t offset = RESET_REG_OFFSET;
-    return write_data_pipeline_value(dp_axi, offset, reset_mask);
-}
-
 uint32_t read_fifo_status_reg(AXI_DATA_PIPELINE* dp_axi) {
     uint32_t offset = FIFO_STATUS_REG_OFFSET;
     return read_data_pipeline_value(dp_axi, offset);

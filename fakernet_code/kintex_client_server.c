@@ -17,6 +17,7 @@
 #include "hermes_if.h"
 #include "ti_board_if.h"
 #include "ceres_if.h"
+#include "fontus_if.h"
 #include "resp.h"
 #include "daq_logger.h"
 
@@ -48,7 +49,8 @@ ServerCommand* board_specific_command_table = NULL;
 enum BOARD_SWITCH {
     HE2TER,
     TI,
-    CERES
+    CERES,
+    FONTUS
 };
 
 // This serverLog function should ONLY be called by code that I stole from
@@ -321,6 +323,9 @@ int main(int argc, char** argv) {
                 else if(strcmp(argv[i], "--ceres") == 0 || strcmp(argv[1], "--CERES") ==0) {
                     which_board = CERES;
                 }
+                else if(strcmp(argv[i], "--fontus") == 0 || strcmp(argv[1], "--FONTUS") ==0) {
+                    which_board = FONTUS;
+                }
 
                 else if((strcmp(argv[i], "--help") == 0) || (strcmp(argv[i], "-h") == 0)) {
                     print_help_message();
@@ -364,6 +369,9 @@ int main(int argc, char** argv) {
     else if( which_board == HE2TER) {
         printf("Using HE2TER board commands and address table\n");
     }
+    else if( which_board == FONTUS) {
+        printf("Using FONTUS board commands and address table\n");
+    }
     else {
         printf("Specified board not known...dying\n");
         return 1;
@@ -396,6 +404,11 @@ int main(int argc, char** argv) {
     else if(which_board == CERES) {
         SAFE_READ_ADDRESS = CERES_SAFE_READ_ADDRESS;
         board_specific_command_table = ceres_commands;
+    }
+    else if(which_board == FONTUS) {
+        // !TODO
+        SAFE_READ_ADDRESS = FONTUS_SAFE_READ_ADDRESS;
+        board_specific_command_table = fontus_commands;
     }
     ServerCommand* commandTable = combine_command_tables();
 

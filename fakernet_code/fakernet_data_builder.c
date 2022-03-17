@@ -52,6 +52,7 @@ int verbosity_stdout = LOG_INFO;
 int verbosity_redis = LOG_WARN;
 int verbosity_file = LOG_WARN;
 
+//int NUM_CHANNELS = 120;
 int NUM_CHANNELS = 16;
 
 #define LOG_MESSAGE_MAX 1024
@@ -1193,6 +1194,7 @@ int main(int argc, char **argv) {
     do {
         // Send a TCP reset_command
         if(send_tcp_reset(udp_client)) {
+            printf("Sending TCP Reset");
             builder_log(LOG_ERROR, "Error sending TCP reset. Will retry.");
             sleep(5);
             continue;
@@ -1228,12 +1230,16 @@ int main(int argc, char **argv) {
     // Main readout loop
     builder_log(LOG_INFO, "Entering main loop");
     event_ready = 0;
+    int did_warn_about_reeling = 0;
     while(loop) {
 
         pull_from_fpga(&fpga_if);
         if(reeling) {
+            if(!did_warn_about_reeling) {
             builder_log(LOG_ERROR, "Reeeling");
+            }
             reeling = !find_event_start(&fpga_if);
+            did_warn_about_reeling = reeling;
         }
         event_ready = read_proc(&fpga_if, &event);
 
@@ -1257,10 +1263,13 @@ int main(int argc, char **argv) {
                     builder_log(LOG_ERROR, "Calculated = 0x%x, Given = 0x%x", calculated_crcs[i], given_crcs[i]);
                 }
             }
-            if(((current_time.tv_sec - prev_time.tv_sec)*1e6 + (current_time.tv_usec - prev_time.tv_usec)) > REDIS_DATA_STREAM_COOLDOWN) {
+
                 redis_publish_event(redis, event);
                 prev_time = current_time;
-            }
+//            if(((current_time.tv_sec - prev_time.tv_sec)*1e6 + (current_time.tv_usec - prev_time.tv_usec)) > REDIS_DATA_STREAM_COOLDOWN) {
+//                redis_publish_event(redis, event);
+//                prev_time = current_time;
+//            }
             display_event(&event);
             if(!do_not_save) {
                 write_to_disk(&event);

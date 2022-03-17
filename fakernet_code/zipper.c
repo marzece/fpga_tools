@@ -9,13 +9,16 @@
 
 // The number of seperate data streams, each of which must
 // be present for an event to be complete.
-#define NUM_DATA_STREAMS 2
+#define MAX_DEVICE_NUMBER 34 // Maximum device ID
 #define DATA_HEADER_NBYTES 20
 #define HASH_TABLE_SIZE 1000
-#define COMPLETE_EVENT_MASK 0x300000000ULL
+//#define COMPLETE_EVENT_MASK 0xFF0ULL
+#define COMPLETE_EVENT_MASK 0x30ULL
 #define QUEUE_LENGTH 100
-#define FONTUS_DEVICE_ID 0
+#define FONTUS_DEVICE_ID 1
+#define REDIS_OUT_DATA_BUF_SIZE (32*1024*1024)
 
+uint32_t last_seen_event[MAX_DEVICE_NUMBER];
 int loop = 1;
 int disconnect_from_redis = 0;
 
@@ -38,6 +41,27 @@ typedef struct EVENT_HEADER {
     uint64_t device_mask;
 } EVENT_HEADER;
 
+typedef struct FullEvent {
+    int data_nbytes[MAX_DEVICE_NUMBER];
+    redisReply* redis_obj[MAX_DEVICE_NUMBER];
+    int counter;
+} FullEvent;
+
+typedef struct ReadyEventQueue {
+    uint32_t event_ids[QUEUE_LENGTH];
+    int events_available;
+} ReadyEventQueue;
+ReadyEventQueue event_ready_queue;
+
+// Hash store
+typedef struct EventRecord {
+    uint64_t bit_word;
+    //unsigned int count;
+    uint32_t event_number;
+    redisReply* data[MAX_DEVICE_NUMBER];
+} EventRecord;
+EventRecord event_registry[HASH_TABLE_SIZE];
+
 // TODO this should be defined in some common header file
 typedef struct TrigHeader {
     uint32_t magic_number;
@@ -50,7 +74,6 @@ typedef struct TrigHeader {
 
 redisContext* create_redis_conn(const char* redis_hostname) {
     printf("Opening Redis Connection\n");
-
     redisContext* c;
     c = redisConnect(redis_hostname, 6379);
     if(c == NULL || c->err) {
@@ -60,28 +83,6 @@ redisContext* create_redis_conn(const char* redis_hostname) {
     }
     return c;
 }
-
-typedef struct ReadyEventQueue {
-    uint32_t event_ids[QUEUE_LENGTH];
-    int events_available;
-} ReadyEventQueue;
-ReadyEventQueue event_ready_queue;
-
-#define MAX_DEVICE_NUMBER 34 // Maximum device ID
-typedef struct FullEvent {
-    int data_nbytes[MAX_DEVICE_NUMBER];
-    redisReply* redis_obj[MAX_DEVICE_NUMBER];
-    int counter;
-} FullEvent;
-// Hash store
-typedef struct EventRecord {
-    uint64_t bit_word;
-    //unsigned int count;
-    uint32_t event_number;
-    redisReply* data[MAX_DEVICE_NUMBER];
-} EventRecord;
-
-EventRecord event_registry[HASH_TABLE_SIZE];
 
 void signal_handler(int signum) {
     // TODO think of more signals that would be useful
@@ -117,17 +118,6 @@ uint32_t pop_complete_event_id() {
     }
     return event_ready_queue.event_ids[--event_ready_queue.events_available];
 }
-
-uint32_t pop_complete_event() {
-    if(event_ready_queue.events_available == 0) {
-        printf("Pop when event queue was empty!\n");
-        return -1; // TODO, should have a better error system here
-
-    }
-    return event_ready_queue.event_ids[--event_ready_queue.events_available];
-}
-
-uint32_t last_seen_event[MAX_DEVICE_NUMBER];
 
 void mark_as_skipped(uint32_t device_id, uint32_t event_number) {
     (void) device_id;
@@ -171,8 +161,11 @@ void register_waveform(uint32_t device_id, uint32_t event_number, redisReply* wf
         event_registry[hash_value].data[device_id] = wf_data;
     }
     else {
+        event_registry[hash_value].event_number = event_number;
+        event_registry[hash_value].bit_word = 1ULL<<device_id;
+        event_registry[hash_value].data[device_id] = wf_data;
         printf("Hash collision!\n");
-        exit(1);
+        //exit(1);
         // TODO, figure out how this should be handled
     }
 
@@ -202,7 +195,6 @@ void recieve_waveform__from_redis(redisContext* redis) {
         return;
     }
 
-    printf("Got reply\n");
     // I'm almost certain that a redis pub-sub message is always an array
     // The first element of the array is a string that just says "message"
     // The second element is a string that gives the channel name (don't care about that)
@@ -216,7 +208,6 @@ void recieve_waveform__from_redis(redisContext* redis) {
 
     uint32_t event_number = ntohl(*((uint32_t*) (rr_dat->str+4)));
     uint32_t device_id = *((uint8_t*) (rr_dat->str+18));
-    printf("%i %i\n", event_number, device_id);
 
     register_waveform(device_id, event_number, reply);
     //freeReplyObject(reply);
@@ -243,6 +234,8 @@ void free_event_data(FullEvent* event) {
 }
 
 void save_event(FILE* fout, int event_id) {
+    // TODO save_event free's the memory for the event, it probably shouldn't
+    // do that b/c it's not obvious. Should have a specific function handle that.
     int i;
     int nwritten;
     EventRecord* event = &(event_registry[event_id % HASH_TABLE_SIZE]);
@@ -259,11 +252,11 @@ void save_event(FILE* fout, int event_id) {
         printf("Error writing event header to disk\n");
         goto ERROR;
     }
-    if(!fwrite(&event_header.device_mask, sizeof(event_header.device_mask), 1, fout)) {
+    if(!fwrite(&event_header.status, sizeof(event_header.status), 1, fout)) {
         printf("Error writing event header to disk\n");
         goto ERROR;
     }
-    if(!fwrite(&event_header.status, sizeof(event_header.status), 1, fout)) {
+    if(!fwrite(&event_header.device_mask, sizeof(event_header.device_mask), 1, fout)) {
         printf("Error writing event header to disk\n");
         goto ERROR;
     }
@@ -276,7 +269,7 @@ void save_event(FILE* fout, int event_id) {
             printf("Error getting FONTUS data\n");
             goto ERROR;
         }
-        fwrite(&data, data_len, 1, fout);
+        fwrite(data, data_len, 1, fout);
         fflush(fout);
         freeReplyObject(event->data[FONTUS_DEVICE_ID]);
     }
@@ -315,6 +308,91 @@ ERROR:;
       return;
 }
 
+void send_event_to_redis(redisContext* redis, int event_id) {
+    int i;
+    redisReply* r;
+    size_t arglens[3];
+    const char* args[3];
+
+    char* data = NULL;
+    int data_len;
+    static unsigned char* redis_data_buf = NULL;
+    unsigned long offset = 0;
+
+    if(!redis) {
+        printf("BAD REDIS\n");
+        return;
+    }
+    if(!redis_data_buf) {
+        redis_data_buf = malloc(REDIS_OUT_DATA_BUF_SIZE);
+        if(!redis_data_buf) {
+            printf("Could not allocate memory for redis_data_buffer \n");
+            return;
+        }
+    }
+
+    EventRecord* event = &(event_registry[event_id % HASH_TABLE_SIZE]);
+    EVENT_HEADER event_header;
+    event_header.trig_number = htonl(event_id);
+    event_header.device_mask = htonll(event->bit_word);
+    event_header.status = htonl((event->bit_word == COMPLETE_EVENT_MASK) ? 0 : 1);
+
+    memcpy(redis_data_buf + offset, &event_header.trig_number, sizeof(event_header.trig_number));
+    offset += sizeof(event_header.trig_number);
+    memcpy(redis_data_buf + offset, &event_header.device_mask, sizeof(event_header.device_mask));
+    offset += sizeof(event_header.device_mask);
+    memcpy(redis_data_buf + offset, &event_header.status, sizeof(event_header.status));
+    offset += sizeof(event_header.status);
+
+    // Write FONTUS Trigger data...
+    if((COMPLETE_EVENT_MASK & (1ULL<<FONTUS_DEVICE_ID)) != 0) {
+        printf("WRITING FONTUS DATA\n");
+        // TODO
+        grab_data_from_pubsub_message(event->data[FONTUS_DEVICE_ID], &data, &data_len);
+        if(!data) {
+            return;
+        }
+        memcpy(redis_data_buf + offset, data, data_len);
+        offset += data_len;
+    }
+
+    // Now write all the remaining (presumably CERES) data
+    for(i=0; i<MAX_DEVICE_NUMBER; i++) {
+        // if this device number is in the COMPLETE_EVENT_MASK then it should be readout,
+        // otherwise I don't care about it.
+        if(i==FONTUS_DEVICE_ID || (COMPLETE_EVENT_MASK & (1ULL<<i)) == 0) {
+            continue;
+        }
+        grab_data_from_pubsub_message(event->data[i], &data, &data_len);
+        if(!data) {
+            return;
+        }
+        memcpy(redis_data_buf + offset, data, data_len);
+        offset += data_len;
+        // TODO, I'm really not sure when it's necessary to fflush things.
+        // Does it have to be done before data is freed??  Idk I tried googling
+        // it but I couldn't find anything
+    }
+
+    args[0] = "PUBLISH";
+    arglens[0] = strlen(args[0]);
+    args[1] = "full_event_stream";
+    arglens[1] = strlen(args[1]);
+    args[2] = (char*)redis_data_buf;
+    arglens[2] = offset;
+
+    r = redisCommandArgv(redis, 3,  args,  arglens);
+    if(r->type == REDIS_REPLY_STRING || r->type == REDIS_REPLY_ERROR) {
+        printf("FUCK %s\n", r->str);
+    }
+    if(!r) {
+        // TODO
+        printf("ERROR sending data to redis!\n");
+        //builder_log(LOG_ERROR, "Redis error!");
+    }
+    freeReplyObject(r);
+}
+
 int main() {
     // First 
     redisReply* reply;
@@ -327,11 +405,15 @@ int main() {
 
     redis = create_redis_conn(redis_hostname);
     reply = redisCommand(redis, "SUBSCRIBE event_stream");
+
     if(!reply) {
         printf("Uh oh, couldn't subscribe to redis...\n");
         return -1;
     }
     freeReplyObject(reply);
+
+    redisContext* publish_redis = create_redis_conn(redis_hostname);
+
     int redis_is_readable = 1; // TODO this should come from select or something like that
     printf("Starting main loop\n");
     //FullEvent event;
@@ -346,6 +428,9 @@ int main() {
         if(event_ready_queue.events_available) {
             int event_id = pop_complete_event_id();
             printf("Event %i is done\n", event_id);
+            // TODO save_event and send_to_redis are very similar functions,
+            // should see if I can combine them or something like that.
+            send_event_to_redis(publish_redis, event_id);
             save_event(fout, event_id);
             //grab_full_event(redis, event_id, &event);
             //save_event(fout, &event);

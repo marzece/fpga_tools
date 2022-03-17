@@ -17,7 +17,7 @@ zipper: zipper.c hiredis/libhiredis.a
 tail_daq_log: tail_daq_log.o hiredis/libhiredis.a
 	$(CC) -ggdb3 -o $@ $(CFLAGS) $^
 
-kintex_client_server: kintex_client_server.o hermes_if.o gpio.o lmk_if.o ads_if.o iic.o fnet_client.o dac_if.o axi_qspi.o ti_board_if.o jesd.o jesd_phy.o adc_sample_fanout.o channel_trigger.o data_pipeline.o ceres_if.o reset_gen_if.o server.o ae.o sds.o adlist.o connection.o anet.o networking.o util.o daq_logger.o hiredis/libhiredis.a
+kintex_client_server: kintex_client_server.o hermes_if.o gpio.o lmk_if.o ads_if.o iic.o fnet_client.o dac_if.o axi_qspi.o ti_board_if.o jesd.o jesd_phy.o adc_sample_fanout.o channel_trigger.o data_pipeline.o ceres_if.o reset_gen_if.o server.o ae.o sds.o adlist.o connection.o anet.o networking.o util.o trigger_pipeline.o fontus_if.o daq_logger.o hiredis/libhiredis.a
 	$(CC) -ggdb3 -o $@ $(CFLAGS) $^
 
 kintex_cli: kintex_cli.o
@@ -25,7 +25,11 @@ kintex_cli: kintex_cli.o
 
 fakernet_data_builder: fakernet_data_builder.c crc32.o crc8.o daq_logger.o
 	$(CC) -Wall $(CFLAGS) -O0 -ggdb3 -o $@ $^ fnet_client.o hiredis/libhiredis.a
+# -DDEBUG
 #$(CC) -Wall -pedantic -O -g -o $@ $^ 
+
+fontus_data_builder: fontus_data_builder.c crc32.o crc8.o daq_logger.o
+	$(CC) -Wall $(CFLAGS) -O0 -ggdb3 -o $@ $^ fnet_client.o hiredis/libhiredis.a
 
 kintex_client_server.o: kintex_client_server.c
 	$(CC) -ggdb3 -o $@ -c $(CFLAGS) $^
@@ -75,7 +79,14 @@ channel_trigger.o: channel_trigger.c
 data_pipeline.o: data_pipeline.c
 	$(CC) -ggdb3 -o $@ -c $(CFLAGS) $^
 
+trigger_pipeline.o: trigger_pipeline.c
+	$(CC) -ggdb3 -o $@ -c $(CFLAGS) $^
+
+
 ceres_if.o: ceres_if.c
+	$(CC) -g -o $@ -c $(CFLAGS) $^
+
+fontus_if.o: fontus_if.c
 	$(CC) -g -o $@ -c $(CFLAGS) $^
 
 crc32.o: crc32.c

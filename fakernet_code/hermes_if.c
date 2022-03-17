@@ -599,7 +599,8 @@ static uint32_t read_data_pipeline_status_command(uint32_t* args) {
 
 static uint32_t write_data_pipeline_reset_command(uint32_t* args) {
     uint32_t mask = args[0];
-    return write_reset_reg(get_hermes_handle()->pipeline, mask);
+    return -1;
+    //return write_reset_reg(get_hermes_handle()->pipeline, mask);
 }
 
 static uint32_t read_data_pipeline_local_trigger_enable_command(uint32_t *args) {
