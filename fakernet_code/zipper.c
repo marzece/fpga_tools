@@ -88,13 +88,9 @@ void signal_handler(int signum) {
     // TODO think of more signals that would be useful
     static int num_kills = 0;
     if(signum == SIGINT || signum == SIGKILL) {
-        printf("Cntrl-C caught\n");
-        disconnect_from_redis = 1;
-        num_kills +=1;
-    }
-    if(num_kills == 2) {
+        printf("Cntrl-C caught. Will attempt graceful exit. Cntrl-C again for immediate exit.\n");
         loop = 0;
-        exit(1);
+        num_kills +=1;
     }
     if(num_kills > 2) {
         exit(1);
@@ -418,11 +414,7 @@ int main() {
     printf("Starting main loop\n");
     //FullEvent event;
     while(loop) {
-        if(disconnect_from_redis) {
-            printf("Killing redis\n");
-            redisFree(redis);
-        }
-        else if(redis_is_readable) {
+        if(redis_is_readable) {
             recieve_waveform__from_redis(redis);
         }
         if(event_ready_queue.events_available) {
@@ -435,6 +427,11 @@ int main() {
             //grab_full_event(redis, event_id, &event);
             //save_event(fout, &event);
             //free_event_data(&event);
+        }
+        if(disconnect_from_redis) {
+            printf("Killing redis\n");
+            redisFree(redis);
+            loop = 0;
         }
     }
     // Clean up
