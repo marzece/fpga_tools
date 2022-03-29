@@ -180,14 +180,14 @@ void recieve_waveform__from_redis(redisContext* redis) {
     redisReply* reply;
     if(redisBufferRead(redis) != REDIS_OK) {
         // Error
-        printf("REDIS BUF READ ERROR\n");
+        printf("REDIS BUF READ ERROR1: %s\n", redis->errstr);
         exit(1);
 
     }
     if(redisGetReplyFromReader(redis, (void**)&reply) != REDIS_OK) {
-        printf("REDIS BUF READ ERROR\n");
-        exit(1);
         // Error
+        printf("REDIS BUF READ ERROR2: %s\n", redis->errstr);
+        exit(1);
     }
 
     if(!reply) {
