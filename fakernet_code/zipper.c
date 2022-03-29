@@ -18,6 +18,10 @@
 #define FONTUS_DEVICE_ID 1
 #define REDIS_OUT_DATA_BUF_SIZE (32*1024*1024)
 
+// Minimum time between sending events to redis, in micro-seconds
+// 30k us = 30ms = ~30hz
+#define REDIS_COOLDOWN 30000
+
 uint32_t last_seen_event[MAX_DEVICE_NUMBER];
 int loop = 1;
 int disconnect_from_redis = 0;
@@ -409,11 +413,14 @@ int main() {
     freeReplyObject(reply);
 
     redisContext* publish_redis = create_redis_conn(redis_hostname);
+    struct timeval prev_time, current_time;
+    gettimeofday(&prev_time, NULL); // Initialize previous time to now
 
     int redis_is_readable = 1; // TODO this should come from select or something like that
     printf("Starting main loop\n");
     //FullEvent event;
     while(loop) {
+        gettimeofday(&current_time, NULL);
         if(redis_is_readable) {
             recieve_waveform__from_redis(redis);
         }
@@ -422,7 +429,13 @@ int main() {
             printf("Event %i is done\n", event_id);
             // TODO save_event and send_to_redis are very similar functions,
             // should see if I can combine them or something like that.
-            send_event_to_redis(publish_redis, event_id);
+
+            double delta_t = (current_time.tv_sec - prev_time.tv_sec)*1e6 + (current_time.tv_usec - prev_time.tv_usec);
+            // TODO instead of just a  cooldown I should maybe include a data limit as well.
+            if(delta_t > REDIS_COOLDOWN) {
+                send_event_to_redis(publish_redis, event_id);
+                prev_time = current_time;
+            }
             save_event(fout, event_id);
             //grab_full_event(redis, event_id, &event);
             //save_event(fout, &event);
