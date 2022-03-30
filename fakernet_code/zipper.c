@@ -21,6 +21,7 @@
 // Minimum time between sending events to redis, in micro-seconds
 // 30k us = 30ms = ~30hz
 #define REDIS_COOLDOWN 30000
+#define PRINT_UPDATE_COOLDOWN 1000000
 
 uint32_t last_seen_event[MAX_DEVICE_NUMBER];
 int loop = 1;
@@ -413,10 +414,13 @@ int main() {
     freeReplyObject(reply);
 
     redisContext* publish_redis = create_redis_conn(redis_hostname);
-    struct timeval prev_time, current_time;
-    gettimeofday(&prev_time, NULL); // Initialize previous time to now
-
+    struct timeval redis_update_time, event_rate_time, current_time;
+    gettimeofday(&redis_update_time, NULL); // Initialize previous time to now
+    event_rate_time = redis_update_time;
     int redis_is_readable = 1; // TODO this should come from select or something like that
+    int built_count = 0;
+    double delta_t;
+    int event_id = -1;
     printf("Starting main loop\n");
     //FullEvent event;
     while(loop) {
@@ -425,21 +429,27 @@ int main() {
             recieve_waveform__from_redis(redis);
         }
         if(event_ready_queue.events_available) {
-            int event_id = pop_complete_event_id();
-            printf("Event %i is done\n", event_id);
+            event_id = pop_complete_event_id();
+            built_count += 1;
             // TODO save_event and send_to_redis are very similar functions,
             // should see if I can combine them or something like that.
 
-            double delta_t = (current_time.tv_sec - prev_time.tv_sec)*1e6 + (current_time.tv_usec - prev_time.tv_usec);
+            delta_t = (current_time.tv_sec - redis_update_time.tv_sec)*1e6 + (current_time.tv_usec - redis_update_time.tv_usec);
             // TODO instead of just a  cooldown I should maybe include a data limit as well.
             if(delta_t > REDIS_COOLDOWN) {
                 send_event_to_redis(publish_redis, event_id);
-                prev_time = current_time;
+                redis_update_time = current_time;
             }
             save_event(fout, event_id);
             //grab_full_event(redis, event_id, &event);
             //save_event(fout, &event);
             //free_event_data(&event);
+        }
+        delta_t = (current_time.tv_sec - event_rate_time.tv_sec)*1e6 + (current_time.tv_usec - event_rate_time.tv_usec);
+        if(delta_t > PRINT_UPDATE_COOLDOWN) {
+            printf("Event id %i. %0.2f events per second\n", event_id, (float)1e6*built_count/PRINT_UPDATE_COOLDOWN);
+            built_count = 0;
+            event_rate_time = current_time;
         }
         if(disconnect_from_redis) {
             printf("Killing redis\n");
