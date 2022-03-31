@@ -15,6 +15,8 @@ uint32_t write_trig_sum_width(AXI_DATA_PIPELINE* dp_axi, uint32_t value);
 uint32_t read_trig_sum_width(AXI_DATA_PIPELINE* dp_axi);
 uint32_t read_threshold(AXI_DATA_PIPELINE* dp_axi);
 uint32_t write_threshold(AXI_DATA_PIPELINE* dp_axi, uint32_t data) ;
+uint32_t read_global_depth(AXI_DATA_PIPELINE* dp_axi);
+uint32_t write_global_depth(AXI_DATA_PIPELINE* dp_axi, uint32_t val);
 uint32_t read_channel_depth(AXI_DATA_PIPELINE* dp_axi, int channel);
 uint32_t write_channel_depth(AXI_DATA_PIPELINE* dp_axi, int channel, uint32_t val);
 uint32_t write_channel_mask(AXI_DATA_PIPELINE* dp_axi, uint32_t mask);

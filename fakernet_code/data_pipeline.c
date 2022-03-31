@@ -20,6 +20,7 @@ int write_addr(uint32_t, uint32_t, uint32_t);
 #define  LOCAL_TRIGGER_COUNT_RESET_OFFST  0x24
 #define  TRIGGER_ENABLE_OFFSET            0x28
 #define  TRIGGER_SUM_WIDTH_OFFSET         0x2C
+#define  GLOBAL_DEPTH_ADDR_OFFSET         0x34
 #define  DEPTH_ADDR_OFFSET                0x100
 #define  DEPTH_ADDR_WIDTH                 0x4
 //#define REGISTER_FILE_STATUS_OFFSET       0x800
@@ -77,6 +78,16 @@ uint32_t write_channel_depth(AXI_DATA_PIPELINE* dp_axi, int channel, uint32_t va
 
 uint32_t read_channel_depth(AXI_DATA_PIPELINE* dp_axi, int channel) {
     uint32_t offset = DEPTH_ADDR_OFFSET + DEPTH_ADDR_WIDTH*channel;
+    return read_data_pipeline_value(dp_axi, offset);
+}
+
+uint32_t write_global_depth(AXI_DATA_PIPELINE* dp_axi, uint32_t val) {
+    uint32_t offset = GLOBAL_DEPTH_ADDR_OFFSET;
+    return write_data_pipeline_value(dp_axi, offset, val);
+}
+
+uint32_t read_global_depth(AXI_DATA_PIPELINE* dp_axi) {
+    uint32_t offset = GLOBAL_DEPTH_ADDR_OFFSET;
     return read_data_pipeline_value(dp_axi, offset);
 }
 

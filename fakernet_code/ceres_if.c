@@ -582,6 +582,16 @@ static uint32_t write_data_pipeline_depth_command(uint32_t* args) {
     return write_channel_depth(get_ceres_handle()->pipeline, channel, value);
 }
 
+static uint32_t read_data_pipeline_global_depth_command(uint32_t* args) {
+    UNUSED(args);
+    return read_global_depth(get_ceres_handle()->pipeline);
+}
+
+static uint32_t write_data_pipeline_global_depth_command(uint32_t* args) {
+    int value = args[0];
+    return write_global_depth(get_ceres_handle()->pipeline, value);
+}
+
 static uint32_t read_data_pipeline_invalid_count_command(uint32_t* args) {
     UNUSED(args);
     return read_invalid_count(get_ceres_handle()->pipeline);
@@ -881,6 +891,8 @@ ServerCommand ceres_commands[] = {
 {"write_data_pipeline_channeL_mask",NULL,          write_data_pipeline_channeL_mask_command,               2,  1, 0, 0},
 {"read_data_pipeline_depth",NULL,                  read_data_pipeline_depth_command,                       2,  1, 0, 0},
 {"write_data_pipeline_depth",NULL,                 write_data_pipeline_depth_command,                      3,  1, 0, 0},
+{"read_data_pipeline_global_depth",NULL,           read_data_pipeline_global_depth_command,                1,  1, 0, 0},
+{"write_data_pipeline_global_depth",NULL,          write_data_pipeline_global_depth_command,               2,  1, 0, 0},
 {"write_data_pipeline",NULL,                       write_data_pipeline_command,                            3,  1, 0, 0},
 {"read_data_pipeline",NULL,                        read_data_pipeline_command,                             2,  1, 0, 0},
 {"read_data_pipeline_invalid_count",NULL,          read_data_pipeline_invalid_count_command,               1,  1, 0, 0},
