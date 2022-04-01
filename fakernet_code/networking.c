@@ -659,6 +659,7 @@ client *createClient(connection *conn) {
     c->id = client_id;
     c->resp = 2;
     c->conn = conn;
+    c->name = NULL;
     c->bufpos = 0;
     c->qb_pos = 0;
     c->querybuf = sdsempty();
