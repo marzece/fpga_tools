@@ -46,6 +46,9 @@ uint32_t write_trigger_mask_enable(AXI_TRIGGER_PIPELINE *tp_axi, uint32_t val);
 uint32_t read_self_trigger_enable(AXI_TRIGGER_PIPELINE *tp_axi);
 uint32_t write_self_trigger_enable(AXI_TRIGGER_PIPELINE *tp_axi, uint32_t val);
 
+uint32_t read_sync_length(AXI_TRIGGER_PIPELINE* tp_axi);
+uint32_t do_sync(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t length);
+
 /*
  * FONTUS should have a local trigger, but it doesn't yet.
  * So, once the day arrives that FONTUS does have a local trigger, the

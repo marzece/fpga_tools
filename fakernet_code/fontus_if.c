@@ -117,6 +117,38 @@ static uint32_t lmk_spi_data_pop_command(uint32_t* args) {
     UNUSED(args);
     return spi_drr_pop(get_fontus_handle()->lmk);
 }
+static uint32_t read_lmk_pll_status_command(uint32_t* args) {
+    uint32_t which_pll = args[0];
+    uint32_t status;
+    if(which_pll == 0) {
+        status = read_pll1_dld_status_reg(get_fontus_handle()->lmk);
+    }
+    else {
+        status = read_pll2_dld_status_reg(get_fontus_handle()->lmk);
+    }
+    return status;
+}
+
+static uint32_t clear_lmk_pll_status_command(uint32_t* args) {
+    uint32_t which_pll = args[0];
+    uint32_t ret;
+    if(which_pll == 0) {
+        ret = clear_pll1_dld_status_reg(get_fontus_handle()->lmk);
+    }
+    else {
+        ret = clear_pll2_dld_status_reg(get_fontus_handle()->lmk);
+    }
+    return ret;
+}
+static uint32_t read_lmk_dac_value_command(uint32_t* args) {
+    UNUSED(args);
+    return read_lmk_dac(get_fontus_handle()->lmk);
+}
+
+static uint32_t write_lmk_dac_value_command(uint32_t* args) {
+    uint32_t value = args[0];
+    return write_lmk_dac(get_fontus_handle()->lmk, value);
+}
 
 static uint32_t set_enable_trigger_system_command(uint32_t* args) {
     uint32_t enable = args[0] ? 1 : 0;
@@ -211,12 +243,26 @@ static uint32_t axi_sys_reset_command(uint32_t* args) {
     return 0;
 }
 
+static uint32_t read_sync_length_command(uint32_t* args) {
+    UNUSED(args);
+    return read_sync_length(get_fontus_handle()->pipeline);
+}
+
+static uint32_t do_sync_command(uint32_t* args) {
+    uint16_t length = args[0];
+    return do_sync(get_fontus_handle()->pipeline, length);
+}
+
 ServerCommand fontus_commands[] = {
 {"write_lmk_if",NULL,                              write_lmk_if_command,                                   3,  1, 0, 0},
 {"read_lmk_if",NULL,                               read_lmk_if_command,                                    2,  1, 0, 0},
 {"write_lmk_spi",NULL,                             write_lmk_spi_command,                                  4,  1, 0, 0},
 {"lmk_spi_data_available",NULL,                    lmk_spi_data_available_command,                         1,  1, 0, 0},
 {"lmk_spi_data_pop",NULL,                          lmk_spi_data_pop_command,                               1,  1, 0, 0},
+{"read_lmk_pll_status",NULL,                       read_lmk_pll_status_command,                            2,  1, 0, 0},
+{"clear_lmk_pll_status",NULL,                      clear_lmk_pll_status_command,                           2,  1, 0, 0},
+{"read_lmk_dac_value",NULL,                        read_lmk_dac_value_command,                             1,  1, 0, 0},
+{"write_lmk_dac_value",NULL,                       write_lmk_dac_value_command,                            2,  0, 0, 0},
 {"set_enable_trigger_system",NULL,                 set_enable_trigger_system_command,                      2,  0, 0, 0},
 {"write_delay_value",NULL,                         write_delay_value_command,                              2,  0, 0, 0},
 {"write_dac_if",NULL,                              write_dac_if_command,                                   3,  0, 0, 0}, 
@@ -226,6 +272,8 @@ ServerCommand fontus_commands[] = {
 {"pipeline_sys_reset",NULL,                        pipeline_sys_reset_command,                             1,  1, 0, 0},
 {"aurora_sys_reset",NULL,                          aurora_sys_reset_command,                               1,  1, 0, 0},
 {"axi_sys_reset",NULL,                             axi_sys_reset_command,                                  1,  1, 0, 0},
+{"read_sync_length",NULL,                          read_sync_length_command,                               1,  1, 0, 0},
+{"do_sync",NULL,                                   do_sync_command,                                        2,  0, 0, 0},
 //{"read_delay_value",NULL,                          read_delay_value_command,                               2,  0, 0, 0},
 {"",NULL,                                          NULL,                                                   0,  0, 0, 0}    //  Must  be  last
 };

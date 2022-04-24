@@ -108,3 +108,8 @@ int spi_drr_pop(AXI_QSPI* qspi) {
 int spi_drr_data_available(AXI_QSPI* qspi) {
     return read_qspi_addr(qspi, RR_OCC_OFFSET);
 }
+
+uint32_t read_qspi_status(AXI_QSPI *qspi) {
+    return read_qspi_addr(qspi, SPISR_OFFSET);
+
+}

@@ -63,7 +63,7 @@ int NUM_CHANNELS = 16;
 
 #define MAGIC_VALUE 0xFFFFFFFF
 #define HEADER_SIZE 20 // 128-bits aka 16 bytes
-#define BUFFER_SIZE (1024*1024) // 1 MB
+#define BUFFER_SIZE (10*1024*1024) // 10 MB
 
 uint32_t crc32(uint32_t crc, uint32_t * buf, unsigned int len);
 void crc8(unsigned char *crc, unsigned char m);
@@ -802,7 +802,7 @@ int read_proc(FPGA_IF* fpga, Event* ret) {
 
 // Connect to redis database
 redisContext* create_redis_conn(const char* hostname) {
-    builder_log(LOG_INFO, "Opening Redis Connection");
+    builder_log(LOG_INFO, "Opening Redis Connection: %s", hostname);
 
     redisContext* c;
     c = redisConnect(hostname, 6379);
@@ -816,7 +816,7 @@ redisContext* create_redis_conn(const char* hostname) {
 
 // Copies an event to one contiguous chunk of data
 char* copy_event(const Event* event) {
-    static const int MEM_SIZE = 1024*1024;
+    static const int MEM_SIZE = BUFFER_SIZE;
     static char* mem = NULL;
     size_t byte_count = 0;
     int i;
@@ -867,7 +867,7 @@ void redis_publish_event(redisContext*c, const Event event) {
 
     r = redisCommandArgv(c, 3,  args,  arglens);
     if(!r) {
-        builder_log(LOG_ERROR, "Redis error!");
+        builder_log(LOG_ERROR, "Redis error: %s", c->errstr);
     }
     freeReplyObject(r);
 
@@ -880,7 +880,7 @@ void redis_publish_event(redisContext*c, const Event event) {
     arglens[2] = HEADER_SIZE;
     r = redisCommandArgv(c, 3,  args,  arglens);
     if(!r) {
-        builder_log(LOG_ERROR, "Redis error!");
+        builder_log(LOG_ERROR, "Redis error! : %s", c->errstr);
     }
     freeReplyObject(r);
 }
@@ -1224,6 +1224,12 @@ int main(int argc, char **argv) {
 
     gettimeofday(&prev_time, NULL);
     redis = create_redis_conn(redis_host);
+    usleep(100000);
+
+    // Do authentication
+    // Immediatly free the reply cause I don't care about it
+    freeReplyObject(redisCommand(redis, "AUTH numubarnuebar"));
+
     signal(SIGINT, sig_handler);
     signal(SIGKILL, sig_handler);
 

@@ -50,7 +50,8 @@ enum BOARD_SWITCH {
     HE2TER,
     TI,
     CERES,
-    FONTUS
+    FONTUS,
+    ATCA
 };
 
 // This serverLog function should ONLY be called by code that I stole from
@@ -302,8 +303,8 @@ int main(int argc, char** argv) {
     int which_board = CERES;
     const char* ip = DEFAULT_IP;
     int port = -1;
+    int i;
     if(argc > 1 ) {
-        int i;
         enum ArgIDs expecting_value = 0;
         for(i=1; i < argc; i++) {
             if(!expecting_value) {

@@ -13,10 +13,8 @@ def grab_response(server):
     t = resp_reader.gets()
     return t
 
-def connect_to_local_client():
-    HOST = "localhost"
-    PORT = 4002
-    fpga_conn = socket.create_connection((HOST, PORT))
+def connect_to_local_client(host='localhost', port=4003):
+    fpga_conn = socket.create_connection((host, port))
     return fpga_conn
 
 def send_command(server, command):
@@ -32,14 +30,16 @@ if __name__ == "__main__":
     parser.add_argument("--ceres", action="store_true", help="Uses CERES addresses & config")
     parser.add_argument("--kcu", action="store_true", help="Uses KCU/HE2TER adresses & config")
     parser.add_argument("-addr", type=str, help="IIC address for ADC")
+    parser.add_argument("--port", type=int, help="Server Port", default=4003)
     args = parser.parse_args()
 
-    server = connect_to_local_client()
+    server = connect_to_local_client(port=args.port)
 
     redis_db = redis.Redis()
 
 
-    current_measurement_resistor = 0.0005 # units ohms, from CERES schematics
+    #current_measurement_resistor = 0.0005 # units ohms, from CERES schematics
+    current_measurement_resistor = 0.006 # units ohms, from CERES schematics
     if args.kcu:
         current_measurement_resistor = 0.006 # units ohms, from HE2TER schematics
 
@@ -77,7 +77,8 @@ if __name__ == "__main__":
     # TODO come up with some way book keeping this better, i.e namedtuple
     # or something, except tuples suck so idk. Maybe just create a Class
     vm_info = {'current': {"addrs": [0x0, 0x1], "values":[0,0]},
-               'voltage': {"addrs": [0x2, 0x3], "values":[0,0]}}
+               'voltage': {"addrs": [0x2, 0x3], "values":[0,0]},
+               'temp': {"addrs": [0x4, 0x5], "values":[0,0]}}
 
     current = None
     voltage = None
@@ -106,14 +107,22 @@ if __name__ == "__main__":
             print("Invalid current")
             current = None
             # Not valid TODO
+        temp_values = vm_info["temp"]["values"]
+        temp_valid = (temp_values[1] & (1<<3)) == 0
+        if(temp_valid):
+            temp = (temp_values[0] << 4) | (temp_values[1] >> 4)
 
         if(current is not None):
             print("Current = %0.3f A\t" % current, end='')
         if(voltage is not None):
-            print("Voltage = %0.3f V" % voltage, end = '')
+            print("Voltage = %0.3f V\t" % voltage, end = '')
+        if(temp_valid):
+            print("Temp = 0x%x " % temp, end='')
+
         print('')
 
         if(voltage and current):
+            #redis_db.xadd("
             publish_data(redis_db, "%f, %f, %f" % (time(), voltage, current))
         
         sleep(2)

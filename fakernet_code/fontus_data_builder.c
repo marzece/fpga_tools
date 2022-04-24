@@ -408,7 +408,7 @@ size_t pull_from_fpga(FPGA_IF* fpga_if) {
     if(contiguous_space_left > 0) {
         bytes_recvd = recv(fpga_if->fd, w_buffer + w_buffer_idx, contiguous_space_left, 0);
         if(bytes_recvd > 0) {
-            printf("God %i bytes\n", bytes_recvd);
+            printf("Got %i bytes\n", bytes_recvd);
             //fwrite(w_buffer+ w_buffer_idx, 1, bytes_recvd, fdump);
         }
         if(bytes_recvd < 0) {

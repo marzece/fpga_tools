@@ -56,7 +56,7 @@ int  read_header(FILE* fin, TrigHeader* header) {
    header->magic_number = _bswap32(header->magic_number);
    header->trig_number = _bswap32(header->trig_number);
    header->clock = _bswap64(header->clock);
-   header->length = _bswap16(header->length);
+   header->length = ntohs(header->length);
    // header->magic_number = ntohl(header->magic_number);
    // header->trig_number = ntohl(header->trig_number);
    // header->clock = ntohll(header->clock);
@@ -136,7 +136,7 @@ EventIndex get_events_index(FILE* fin, const unsigned int max_counts) {
     return index;
 }
 
-int get_event(FILE* fin, long offset, uint16_t** samples) {
+int get_event(FILE* fin, long offset, uint16_t** samples, TrigHeader* _header) {
     TrigHeader header;
     long initial_position = ftell(fin);
 
@@ -146,6 +146,7 @@ int get_event(FILE* fin, long offset, uint16_t** samples) {
         return -1;;
     }
     *samples = (uint16_t*)malloc(sizeof(uint16_t)*header.length*2*NCHANNELS);
+    *_header = header;
 
     if(read_event(fin, header.length*2, *samples) != 0) {
         // ERROR

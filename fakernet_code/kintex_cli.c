@@ -293,7 +293,7 @@ int main(int argc, char **argv) {
     int server_fd = connect_to_server(server_ip, server_port);
 
     if(server_fd <= 0) {
-        printf("Error ocurred opening command pipe\n");
+        printf("Error ocurred connecting to server \n");
         printf("%s\n", strerror(errno));
         return 1;
     }

@@ -32,4 +32,5 @@ SPI_CR bits_to_spi_cr(uint32_t word);
 int write_spi(AXI_QSPI* qspi, uint8_t ssr, uint8_t* data, int nwords);
 int spi_drr_pop(AXI_QSPI* qspi);
 int spi_drr_data_available(AXI_QSPI* qspi);
+uint32_t read_qspi_status(AXI_QSPI *qspi);
 #endif

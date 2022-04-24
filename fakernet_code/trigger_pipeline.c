@@ -15,6 +15,7 @@ int write_addr(uint32_t, uint32_t, uint32_t);
 #define  REGISTER_WIDTH                            0x4
 #define  RESET_REG_OFFSET                          0x0
 #define  PULSE_GENERATOR_ENABLE_MASK               0x8
+#define  SYNC_REG_OFFSET                           0x14
 #define  TRIG_VAR_COMBINER_MULTIPLICITY_WIDTH      0x20
 #define  INNER_MULTIPLICITY_THRESHOLD_BASE_OFFSET  0x30
 #define  INNER_ESUM_THRESHOLD_BASE_OFFSET          0x50
@@ -397,3 +398,26 @@ uint32_t read_self_trigger_enable(AXI_TRIGGER_PIPELINE *tp_axi) {
 uint32_t write_self_trigger_enable(AXI_TRIGGER_PIPELINE *tp_axi, uint32_t val) {
     return write_trig_pipeline_value(tp_axi, SELF_TRIGGER_ENABLE_OFFSET, val);
 }
+
+uint32_t read_sync_length(AXI_TRIGGER_PIPELINE* tp_axi) {
+    uint32_t word = read_trig_pipeline_value(tp_axi, SYNC_REG_OFFSET);
+    word = (word >> 4) & 0xFFFF;
+    return word;
+}
+
+uint32_t do_sync(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t length) {
+    uint32_t word = ((length & 0xFFFF) << 4) | 0x1;
+    uint32_t ret = 0;
+    ret = write_trig_pipeline_value(tp_axi, SYNC_REG_OFFSET, word);
+    if(ret) { return ret;}
+
+    // TODO from looking at the sync_gen RTL code it looks like the SYNC pulse
+    // will only be emitted once bit-0 of the register is '1' and will stop
+    // only once that bit is un-set.
+    // This behavior should be tested & possibly re-thought cause it's at least
+    // unintuitive.
+    // Unset bit-0
+    word &= 0xFFFFE;
+    return write_trig_pipeline_value(tp_axi, SYNC_REG_OFFSET, word);
+}
+

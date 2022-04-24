@@ -57,6 +57,7 @@ if __name__ == "__main__":
                     prev_data[lane] = data[lane]
                     continue
                 else:
-                    redis_db.publish("jesd_errors", "{} {} {} {} {}".format(lane, *dv))
+                    redis_db.xadd("jesd_errors", data, maxlen=500);
+                    #redis_db.publish("jesd_errors", "{} {} {} {} {}".format(lane, *dv))
             prev_data[lane] = data[lane]
         sleep(2)

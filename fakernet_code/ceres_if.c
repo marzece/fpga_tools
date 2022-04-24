@@ -374,6 +374,49 @@ static uint32_t lmk_spi_data_pop_command(uint32_t* args) {
     return spi_drr_pop(lmk);
 }
 
+static uint32_t read_lmk_pll_status_command(uint32_t* args) { 
+    uint32_t which_lmk = args[0];
+    uint32_t which_pll = args[1];
+    uint32_t status;
+    AXI_QSPI* lmk = lmk_switch(which_lmk);
+    if(!lmk) {
+        return -1;
+    }
+    if(which_pll == 0 || which_pll == 1) {
+        status = read_pll1_dld_status_reg(lmk);
+    }
+    else {
+        status = read_pll2_dld_status_reg(lmk);
+    }
+    return status;
+}
+
+static uint32_t clear_lmk_pll_status_command(uint32_t* args) { 
+    uint32_t which_lmk = args[0];
+    uint32_t which_pll = args[1];
+    uint32_t ret;
+    AXI_QSPI* lmk = lmk_switch(which_lmk);
+    if(!lmk) {
+        return -1;
+    }
+    if(which_pll == 0) {
+        ret = clear_pll1_dld_status_reg(lmk);
+    }
+    else {
+        ret = clear_pll2_dld_status_reg(lmk);
+    }
+    return ret;
+}
+
+static uint32_t read_lmk_dac_value_command(uint32_t* args) {
+    uint32_t which_lmk = args[0];
+    AXI_QSPI* lmk = lmk_switch(which_lmk);
+    if(!lmk) {
+        return -1;
+    }
+    return read_lmk_dac(lmk);
+}
+
 static uint32_t jesd_read_command(uint32_t* args) {
     uint32_t which_jesd = args[0];
     uint32_t offset = args[1];
@@ -421,6 +464,11 @@ static void generic_sys_reset(uint32_t bit_mask) {
     reset_gen_do_reset(get_ceres_handle()->reset_gen);
 }
 
+static uint32_t fnet_sys_reset_command(uint32_t* args) {
+    UNUSED(args);
+    generic_sys_reset(1<<4);
+    return 0;
+}
 static uint32_t pipeline_sys_reset_command(uint32_t* args) {
     UNUSED(args);
     generic_sys_reset(1<<RESET_GEN_PIPELINE_BIT);
@@ -662,7 +710,7 @@ static uint32_t write_data_pipeline_trigger_enable_command(uint32_t* args) {
     return write_trigger_enable(get_ceres_handle()->pipeline, enable);
 }
 
-static uint32_t set_trigger_params_command(uint32_t* args) {
+static uint32_t set_local_trigger_params_command(uint32_t* args) {
     uint32_t rate = args[0];   // Number of counts between each readout
     uint32_t length = args[1]; // Amount of data in each readout
 
@@ -676,6 +724,17 @@ static uint32_t set_trigger_params_command(uint32_t* args) {
     ret = write_local_trigger_length(get_ceres_handle()->pipeline, length);
     ret |= write_local_trigger_count_reset_value(get_ceres_handle()->pipeline, rate);
 
+    return ret;
+}
+
+static uint32_t set_trigger_params_command(uint32_t* args) {
+    uint32_t mask = args[0];
+    uint32_t width = args[1];
+    uint32_t threshold = args[2];
+    uint32_t ret = 0;
+    ret = write_channel_mask(get_ceres_handle()->pipeline, mask);
+    ret |= write_trig_sum_width(get_ceres_handle()->pipeline, width);
+    ret |= write_threshold(get_ceres_handle()->pipeline, threshold);
     return ret;
 }
 
@@ -870,11 +929,15 @@ ServerCommand ceres_commands[] = {
 {"write_lmk_spi",NULL,                             write_lmk_spi_command,                                  5,  1, 0, 0},
 {"lmk_spi_data_available",NULL,                    lmk_spi_data_available_command,                         2,  1, 0, 0},
 {"lmk_spi_data_pop",NULL,                          lmk_spi_data_pop_command,                               2,  1, 0, 0},
+{"read_lmk_pll_status",NULL,                       read_lmk_pll_status_command,                            3,  1, 0, 0},
+{"clear_lmk_pll_status",NULL,                      clear_lmk_pll_status_command,                           3,  1, 0, 0},
+{"read_lmk_dac_value",NULL,                        read_lmk_dac_value_command,                             2,  1, 0, 0},
 {"jesd_read",NULL,                                 jesd_read_command,                                      3,  1, 0, 0},
 {"jesd_write",NULL,                                jesd_write_command,                                     4,  1, 0, 0},
 {"jesd_error_count",NULL,                          jesd_error_count_command,                               2,  4, 0, 0},
 {"jesd_error_rate",NULL,                           jesd_error_rate_command,                                2,  4, 0, 0},
 {"jesd_reset",NULL,                                jesd_reset_command,                                     2,  1, 0, 0},
+{"fnet_sys_reset",NULL,                        fnet_sys_reset_command,                             1,  1, 0, 0},
 {"pipeline_sys_reset",NULL,                        pipeline_sys_reset_command,                             1,  1, 0, 0},
 {"aurora_sys_reset",NULL,                          aurora_sys_reset_command,                               1,  1, 0, 0},
 {"jesd_sys_reset",NULL,                            jesd_sys_reset_command,                                 1,  1, 0, 0},
@@ -909,7 +972,8 @@ ServerCommand ceres_commands[] = {
 {"write_data_pipeline_trigger_count_reset_value",NULL,  write_data_pipeline_trigger_count_reset_value_command,  2,  1, 0, 0},
 {"read_data_pipeline_trigger_enable",NULL,         read_data_pipeline_trigger_enable_command,              1,  1, 0, 0},
 {"write_data_pipeline_trigger_enable",NULL,        write_data_pipeline_trigger_enable_command,             2,  1, 0, 0},
-{"set_trigger_params",NULL,                        set_trigger_params_command,                             3,  1, 0, 0},
+{"set_local_trigger_params",NULL,                  set_local_trigger_params_command,                       3,  1, 0, 0},
+{"set_trigger_params",NULL,                        set_trigger_params_command,                             4,  1, 0, 0},
 {"set_sysref",NULL,                                set_sysref_command,                                     3,  1, 0, 0},
 {"write_jesd_phy",NULL,                            write_jesd_phy_command,                                         4,  1, 0, 0},
 {"read_jesd_phy",NULL,                             read_jesd_phy_command,                                          3,  1, 0, 0},

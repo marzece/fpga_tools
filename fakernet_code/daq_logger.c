@@ -45,7 +45,7 @@ void setup_logger(const char* logID, const char* redis_host, const char* log_fil
         logger->verbosity_file = LOG_NEVER;
         printf("Did not open any log file!\n");
     }
-    if(logger->redis == NULL) {
+    if(redis_host && logger->redis == NULL) {
         // TODO, should copy redis->errstr for this messge
         logger->verbosity_redis = LOG_NEVER;
         daq_log(LOG_ERROR, "Could not connect to redis for logging!\n");

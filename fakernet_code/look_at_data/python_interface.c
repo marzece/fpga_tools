@@ -81,6 +81,7 @@ static PyObject* _get_event(PyObject *self, PyObject *args) {
     long offset;
     int nsamples;
     uint16_t* samples = NULL;
+    TrigHeader header;
     FILE* fin = NULL;
     if (!PyArg_ParseTuple(args, "Ol", &py_file_in, &offset)) {
         PyErr_SetString(error, "Failed to interpret args");
@@ -105,7 +106,7 @@ static PyObject* _get_event(PyObject *self, PyObject *args) {
         PyErr_SetString(error, "Error creating FILE from file descriptor");
         return NULL;
     }
-    nsamples = get_event(fin, offset, &samples);
+    nsamples = get_event(fin, offset, &samples, &header);
     if(nsamples < 0) {
         PyErr_SetString(error, "Error reading event from file at given offset");
         return NULL;
