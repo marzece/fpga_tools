@@ -82,24 +82,6 @@ static uint32_t read_lmk_if_command(uint32_t* args) {
     return read_lmk_if(get_fontus_handle()->lmk, args[0]);
 }
 
-static uint32_t write_lmk_spi(AXI_QSPI* lmk, uint32_t rw, uint32_t addr, uint32_t data) {
-    // RW is 3 bits and the bottom bits are always zero (pretty sure)
-    // so RW only has two valid values.
-    rw = rw ? 0x4 : 0x0;
-    addr = addr & 0x1FFF;
-    data = data & 0xFF;
-
-    uint8_t word1 = (rw << 5) | (addr >> 8);
-    uint8_t word2 = addr & 0xFF;
-    uint8_t word3 = data & 0xFF;
-
-    uint8_t word_buf[3] = {word1, word2, word3};
-    // Bit 0 of the SSR is the LMK select line, pull it low to start SPI data transfer
-    uint32_t ssr = 0x0;
-    return write_spi(lmk, ssr, word_buf, 3);
-
-}
-
 static uint32_t write_lmk_spi_command(uint32_t* args) {
     uint32_t rw = args[0];
     uint32_t addr = args[1];
