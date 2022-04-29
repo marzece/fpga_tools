@@ -365,7 +365,7 @@ static uint32_t read_lmk_pll_status_command(uint32_t* args) {
     if(!lmk) {
         return -1;
     }
-    if(which_pll == 0 || which_pll == 1) {
+    if(which_pll == 0) {
         status = read_pll1_dld_status_reg(lmk);
     }
     else {

@@ -73,7 +73,6 @@ static struct FONTUS_IF* get_fontus_handle() {
     return fontus;
 }
 
-
 static uint32_t write_lmk_if_command(uint32_t* args) {
     return write_lmk_if(get_fontus_handle()->lmk, args[0], args[1]);
 }
