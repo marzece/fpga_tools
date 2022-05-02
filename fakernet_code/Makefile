@@ -5,7 +5,7 @@ CFLAGS += -O0 -std=gnu99 -Wall -W -Wshadow -Wwrite-strings \
 
 LDLIBS += -lm
 
-all: fnetctrl kintex_client_server kintex_cli fakernet_data_builder tail_daq_log fontus_data_builder zipper
+all: fnetctrl kintex_client_server kintex_cli fakernet_data_builder tail_daq_log fontus_data_builder zipper ceres_server
 
 fnetctrl: fnetctrl.o fnet_client.o
 

@@ -663,7 +663,6 @@ client *createClient(connection *conn) {
     c->bufpos = 0;
     c->qb_pos = 0;
     c->querybuf = sdsempty();
-    c->pending_querybuf = sdsempty();
     c->querybuf_peak = 0;
     c->reqtype = 0;
     c->argc = 0;
@@ -678,6 +677,7 @@ client *createClient(connection *conn) {
     c->reply_bytes = 0;
     c->obuf_soft_limit_reached_time = 0;
     c->client_list_node = NULL;
+    c->server_data = NULL;
     if (conn) {
         linkClient(c);
     }
@@ -829,7 +829,6 @@ void freeClient(client *c) {
 
     /* Free the query buffer */
     sdsfree(c->querybuf);
-    sdsfree(c->pending_querybuf);
     c->querybuf = NULL;
 
     // !TODO readd blocking functionality at some point
@@ -851,12 +850,10 @@ void freeClient(client *c) {
         listDelNode(server.clients_to_close,ln);
     }
 
-
-
-
     /* Release other dynamically allocated client structure fields,
      * and finally release the client structure itself. */
     if (c->name)  { sdsfree(c->name); }
+    free(c->server_data);
     free(c->argv);
     free(c);
 }

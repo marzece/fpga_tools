@@ -123,10 +123,6 @@ typedef struct client {
     int resp;               /* RESP protocol version. Can be 2 or 3. */
     sds querybuf;           /* Buffer we use to accumulate client queries. */
     size_t qb_pos;          /* The position we have read in querybuf. */
-    sds pending_querybuf;   /* If this client is flagged as master, this buffer
-                               represents the yet not applied portion of the
-                               replication stream that we are receiving from
-                               the master. */
     size_t querybuf_peak;   /* Recent (100ms or more) peak of querybuf size. */
     int argc;               /* Num of arguments of current command. */
     sds* argv;            /* Arguments of current command. */
@@ -147,10 +143,13 @@ typedef struct client {
     //blockingState bpop;     /* blocking state */
     listNode *client_list_node; /* list node in client list */
 
+    void* server_data;
+
     /* Response buffer */
     int bufpos;
     char buf[PROTO_REPLY_CHUNK_BYTES];
 } client;
+typedef void (*ServerCallFunc)(client *c);
 
 struct  Server {
     pid_t pid;
@@ -185,7 +184,6 @@ struct  Server {
     long long ustime;            /* 'unixtime' in microseconds. */
     int shutdown_asap;          /* SHUTDOWN needed ASAP */
 
-
     aeEventLoop *el;
     long long stat_net_input_bytes; /* Bytes read from network. */
     long long stat_net_output_bytes; /* Bytes written to network. */
@@ -195,8 +193,10 @@ struct  Server {
     long long stat_total_writes_processed; /* Total number of writes processed */
     size_t client_max_querybuf_len; /* Limit for client query buffer length */
     clientBufferLimitsConfig client_obuf_limits;
-    // logfile;
+
+    ServerCallFunc server_call;
 };
+
 
 extern struct Server server;
 extern ServerCommand* server_command_table;
@@ -205,6 +205,7 @@ void send_command_table(client* c, int argc, sds* argv);
 void daemonize(void);
 void initServerConfig(void);
 void initServer(void);
+void serverSetCustomCall(ServerCallFunc call_func);
 long long ustime(void); /* Get linux time microseconds */
 
 void _serverAssert(const char *estr, const char *file, int line);
@@ -214,10 +215,6 @@ void acceptTcpHandler(struct aeEventLoop *el, int fd, void *privdata, int mask);
 
 int clientHasPendingReplies(client *c);
 void clientInstallWriteHandler(client *c);
-//static void anetSetError(char *err, const char *fmt, ...);
-//static int anetSetReuseAddr(char *err, int fd);
-//static int anetListen(char *err, int s, struct sockaddr *sa, socklen_t len, int backlog);
-//static int anetTcpServer(char *err, int port, char *bindaddr, int af, int backlog);
 int listenToPort(int port, int *fds, int *count);
 void processInputBuffer(client *c);
 int processMultibulkBuffer(client *c);

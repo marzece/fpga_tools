@@ -36,23 +36,13 @@ int dummy_mode = 0;
 uint32_t SAFE_READ_ADDRESS;
 
 typedef struct XEMConn {
-    fnet_ctrl_client* fnet_client;
+    struct fnet_ctrl_client* fnet_client;
     int device_id;
     char* ip;
 //    int is_up;
 } XEMConn;
 XEMConn XEMS[NUM_XEMS];
-
-XEMS[0] = {NULL, 4, 192.168.1.196};
-XEMS[1] = {NULL, 5, 192.168.1.197};
-XEMS[2] = {NULL, 6, 192.168.1.198};
-XEMS[3] = {NULL, 7, 192.168.1.199};
-XEMS[4] = {NULL, 8, 192.168.1.200};
-XEMS[5] = {NULL, 9, 192.168.1.201};
-XEMS[6] = {NULL, 10, 192.168.1.202};
-XEMS[7] = {NULL, 11, 192.168.1.203};
-
-XEMConn* the_active_xem;
+XEMConn* active_xem;
 
 char command_buffer[BUFFER_SIZE];
 char resp_buffer[BUFFER_SIZE];
@@ -102,11 +92,86 @@ void sig_handler(int dummy) {
 }
 
 
-int set_active_xem(uint32_t xem_bits) {
+void set_active_xem_command(client* c, int argc, sds* argv) {
+    int i;
+    if(argc < 2) {
+        addReplyErrorFormat(c, "Must provide active xem argument");
+        return;
+    }
+    uint32_t device_id = strtoul(argv[1], NULL, 0);
+    if(!c->server_data) {
+        c->server_data = malloc(sizeof(int));
+    }
 
+    // Unset the XEM, if the client tries to set the XEM ID to a invalid ID
+    // then I want the active XEM to be un-set so any further commands don't
+    // get accidentally sent to whatever XEM was last being talked to, cause
+    // that'd probably be unintentional.
+    *(int*)c->server_data = -1;
+
+    for(i=0; i<NUM_XEMS; i++) {
+        if(device_id == XEMS[i].device_id) {
+            if(XEMS[i].fnet_client == NULL) {
+                // The server wasn't able to connect to this XEM when it booted up
+                // Should not allow it to be the active XEM
+                // TODO, could try and reconnect here maybe
+                addReplyErrorFormat(c, "Specified XEM isn't available to the server");
+            }
+            else {
+                *(int*)c->server_data = i;
+                addReplyStatus(c, "OK");
+            }
+            return;
+        }
+    }
+    if(device_id == -1) {
+        addReplyStatus(c, "OK");
+    } else {
+        addReplyErrorFormat(c, "Device ID #%i is not a CERES XEM", device_id);
+    }
 }
 
-int setup_udp(const char* ip, XEMConn* xem) {
+void get_active_xem_command(client* c, int argc, sds* argv) {
+    UNUSED(argc);
+    UNUSED(argv);
+    int device_index;
+
+    if(!c->server_data || *(int*)c->server_data < 0) {
+        // RESP NULL response is "$-1\r\n"
+        addReplyLongLongWithPrefix(c, -1, '$');
+    }
+    else {
+        device_index = *(int*)c->server_data;
+
+        addReplyLongLong(c, XEMS[device_index].device_id);
+    }
+}
+
+void get_available_xems_command(client* c, int argc, sds* argv) {
+    UNUSED(argc);
+    UNUSED(argv);
+    int i;
+    int count = 0;
+    for(i=0; i<NUM_XEMS; i++) {
+        if(XEMS[i].fnet_client) {
+            count+=1;
+        }
+    }
+
+    if(count == 0) {
+        addReplyLongLongWithPrefix(c, -1, '$');
+        return;
+    }
+
+    addReplyLongLongWithPrefix(c, count, '*');
+    for(i=0; i<NUM_XEMS; i++) {
+        if(XEMS[i].fnet_client) {
+            addReplyLongLong(c, XEMS[i].device_id);
+        }
+    }
+}
+
+int setup_udp(XEMConn* xem) {
     int reliable = 0; // wtf does this do?
     const char* err_string = NULL;
     if(dummy_mode) {
@@ -129,7 +194,7 @@ int read_addr(uint32_t base, uint32_t addr, uint32_t* result) {
         return 0;
     }
 
-    fnet_ctrl_get_send_recv_bufs(fnet_client, &send, &recv);
+    fnet_ctrl_get_send_recv_bufs(active_xem->fnet_client, &send, &recv);
 
     addr = base + addr;
     addr &= 0x3FFFFFF; // Only the first 25-bits are valid
@@ -138,12 +203,12 @@ int read_addr(uint32_t base, uint32_t addr, uint32_t* result) {
     send[0].addr = htonl(FAKERNET_REG_ACCESS_ADDR_READ | addr);
 
     int num_items = 1;
-    int ret = fnet_ctrl_send_recv_regacc(fnet_client, num_items);
+    int ret = fnet_ctrl_send_recv_regacc(active_xem->fnet_client, num_items);
 
     // Pretty sure "ret" will be the number of UDP reg-accs dones
     if(ret == 0) {
         printf("ERROR %i\n", ret);
-        printf("%s\n", fnet_ctrl_last_error(fnet_client));
+        printf("%s\n", fnet_ctrl_last_error(active_xem->fnet_client));
         printf("%s\n", strerror(errno));
         return -1;
     }
@@ -172,7 +237,7 @@ int write_addr(uint32_t base, uint32_t addr, uint32_t data) {
       if(dummy_mode) { return 0; }
 
       addr = addr+base;
-      fnet_ctrl_get_send_recv_bufs(fnet_client, &send, &recv);
+      fnet_ctrl_get_send_recv_bufs(active_xem->fnet_client, &send, &recv);
 
       addr &= 0x3FFFFFF; // Only the first 25-bits are valid
 
@@ -180,12 +245,12 @@ int write_addr(uint32_t base, uint32_t addr, uint32_t data) {
       send[0].addr = htonl(FAKERNET_REG_ACCESS_ADDR_WRITE | addr);
 
       int num_items = 1;
-      int ret = fnet_ctrl_send_recv_regacc(fnet_client, num_items);
+      int ret = fnet_ctrl_send_recv_regacc(active_xem->fnet_client, num_items);
       
       // Pretty sure "ret" will be the number of UDP reg-accs dones
       if(ret == 0) {
           printf("ERROR %i\n", ret);
-          printf("%s\n", fnet_ctrl_last_error(fnet_client));
+          printf("%s\n", fnet_ctrl_last_error(active_xem->fnet_client));
           printf("%s\n", strerror(errno));
           return -1;
       }
@@ -255,6 +320,9 @@ void sleep_command(client* c, int argc, sds* args) {
 static ServerCommand default_commands[] = {
     {"write_addr", write_addr_command, NULL, 3, 1, 0, 0},
     {"read_addr", read_addr_command, NULL, 2, 1, 0, 0},
+    {"set_active_xem", set_active_xem_command, NULL, 2, 0, 0, 0},
+    {"get_active_xem", get_active_xem_command, NULL, 1, 0, 0, 0},
+    {"get_available_xems", get_available_xems_command , NULL, 1, 0, 0, 0},
     {"sleep",  sleep_command, NULL, 2, 1, 0, 0},
     {"", NULL, NULL, 0, 0, 0, 0} // Must be last
 };
@@ -300,7 +368,6 @@ ServerCommand* search_for_command(ServerCommand* table, const char* command_name
 // For arguements with a values
 enum ArgIDs {
     ARG_NONE=0,
-    ARG_IP,
     ARG_PORT
 };
 
@@ -308,19 +375,92 @@ void print_help_message() {
     printf("You need help\n");
 }
 
-int main(int argc, char** argv) {
+void ceres_call(client *c) {
+    int i;
+    ServerCommand *real_cmd = c->cmd;
 
-    const char* ip = DEFAULT_IP;
+    // Need to set the active XEM to the current client's specified one.
+    // If the active_xem isn't set then the only command that can be executed is to set the active xem
+    if(!c->server_data || *(int*)c->server_data < 0) {
+        if(real_cmd->func == set_active_xem_command) {
+            set_active_xem_command(c, c->argc, c->argv);
+        }
+        else if (real_cmd->func == send_command_table) {
+            send_command_table(c, c->argc, c->argv);
+        }
+        else if (real_cmd->func == get_active_xem_command) {
+            get_active_xem_command(c, c->argc, c->argv);
+        }
+        else if (real_cmd->func == get_available_xems_command) {
+            get_available_xems_command(c, c->argc, c->argv);
+        }
+        else {
+            addReplyErrorFormat(c, "Cannot perform command until XEM ID is set");
+        }
+        return;
+    }
+
+    // If here then the client's active xem is set, so make that the server's active xem
+    int xem_index = *(int*)c->server_data;
+    active_xem = &XEMS[xem_index];
+
+    /* Call the command. */
+    if(real_cmd->func) {
+        c->cmd->func(c, c->argc, c->argv);
+    }
+    else {
+        // Use legacy_func
+        int num_ints_needed = real_cmd->nargs > real_cmd->nresp ? real_cmd->nargs : real_cmd->nresp;
+        uint32_t* args_uint = malloc(sizeof(uint32_t)*num_ints_needed);
+        for(i=1; i<real_cmd->nargs; i++) {
+            args_uint[i-1] = strtoul(c->argv[i], NULL, 0);
+        }
+        uint32_t resp = real_cmd->legacy_func(args_uint);
+        if(real_cmd->nresp == 0) {
+            addReplyStatus(c, "OK");
+        }
+        else if(real_cmd->nresp == 1) {
+            addReplyLongLong(c, (long long)resp);
+        }
+        else {
+            if(resp != 0) {
+                // TODO! need to add low level error string!
+                addReplyErrorFormat(c, "Error performing command '%s'", real_cmd->name);
+            }
+            else {
+                // RESP array is *N\r\n where N is the length of the array, followed
+                // by the elements of the array
+                addReplyLongLongWithPrefix(c, (long long)real_cmd->nresp, '*');
+                for(i=0; i<real_cmd->nresp; i++) {
+                    addReplyLongLong(c, (long long)args_uint[i]);
+                }
+            }
+        }
+        free(args_uint);
+    }
+
+    // Unset the server's active xem
+    active_xem = NULL;
+}
+
+int main(int argc, char** argv) {
+    // TODO figure out how to un-hardcode these
+    XEMS[0].fnet_client = NULL; XEMS[0].device_id = 4; XEMS[0].ip = "192.168.1.196";
+    XEMS[1].fnet_client = NULL; XEMS[1].device_id = 5; XEMS[1].ip = "192.168.1.197";
+    XEMS[2].fnet_client = NULL; XEMS[2].device_id = 6; XEMS[2].ip = "192.168.1.198";
+    XEMS[3].fnet_client = NULL; XEMS[3].device_id = 7; XEMS[3].ip = "192.168.1.199";
+    XEMS[4].fnet_client = NULL; XEMS[4].device_id = 8; XEMS[4].ip = "192.168.1.200";
+    XEMS[5].fnet_client = NULL; XEMS[5].device_id = 9; XEMS[5].ip = "192.168.1.201";
+    XEMS[6].fnet_client = NULL; XEMS[6].device_id = 10; XEMS[6].ip = "192.168.1.202";
+    XEMS[7].fnet_client = NULL; XEMS[7].device_id = 11; XEMS[7].ip = "192.168.1.203";
+
     int port = -1;
     int i;
     if(argc > 1 ) {
         enum ArgIDs expecting_value = 0;
         for(i=1; i < argc; i++) {
             if(!expecting_value) {
-                if(strcmp(argv[i], "--ip") == 0) {
-                    expecting_value = ARG_IP;
-                }
-                else if(strcmp(argv[i], "--port") == 0) {
+                if(strcmp(argv[i], "--port") == 0) {
                     expecting_value = ARG_PORT;
                 }
                 else if(strcmp(argv[i], "--dry") == 0 || strcmp(argv[i], "--dummy") == 0) {
@@ -337,10 +477,6 @@ int main(int argc, char** argv) {
                 }
             } else {
                 switch(expecting_value) {
-                    case ARG_IP:
-                        ip = argv[i];
-                        printf("FPGA IP set to %s\n", ip);
-                        break;
                     case ARG_PORT:
                         port = atoi(argv[i]);
                         if(port <= 0) {
@@ -369,7 +505,8 @@ int main(int argc, char** argv) {
 
     // First connect to FPGAs
     for(i=0;i<NUM_XEMS;i++) {
-        if(setup_udp(ip, &(XEMS[i]))) {
+        XEMConn* xem = &XEMS[i];
+        if(setup_udp(xem)) {
             daq_log(LOG_ERROR, "Cannot connect to XEM%i", xem->device_id);
         }
         else {
@@ -395,6 +532,7 @@ int main(int argc, char** argv) {
     server_command_table = commandTable;
     initServer();
 
+    serverSetCustomCall(ceres_call);
     aeSetBeforeSleepProc(server.el, beforeSleep);
     //aeSetAfterSleepProc(server.el,afterSleep);
     aeMain(server.el);

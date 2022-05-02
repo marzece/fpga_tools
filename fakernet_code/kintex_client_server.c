@@ -50,8 +50,7 @@ enum BOARD_SWITCH {
     HE2TER,
     TI,
     CERES,
-    FONTUS,
-    ATCA
+    FONTUS
 };
 
 // This serverLog function should ONLY be called by code that I stole from

@@ -389,7 +389,10 @@ void call(client *c, int flags) {
     updateCachedTime(0);
     start = server.ustime;
 
-    if(real_cmd->func) {
+    if(server.server_call) {
+        server.server_call(c);
+    }
+    else if(real_cmd->func) {
         c->cmd->func(c, c->argc, c->argv);
     }
     else {
@@ -468,6 +471,7 @@ void initServer(void) {
     server.stat_total_writes_processed = 0;
     server.mstime = 0;
     server.ustime =0;
+    server.server_call = NULL;
 
 
     //createSharedObjects();
@@ -514,4 +518,12 @@ void initServer(void) {
                 serverPanic("Unrecoverable error creating server.ipfd file event.");
             }
     }
+}
+
+void serverSetCustomCall(ServerCallFunc call_func) {
+    server.server_call = call_func;
+}
+
+void serverClearCustomCall() {
+    server.server_call = NULL;
 }
