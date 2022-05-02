@@ -14,4 +14,10 @@
 *.gif
 *.yml
 *.png
+*.C
+*.rdb
 tags
+fakernet_code/kintex_cli
+fakernet_code/kintex_client_server
+fakernet_code/fakernet_data_builder
+fakernet_code/zipper
