@@ -606,6 +606,7 @@ int processCommandAndResetClient(client *c) {
         {
             resetClient(c);
         }*/
+        resetClient(c);
     }
     if (server.current_client == NULL) {
         deadclient = 1;
