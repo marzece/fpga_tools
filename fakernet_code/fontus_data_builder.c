@@ -44,6 +44,10 @@ Author: Eric Marzec <marzece@gmail.com>
 #include "fnet_client.h"
 #include "daq_logger.h"
 
+#if __linux__
+#define htonll(x) ((((uint64_t)htonl(x)) << 32) + htonl((x) >> 32))
+#define ntohll(x) htonll(x)
+#endif
 
 FILE* fdump = NULL;
 

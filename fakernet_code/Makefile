@@ -20,6 +20,9 @@ tail_daq_log: tail_daq_log.o hiredis/libhiredis.a
 kintex_client_server: kintex_client_server.o hermes_if.o gpio.o lmk_if.o ads_if.o iic.o fnet_client.o dac_if.o axi_qspi.o ti_board_if.o jesd.o jesd_phy.o adc_sample_fanout.o channel_trigger.o data_pipeline.o ceres_if.o reset_gen_if.o server.o ae.o sds.o adlist.o connection.o anet.o networking.o util.o trigger_pipeline.o fontus_if.o daq_logger.o hiredis/libhiredis.a
 	$(CC) -ggdb3 -o $@ $(CFLAGS) $^
 
+ceres_server: ceres_server.o gpio.o lmk_if.o ads_if.o iic.o fnet_client.o dac_if.o axi_qspi.o jesd.o jesd_phy.o adc_sample_fanout.o channel_trigger.o data_pipeline.o ceres_if.o reset_gen_if.o server.o ae.o sds.o adlist.o connection.o anet.o networking.o util.o trigger_pipeline.o daq_logger.o hiredis/libhiredis.a
+	$(CC) -ggdb3 -o $@ $(CFLAGS) $^
+
 kintex_cli: kintex_cli.o
 	$(CC) -ggdb3 -o $@ $(CFLAGS) -Ilinenoise/ linenoise/linenoise.c $^
 
@@ -32,6 +35,9 @@ fontus_data_builder: fontus_data_builder.c crc32.o crc8.o daq_logger.o
 	$(CC) -Wall $(CFLAGS) -O0 -ggdb3 -o $@ $^ fnet_client.o hiredis/libhiredis.a
 
 kintex_client_server.o: kintex_client_server.c
+	$(CC) -ggdb3 -o $@ -c $(CFLAGS) $^
+
+ceres_server.o: ceres_server.c
 	$(CC) -ggdb3 -o $@ -c $(CFLAGS) $^
 
 kintex_cli.o:kintex_cli.c

@@ -44,6 +44,11 @@ Author: Eric Marzec <marzece@gmail.com>
 #include "fnet_client.h"
 #include "daq_logger.h"
 
+#if __linux__
+#define htonll(x) ((((uint64_t)htonl(x)) << 32) + htonl((x) >> 32))
+#define ntohll(x) htonll(x)
+#endif
+
 
 // TODO need to capture some of these global state variables into a struct
 // or soemthing that of nature

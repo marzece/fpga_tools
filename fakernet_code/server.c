@@ -350,10 +350,6 @@ ServerCommand *lookupCommandByCString(char *s) {
  * other operations can be performed by the caller. Otherwise
  * if C_ERR is returned the client was destroyed (i.e. after QUIT). */
 int processCommand(client *c) {
-    /* The QUIT command is handled separately. Normal command procs will
-     * go through checking for replication and QUIT will cause trouble
-     * when FORCE_REPLICATION is enabled and would be implemented in
-     * a regular command proc. */
     if (!strcasecmp(c->argv[0], "quit")) {
         addReplyString(c, "+OK");
         c->flags |= CLIENT_CLOSE_AFTER_REPLY;
@@ -416,6 +412,8 @@ void call(client *c, int flags) {
                 addReplyErrorFormat(c, "Error performing command '%s'", real_cmd->name);
             }
             else {
+                // RESP array is *N\r\n where N is the length of the array, followed
+                // by the elements of the array
                 addReplyLongLongWithPrefix(c, (long long)real_cmd->nresp, '*');
                 for(i=0; i<real_cmd->nresp; i++) {
                     addReplyLongLong(c, (long long)args_uint[i]);

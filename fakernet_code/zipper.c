@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <signal.h>
+#include <arpa/inet.h>
 #include "hiredis/hiredis.h"
 
 // The number of seperate data streams, each of which must
@@ -22,6 +23,11 @@
 // 30k us = 30ms = ~30hz
 #define REDIS_COOLDOWN 30000
 #define PRINT_UPDATE_COOLDOWN 1000000
+
+#if __linux__
+#define htonll(x) ((((uint64_t)htonl(x)) << 32) + htonl((x) >> 32))
+#define ntohll(x) htonll(x)
+#endif
 
 uint32_t last_seen_event[MAX_DEVICE_NUMBER];
 int loop = 1;
