@@ -262,9 +262,12 @@ int read_addr(uint32_t base, uint32_t addr, uint32_t* result) {
     int ret = fnet_ctrl_send_recv_regacc(active_xem->fnet_client, num_items);
 
     // Pretty sure "ret" will be the number of UDP reg-accs dones
-    if(ret == 0) {
+    if(ret <= 0) {
         printf("ERROR %i\n", ret);
-        printf("%s\n", fnet_ctrl_last_error(active_xem->fnet_client));
+        char* last_error = fnet_ctrl_last_error(active_xem->fnet_client);
+        if(last_error) {
+            printf("%s\n", last_error);
+        }
         printf("%s\n", strerror(errno));
         return -1;
     }
@@ -281,7 +284,9 @@ int read_addr(uint32_t base, uint32_t addr, uint32_t* result) {
 // then I read from that super-secret address
 int double_read_addr(uint32_t base, uint32_t addr, uint32_t* result) {
 
-    read_addr(base, addr, result);
+    if(read_addr(base, addr, result)) {
+        return -1;
+    }
     usleep(100);
     return read_addr(SAFE_READ_ADDRESS, 0x0, result);
 }
@@ -306,7 +311,10 @@ int write_addr(uint32_t base, uint32_t addr, uint32_t data) {
       // Pretty sure "ret" will be the number of UDP reg-accs dones
       if(ret == 0) {
           printf("ERROR %i\n", ret);
-          printf("%s\n", fnet_ctrl_last_error(active_xem->fnet_client));
+          char* last_error = fnet_ctrl_last_error(active_xem->fnet_client);
+          if(last_error) {
+              printf("%s\n", last_error);
+          }
           printf("%s\n", strerror(errno));
           return -1;
       }
