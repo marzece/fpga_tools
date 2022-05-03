@@ -156,7 +156,7 @@ void set_active_xem_mask_command(client* c, int argc, sds* argv) {
     }
     if(available_count == requested_count) {
         for(i=0; i<available_count; i++) {
-            *(int*)c->server_data |= available_xems[i];
+            *(int*)c->server_data |= (1<<available_xems[i]);
         }
         addReplyStatus(c, "OK");
     }
@@ -178,58 +178,28 @@ void set_active_xem_mask_command(client* c, int argc, sds* argv) {
     }
 }
 
-void set_active_xem_command(client* c, int argc, sds* argv) {
-    int i;
-    if(argc < 2) {
-        addReplyErrorFormat(c, "Must provide active xem argument");
-        return;
-    }
-    uint32_t device_id = strtoul(argv[1], NULL, 0);
-    if(!c->server_data) {
-        c->server_data = malloc(sizeof(int));
-    }
-
-    // Unset the XEM, if the client tries to set the XEM ID to a invalid ID
-    // then I want the active XEM to be un-set so any further commands don't
-    // get accidentally sent to whatever XEM was last being talked to, cause
-    // that'd probably be unintentional.
-    *(int*)c->server_data = -1;
-
-    for(i=0; i<NUM_XEMS; i++) {
-        if(device_id == XEMS[i].device_id) {
-            if(XEMS[i].fnet_client == NULL) {
-                // The server wasn't able to connect to this XEM when it booted up
-                // Should not allow it to be the active XEM
-                // TODO, could try and reconnect here maybe
-                addReplyErrorFormat(c, "Specified XEM isn't available to the server");
-            }
-            else {
-                *(int*)c->server_data = i;
-                addReplyStatus(c, "OK");
-            }
-            return;
-        }
-    }
-    if(device_id == -1) {
-        addReplyStatus(c, "OK");
-    } else {
-        addReplyErrorFormat(c, "Device ID #%i is not a CERES XEM", device_id);
-    }
-}
-
-void get_active_xem_command(client* c, int argc, sds* argv) {
+void get_active_xem_mask_command(client* c, int argc, sds* argv) {
     UNUSED(argc);
     UNUSED(argv);
-    int device_index;
+    int i;
+    int device_index_mask;
+    uint32_t device_id_mask = 0;
 
-    if(!c->server_data || *(int*)c->server_data < 0) {
+    if(!c->server_data || *(int*)c->server_data <= 0) {
         // RESP NULL response is "$-1\r\n"
         addReplyLongLongWithPrefix(c, -1, '$');
     }
     else {
-        device_index = *(int*)c->server_data;
+        device_index_mask = *(int*)c->server_data;
+        for(i=0;i<NUM_XEMS;i++) {
+            if(((1<<i) & device_index_mask) == 0) {
+                continue;
+            }
+            device_id_mask |= (1<<XEMS[i].device_id);
 
-        addReplyLongLong(c, XEMS[device_index].device_id);
+        }
+
+        addReplyLongLong(c, device_id_mask);
     }
 }
 
@@ -406,8 +376,8 @@ void sleep_command(client* c, int argc, sds* args) {
 static ServerCommand default_commands[] = {
     {"write_addr", write_addr_command, NULL, 3, 1, 0, 0},
     {"read_addr", read_addr_command, NULL, 2, 1, 0, 0},
-    {"set_active_xem", set_active_xem_command, NULL, 2, 0, 0, 0},
-    {"get_active_xem", get_active_xem_command, NULL, 1, 0, 0, 0},
+    {"set_active_xem_mask", set_active_xem_mask_command, NULL, 2, 0, 0, 0},
+    {"get_active_xem_mask", get_active_xem_mask_command, NULL, 1, 0, 0, 0},
     {"get_available_xems", get_available_xems_command , NULL, 1, 0, 0, 0},
     {"sleep",  sleep_command, NULL, 2, 1, 0, 0},
     {"", NULL, NULL, 0, 0, 0, 0} // Must be last
@@ -467,62 +437,82 @@ void ceres_call(client *c) {
 
     // Need to set the active XEM to the current client's specified one.
     // If the active_xem isn't set then the only command that can be executed is to set the active xem
-    if(!c->server_data || *(int*)c->server_data < 0) {
-        if(real_cmd->func == set_active_xem_command) {
-            set_active_xem_command(c, c->argc, c->argv);
+        if(real_cmd->func == set_active_xem_mask_command) {
+            set_active_xem_mask_command(c, c->argc, c->argv);
+            return;
         }
         else if (real_cmd->func == send_command_table) {
             send_command_table(c, c->argc, c->argv);
+            return;
         }
-        else if (real_cmd->func == get_active_xem_command) {
-            get_active_xem_command(c, c->argc, c->argv);
+        else if (real_cmd->func == get_active_xem_mask_command) {
+            get_active_xem_mask_command(c, c->argc, c->argv);
+            return;
         }
         else if (real_cmd->func == get_available_xems_command) {
             get_available_xems_command(c, c->argc, c->argv);
+            return;
         }
-        else {
+
+        if(!c->server_data || *(int*)c->server_data < 0) {
             addReplyErrorFormat(c, "Cannot perform command until XEM ID is set");
+            return;
         }
-        return;
-    }
 
     // If here then the client's active xem is set, so make that the server's active xem
-    int xem_index = *(int*)c->server_data;
-    active_xem = &XEMS[xem_index];
-
-    /* Call the command. */
-    if(real_cmd->func) {
-        c->cmd->func(c, c->argc, c->argv);
+    //int xem_index = *(int*)c->server_data;
+    int xem_mask = *(int*)c->server_data;
+    int ixem;
+    int active_xem_count = 0;
+    // First count how many active XEMs there are
+    for(ixem=0; ixem<NUM_XEMS; ixem++) {
+        if(((1<<ixem) & xem_mask) == 0) {
+            continue;
+        }
+        active_xem_count+=1;
     }
-    else {
-        // Use legacy_func
-        int num_ints_needed = real_cmd->nargs > real_cmd->nresp ? real_cmd->nargs : real_cmd->nresp;
-        uint32_t* args_uint = malloc(sizeof(uint32_t)*num_ints_needed);
-        for(i=1; i<real_cmd->nargs; i++) {
-            args_uint[i-1] = strtoul(c->argv[i], NULL, 0);
+
+    addReplyLongLongWithPrefix(c, active_xem_count, '*');
+    for(ixem=0; ixem<NUM_XEMS; ixem++) {
+        if(((1<<ixem) & xem_mask) == 0) {
+            continue;
         }
-        uint32_t resp = real_cmd->legacy_func(args_uint);
-        if(real_cmd->nresp == 0) {
-            addReplyStatus(c, "OK");
-        }
-        else if(real_cmd->nresp == 1) {
-            addReplyLongLong(c, (long long)resp);
+        active_xem = &XEMS[ixem];
+
+        /* Call the command. */
+        if(real_cmd->func) {
+            c->cmd->func(c, c->argc, c->argv);
         }
         else {
-            if(resp != 0) {
-                // TODO! need to add low level error string!
-                addReplyErrorFormat(c, "Error performing command '%s'", real_cmd->name);
+            // Use legacy_func
+            int num_ints_needed = real_cmd->nargs > real_cmd->nresp ? real_cmd->nargs : real_cmd->nresp;
+            uint32_t* args_uint = malloc(sizeof(uint32_t)*num_ints_needed);
+            for(i=1; i<real_cmd->nargs; i++) {
+                args_uint[i-1] = strtoul(c->argv[i], NULL, 0);
+            }
+            uint32_t resp = real_cmd->legacy_func(args_uint);
+            if(real_cmd->nresp == 0) {
+                addReplyStatus(c, "OK");
+            }
+            else if(real_cmd->nresp == 1) {
+                addReplyLongLong(c, (long long)resp);
             }
             else {
-                // RESP array is *N\r\n where N is the length of the array, followed
-                // by the elements of the array
-                addReplyLongLongWithPrefix(c, (long long)real_cmd->nresp, '*');
-                for(i=0; i<real_cmd->nresp; i++) {
-                    addReplyLongLong(c, (long long)args_uint[i]);
+                if(resp != 0) {
+                    // TODO! need to add low level error string!
+                    addReplyErrorFormat(c, "Error performing command '%s'", real_cmd->name);
+                }
+                else {
+                    // RESP array is *N\r\n where N is the length of the array, followed
+                    // by the elements of the array
+                    addReplyLongLongWithPrefix(c, (long long)real_cmd->nresp, '*');
+                    for(i=0; i<real_cmd->nresp; i++) {
+                        addReplyLongLong(c, (long long)args_uint[i]);
+                    }
                 }
             }
+            free(args_uint);
         }
-        free(args_uint);
     }
 
     // Unset the server's active xem
