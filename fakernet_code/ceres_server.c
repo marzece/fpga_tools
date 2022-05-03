@@ -92,6 +92,92 @@ void sig_handler(int dummy) {
 }
 
 
+void set_active_xem_mask_command(client* c, int argc, sds* argv) {
+    int i;
+
+    int unavailable_xems[NUM_XEMS];
+    int unavailable_count = 0;
+
+    int available_xems[NUM_XEMS];
+    int available_count = 0;
+    uint32_t device_id_mask;
+
+    if(argc < 2) {
+        addReplyErrorFormat(c, "Must provide active xem argument");
+        return;
+    }
+
+    device_id_mask = strtoul(argv[1], NULL, 0);
+    if(!c->server_data) {
+        c->server_data = malloc(sizeof(int));
+    }
+
+    // Unset the XEM, if the client tries to set the XEM ID to a invalid ID
+    // then I want the active XEM to be un-set so any further commands don't
+    // get accidentally sent to whatever XEM was last being talked to, cause
+    // that'd probably be unintentional.
+    *(int*)c->server_data = 0;
+
+    // If the requested device_id_mask is zero, we're done
+    if(device_id_mask == 0) {
+        addReplyStatus(c, "OK");
+        return;
+    }
+
+    // First count the number of set bits in the mask, if it's too high or too
+    // low, then that's a problem
+    int requested_count = 0;
+    for(i=0; i <32; i++) {
+        if(device_id_mask & (1<<i)) {
+            requested_count+=1;
+        }
+    }
+
+    if(requested_count > NUM_XEMS) {
+        addReplyErrorFormat(c, "Too XEMs requested in active mask");
+        return;
+    }
+
+    for(i=0; i<NUM_XEMS; i++) {
+        if((device_id_mask & (1<<XEMS[i].device_id)) != 0) {
+
+            if(XEMS[i].fnet_client == NULL) {
+                // The server wasn't able to connect to this XEM when it booted up
+                // Should not allow it to be the active XEM
+                // TODO, could try and reconnect here maybe
+                unavailable_xems[unavailable_count++] = XEMS[i].device_id;
+            }
+            else {
+                available_xems[available_count++] = i;
+                //*(int*)c->server_data |= i;
+            }
+
+        }
+    }
+    if(available_count == requested_count) {
+        for(i=0; i<available_count; i++) {
+            *(int*)c->server_data |= available_xems[i];
+        }
+        addReplyStatus(c, "OK");
+    }
+    else if(unavailable_count > 0) {
+        char buffer[128];
+        int offset = 0;
+        for(i=0; i<unavailable_count; i++) {
+            snprintf(buffer +offset, 128-offset, "%i ", unavailable_xems[i]);
+            offset = strlen(buffer);
+        }
+
+        addReplyErrorFormat(c, "XEM(s) %s aren't connected", buffer);
+    }
+    else {
+        // The only way unavailable_count can be zero and available_count is
+        // less than requested_count should be if the requested XEM device IDs
+        // aren't in the XEMs array
+        addReplyErrorFormat(c, "One or more requested XEMs isn't valid");
+    }
+}
+
 void set_active_xem_command(client* c, int argc, sds* argv) {
     int i;
     if(argc < 2) {
