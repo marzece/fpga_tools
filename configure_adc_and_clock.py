@@ -3,7 +3,8 @@ import socket
 import argparse
 from time import sleep
 from collections import defaultdict
-from ceres_fpga_spi import adc_spi, lmk_spi, decode_data, connect_to_fpga, SPI_Device, adc_hard_reset
+import hiredis
+from ceres_fpga_spi import adc_spi, lmk_spi, decode_data, connect_to_fpga, SPI_Device, adc_hard_reset, grab_response
 
 def parse_config_file(f):
     evm_devices = ["LMK", "ADS"]
@@ -128,10 +129,21 @@ def main():
     parser.add_argument("--port", type=int, default=4002, help="Port to connect to server on")
     parser.add_argument("--ti", action="store_true", help="Use commands for TI board")
     parser.add_argument("--do_reset", action="store_true", help="Do hard reset (applies to both ADCs)")
+    parser.add_argument("--xem-mask", type=str, default=None, help="Mask to indicate which XEMs should recieve programming, default is none.")
 
     args = parser.parse_args()
 
     fn = args.filename
+    xem_mask = args.xem_mask
+    xems = [-1]
+    if(xem_mask is not None):
+        base = 10
+        if(xem_mask[:2].lower() == "0x"):
+            base = 16
+        xem_mask = int(xem_mask, base)
+        xems = [i for i in range(32) if (xem_mask & (1<<i))]
+
+    print("XEMs = %s" % str(xems))
 
     with open(fn, 'r') as f:
         instructions = parse_config_file(f)
@@ -144,12 +156,23 @@ def main():
                SPI_Device.ADC_D if args.adc_d else None,
                SPI_Device.CERES_LMK if args.ceres_lmk else None]
 
-    print(devices)
-    if(args.do_reset):
-        print("Doing reset")
-        adc_hard_reset(fpga_conn, devices)
 
-    do_programming(fpga_conn, devices, instructions)
+    print(devices)
+    for xem in xems:
+        if xem != -1:
+            mask = (1<<xem)
+            command = "set_active_xem_mask %i\r\n" % mask
+            fpga_conn.sendall(command.encode("ascii"))
+            resp = grab_response(fpga_conn)
+            if(type(resp) == hiredis.ReplyError):
+                print("XEM %i is not available %s", xem, str(resp))
+                continue
+
+        if(args.do_reset):
+            print("Doing reset")
+            adc_hard_reset(fpga_conn, devices)
+
+        do_programming(fpga_conn, devices, instructions)
 
     #fpga_conn[0].write("jesd_sys_reset\n".encode("ascii"))
     #_ = fpga_conn[1].readline()
