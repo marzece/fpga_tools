@@ -232,14 +232,6 @@ void grab_data_from_pubsub_message(redisReply* message, char** data, int* length
     *length = rr_dat->len;
 }
 
-void free_event_data(FullEvent* event) {
-    int i;
-    for(i=0; i<MAX_DEVICE_NUMBER; i++) {
-        freeReplyObject(event->redis_obj[i]);
-    }
-    memset(event, 0, sizeof(FullEvent));
-}
-
 void save_event(FILE* fout, int event_id) {
     // TODO save_event free's the memory for the event, it probably shouldn't
     // do that b/c it's not obvious. Should have a specific function handle that.
@@ -278,7 +270,6 @@ void save_event(FILE* fout, int event_id) {
         }
         fwrite(data, data_len, 1, fout);
         fflush(fout);
-        freeReplyObject(event->data[FONTUS_DEVICE_ID]);
     }
 
     // Now write all the remaining (presumably CERES) data
@@ -304,7 +295,6 @@ void save_event(FILE* fout, int event_id) {
         // Does it have to be done before data is freed??  Idk I tried googling
         // it but I couldn't find anything
         fflush(fout);
-        freeReplyObject(event->data[i]);
     }
     return;
 
@@ -313,6 +303,26 @@ ERROR:;
       printf("I'm gonna die now\n");
       loop = 0;
       return;
+}
+
+void free_event(int event_id) {
+    int i;
+    EventRecord* event = &(event_registry[event_id % HASH_TABLE_SIZE]);
+
+    // Write FONTUS Trigger data...
+    if((COMPLETE_EVENT_MASK & (1ULL<<FONTUS_DEVICE_ID)) != 0) {
+        freeReplyObject(event->data[FONTUS_DEVICE_ID]);
+    }
+
+    // Now write all the remaining (presumably CERES) data
+    for(i=0; i<MAX_DEVICE_NUMBER; i++) {
+        // if this device number is in the COMPLETE_EVENT_MASK then it should be free'd
+        if(i==FONTUS_DEVICE_ID || (COMPLETE_EVENT_MASK & (1ULL<<i)) == 0) {
+            continue;
+        }
+        freeReplyObject(event->data[i]);
+    }
+    return;
 }
 
 void send_event_to_redis(redisContext* redis, int event_id) {
@@ -449,7 +459,7 @@ int main() {
             save_event(fout, event_id);
             //grab_full_event(redis, event_id, &event);
             //save_event(fout, &event);
-            //free_event_data(&event);
+            free_event(event_id);
         }
         delta_t = (current_time.tv_sec - event_rate_time.tv_sec)*1e6 + (current_time.tv_usec - event_rate_time.tv_usec);
         if(delta_t > PRINT_UPDATE_COOLDOWN) {
