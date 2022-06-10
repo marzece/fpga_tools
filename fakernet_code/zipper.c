@@ -24,6 +24,7 @@
 #define REDIS_COOLDOWN 30000
 #define PRINT_UPDATE_COOLDOWN 1000000
 
+// For some reason linux doesn't always have htonll...so this can be used instead
 #if __linux__
 #define htonll(x) ((((uint64_t)htonl(x)) << 32) + htonl((x) >> 32))
 #define ntohll(x) htonll(x)
@@ -83,10 +84,22 @@ typedef struct TrigHeader {
     uint8_t crc;
 } TrigHeader;
 
-redisContext* create_redis_conn(const char* redis_hostname) {
+redisContext* create_redis_conn(const char* redis_hostname, int port) {
     printf("Opening Redis Connection\n");
     redisContext* c;
-    c = redisConnect(redis_hostname, 6379);
+    c = redisConnect(redis_hostname, port);
+    if(c == NULL || c->err) {
+        printf("Redis connection error %s\n", c->errstr);
+        redisFree(c);
+        return NULL;
+    }
+    return c;
+}
+
+redisContext* create_redis_unix_conn(const char* path) {
+    printf("Opening Redis Connection\n");
+    redisContext* c;
+    c = redisConnectUnix(path);
     if(c == NULL || c->err) {
         printf("Redis connection error %s\n", c->errstr);
         redisFree(c);
@@ -420,7 +433,7 @@ int main() {
     signal(SIGKILL, signal_handler);
     signal(SIGINT, signal_handler);
 
-    redis = create_redis_conn(redis_hostname);
+    redis = create_redis_conn(redis_hostname, 6379);
     reply = redisCommand(redis, "SUBSCRIBE event_stream");
 
     if(!reply) {
@@ -429,7 +442,7 @@ int main() {
     }
     freeReplyObject(reply);
 
-    redisContext* publish_redis = create_redis_conn(redis_hostname);
+    redisContext* publish_redis = create_redis_conn(redis_hostname, 6379);
     struct timeval redis_update_time, event_rate_time, current_time;
     gettimeofday(&redis_update_time, NULL); // Initialize previous time to now
     event_rate_time = redis_update_time;
