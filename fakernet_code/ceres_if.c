@@ -402,6 +402,16 @@ static uint32_t read_lmk_dac_value_command(uint32_t* args) {
     return read_lmk_dac(lmk);
 }
 
+static uint32_t write_lmk_dac_value_command(uint32_t* args) {
+    uint32_t which_lmk = args[0];
+    uint32_t value = args[1];
+    AXI_QSPI* lmk = lmk_switch(which_lmk);
+    if(!lmk) {
+        return -1;
+    }
+    return write_lmk_dac(lmk, value);
+}
+
 static uint32_t jesd_read_command(uint32_t* args) {
     uint32_t which_jesd = args[0];
     uint32_t offset = args[1];
@@ -923,6 +933,7 @@ ServerCommand ceres_commands[] = {
 {"read_lmk_pll_status",NULL,                       read_lmk_pll_status_command,                            3,  1, 0, 0},
 {"clear_lmk_pll_status",NULL,                      clear_lmk_pll_status_command,                           3,  1, 0, 0},
 {"read_lmk_dac_value",NULL,                        read_lmk_dac_value_command,                             2,  1, 0, 0},
+{"write_lmk_dac_value",NULL,                       write_lmk_dac_value_command,                            3,  1, 0, 0},
 {"jesd_read",NULL,                                 jesd_read_command,                                      3,  1, 0, 0},
 {"jesd_write",NULL,                                jesd_write_command,                                     4,  1, 0, 0},
 {"jesd_error_count",NULL,                          jesd_error_count_command,                               2,  4, 0, 0},
