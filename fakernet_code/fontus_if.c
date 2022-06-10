@@ -21,12 +21,15 @@
 #define RESET_GEN_AXI_BIT 1
 #define RESET_GEN_AURORA_BIT 2
 
+#define COAX_GPIO_OFFSET 0
+
 const uint32_t FONTUS_SAFE_READ_ADDRESS = TRIGGER_PIPELINE_ADDR;
 
 struct FONTUS_IF {
     AXI_QSPI* lmk;
     AXI_QSPI* dac;
     AXI_RESET_GEN* reset_gen;
+    AXI_GPIO* gpio;
     AXI_TRIGGER_PIPELINE* pipeline;
 };
 
@@ -67,6 +70,7 @@ static struct FONTUS_IF* get_fontus_handle() {
         fontus = malloc(sizeof(struct FONTUS_IF));
         fontus->lmk = new_lmk_spi("fontus_lmk", FONTUS_LMK_AXI_ADDR);
         fontus->pipeline = new_trig_pipeline_if("trigger_pipeline", TRIGGER_PIPELINE_ADDR);
+        fontus->gpio = new_gpio("gpio", GPIO0_AXI_ADDR);
         fontus->dac = new_dac_spi("DAC SPI", DAC_AXI_ADDR);
         fontus->reset_gen = new_reset_gen("Resetter", RESET_GEN_AXI_ADDR);
     }
@@ -234,6 +238,16 @@ static uint32_t do_sync_command(uint32_t* args) {
     return do_sync(get_fontus_handle()->pipeline, length);
 }
 
+static uint32_t write_coax_dir_select_command(uint32_t* args) {
+    uint32_t value = args[0];
+    return write_gpio_value(get_fontus_handle()->gpio, COAX_GPIO_OFFSET, value);
+}
+
+static uint32_t read_coax_dir_select_command(uint32_t* args) {
+    UNUSED(args);
+    return read_gpio_value(get_fontus_handle()->gpio, COAX_GPIO_OFFSET);
+}
+
 ServerCommand fontus_commands[] = {
 {"write_lmk_if",NULL,                              write_lmk_if_command,                                   3,  1, 0, 0},
 {"read_lmk_if",NULL,                               read_lmk_if_command,                                    2,  1, 0, 0},
@@ -255,6 +269,8 @@ ServerCommand fontus_commands[] = {
 {"axi_sys_reset",NULL,                             axi_sys_reset_command,                                  1,  1, 0, 0},
 {"read_sync_length",NULL,                          read_sync_length_command,                               1,  1, 0, 0},
 {"do_sync",NULL,                                   do_sync_command,                                        2,  0, 0, 0},
+{"write_coax_dir_select",NULL,                     write_coax_dir_select_command,                          2,  0, 0, 0},
+{"read_coax_dir_select",NULL,                      read_coax_dir_select_command,                           1,  1, 0, 0},
 //{"read_delay_value",NULL,                          read_delay_value_command,                               2,  0, 0, 0},
 {"",NULL,                                          NULL,                                                   0,  0, 0, 0}    //  Must  be  last
 };
