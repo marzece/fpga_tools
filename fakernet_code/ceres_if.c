@@ -37,10 +37,12 @@
 #define  DATA_PIPELINE_0_ADDR       0x0
 #define  CLKGEN_IIC_ADDR            0xD0
 
-#define RESET_GEN_PIPELINE_BIT 1
 #define RESET_GEN_JESD_BIT 0
+#define RESET_GEN_PIPELINE_BIT 1
 #define RESET_GEN_AXI_BIT 2
 #define RESET_GEN_AURORA_BIT 3
+#define RESET_GEN_FNET_BIT 4
+#define RESET_GEN_FIFO_BIT 5
 
 const uint32_t CERES_SAFE_READ_ADDRESS = GPIO_AXI_ADDR;
 
@@ -449,12 +451,18 @@ static void generic_sys_reset(uint32_t bit_mask) {
 
 static uint32_t fnet_sys_reset_command(uint32_t* args) {
     UNUSED(args);
-    generic_sys_reset(1<<4);
+    generic_sys_reset(1<<RESET_GEN_FNET_BIT);
     return 0;
 }
 static uint32_t pipeline_sys_reset_command(uint32_t* args) {
     UNUSED(args);
     generic_sys_reset(1<<RESET_GEN_PIPELINE_BIT);
+    return 0;
+}
+
+static uint32_t fifo_reset_command(uint32_t* args) {
+    UNUSED(args);
+    generic_sys_reset(1<<RESET_GEN_FIFO_BIT);
     return 0;
 }
 
@@ -920,8 +928,9 @@ ServerCommand ceres_commands[] = {
 {"jesd_error_count",NULL,                          jesd_error_count_command,                               2,  4, 0, 0},
 {"jesd_error_rate",NULL,                           jesd_error_rate_command,                                2,  4, 0, 0},
 {"jesd_reset",NULL,                                jesd_reset_command,                                     2,  1, 0, 0},
-{"fnet_sys_reset",NULL,                        fnet_sys_reset_command,                             1,  1, 0, 0},
+{"fnet_sys_reset",NULL,                            fnet_sys_reset_command,                                 1,  1, 0, 0},
 {"pipeline_sys_reset",NULL,                        pipeline_sys_reset_command,                             1,  1, 0, 0},
+{"fifo_sys_reset",NULL,                            fifo_reset_command,                                     1,  1, 0, 0},
 {"aurora_sys_reset",NULL,                          aurora_sys_reset_command,                               1,  1, 0, 0},
 {"jesd_sys_reset",NULL,                            jesd_sys_reset_command,                                 1,  1, 0, 0},
 {"axi_sys_reset",NULL,                             axi_sys_reset_command,                                  1,  1, 0, 0},
