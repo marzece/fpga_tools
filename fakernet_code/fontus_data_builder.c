@@ -443,9 +443,21 @@ EventInProgress start_event() {
 }
 
 uint32_t calc_trig_header_crc(FontusTrigHeader* header) {
-    unsigned char crc = 0;
-    //TODO
-    return crc ^ 0x55; // The 0x55 here makes it the ITU CRC8 implemenation
+    // Need to layout the Header in a contiguous array so I can run the CRC
+    // calculation on it. The struct is probably contigous, but better safe
+    // than sorry.
+    // The buffer doesn't need space for the magic_number, or the CRC though.
+    char buffer[HEADER_SIZE-8];
+    *(uint32_t*)(buffer+0) = ntohl(header->trig_number);
+    *(uint64_t*)(buffer+4) = ntohll(header->clock);
+    *(uint16_t*)(buffer+12) = ntohs(header->length);
+    *(uint8_t*)(buffer+14) = header->device_number;
+    *(uint8_t*)(buffer+15) = header->trigger_flags;
+    *(uint32_t*)(buffer+16) = ntohl(header->self_trigger_word);
+    *(uint64_t*)(buffer+20) = ntohll(header->beam_trigger_time);
+    *(uint64_t*)(buffer+28) = ntohll(header->led_trigger_time);
+    *(uint64_t*)(buffer+36) = ntohll(header->ct_time);
+    return crc32(0, buffer, 44);
 }
 
 void display_event(FontusTrigHeader* ev) {
@@ -671,7 +683,7 @@ int find_event_start(FPGA_IF* fpga) {
 
     for(i=0; i < contiguous_space-3; i++) {
         unsigned char* current = fpga->ring_buffer.buffer + fpga->ring_buffer.read_pointer;
-        if(*current == 0xFF && *(current+1) == 0xFF && *(current+2) == 0xFF && *(current+3) == 0xFF) {
+        if(*current == 0xF0 && *(current+1) == 0x0F && *(current+2) == 0xF0 && *(current+3) == 0x0F) {
             found = 1;
             break;
         }
@@ -717,11 +729,10 @@ int read_proc(FPGA_IF* fpga, FontusTrigHeader* ret) {
         interpret_header_word(header, val, word);
         event.header_bytes_read += sizeof(uint32_t);
     } // Done reading header
-    if(event.header.crc != calc_trig_header_crc(&event.header) || event.header.magic_number != MAGIC_VALUE) {
-
-        //TODO Implement the CRC then uncomment the below lines
-        //handle_bad_header(&event.header);
-        //return 0;
+    uint32_t calcd_crc = calc_trig_header_crc(&event.header);
+    if(event.header.crc !=  calcd_crc || event.header.magic_number != MAGIC_VALUE) {
+        handle_bad_header(&event.header);
+        return 0;
     }
     *ret = event.header;
 
@@ -1003,10 +1014,18 @@ int main(int argc, char **argv) {
     builder_log(LOG_INFO, "Entering main loop");
     event_ready = 0;
 
+    int did_warn_about_reeling = 0;
     FontusTrigHeader event;
     while(loop) {
 
         pull_from_fpga(&fpga_if);
+        if(reeling) {
+            if(did_warn_about_reeling) {
+                builder_log(LOG_ERROR, "Reeeling");
+            }
+            reeling = !find_event_start(&fpga_if);
+            did_warn_about_reeling = reeling;
+        }
         event_ready = read_proc(&fpga_if, &event);
 
         if(event_ready) {
