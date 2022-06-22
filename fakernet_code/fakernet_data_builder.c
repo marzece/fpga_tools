@@ -736,7 +736,9 @@ int read_proc(FPGA_IF* fpga, Event* ret) {
     // Check the header's CRC
     // TODO this if_statement will get called whenver a read is done...should only
     // happen just after the header is completely read
-    if(event.event.header.crc != calc_trig_header_crc(&event.event.header)) {
+    if(event.event.header.crc != calc_trig_header_crc(&event.event.header) ||
+            event.event.header.magic_number != 0xFFFFFFFF ||
+            event.event.header.length < 50) {
         builder_log(LOG_ERROR, "BAD HEADER HAPPENED");
         handle_bad_header(&(event.event.header));
         event = start_event(); // This event is being trashed, just start a new one.
@@ -760,7 +762,42 @@ int read_proc(FPGA_IF* fpga, Event* ret) {
 
     int bytes_in_buffer = ring_buffer_contiguous_readable(&fpga->ring_buffer);
     if(bytes_in_buffer == 0 && bytes_remaining != 0) {
+        // Can't read anymore and the event isn't finished
         return 0;
+    }
+
+    // Check header event length for consistency
+    int channel;
+    uint32_t offset = fpga->ring_buffer.read_pointer;
+    size_t continguous_readable = ring_buffer_contiguous_readable(&(fpga->ring_buffer));
+    for(channel=0; channel < NUM_CHANNELS; channel++) {
+        // TODO, the below line probably won't work if the event straddles the ring_buffer wrap
+	    size_t channel_start_offset = event_length*channel*sizeof(uint32_t) - event.data_bytes_read;
+        // Make sure we won't go off the end of the ring-buffer to check this channel
+	    if(channel_start_offset >= bytes_in_buffer) {
+		    break;
+	    }
+        uint32_t channel_header = *((uint32_t*)(fpga->ring_buffer.buffer + offset + channel_start_offset));
+        // Channel header is 0xXXFFXXFF where XX is the channel number, e.g. 0, 1, 2, 3...
+        uint32_t expectation = (0xFF00FF | (channel<<24) | channel<<8);
+	/*
+        if(expectation != channel_header) {
+            // This is a mis-match
+            builder_log(LOG_ERROR, "Expected = 0x%x, Got = 0x%x\n", expectation, channel_header);
+            shit_counter += 1;
+            reeling = 1;
+            //event = start_event();
+
+//	    printf("STOPPING FONTUS\n");
+//	    redisContext* fontus_conn =  create_redis_conn("localhost", 4002);
+//	    redisReply* reply = redisCommand(fontus_conn, "write_addr 0x8 0");
+//	    freeReplyObject(reply);
+//	    redisFree(fontus_conn);
+            //ring_buffer_update_event_read_pntr(&fpga->ring_buffer);
+            return 0;
+        }
+	*/
+        // else { everything's fine }
     }
 
     int i;
