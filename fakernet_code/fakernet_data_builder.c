@@ -798,12 +798,17 @@ int read_proc(FPGA_IF* fpga, TrigHeader* ret) {
                 }
                 else {
                     // not compressed samples
-                    sample = event.prev_sample + ((word & 0x3FFF0000) >> 16);
+                    if(event.samples_read == 0) {
+                        sample = (word >> 16);
+                    }
+                    else {
+                        sample = event.prev_sample + (((int16_t)(word >> 14)) >> 2);
+                    }
                     event.prev_sample = sample;
                     *(uint16_t*)(fpga->event_buffer.data+fpga->event_buffer.num_bytes) = htons(sample | valid_bit);
                     fpga->event_buffer.num_bytes += 2;
 
-                    sample = event.prev_sample + (word & 0x3FFF);
+                    sample = event.prev_sample + ((int16_t)((word & 0x3FFF) << 2)) >> 2;
                     event.prev_sample = sample;
                     *(uint16_t*)(fpga->event_buffer.data + fpga->event_buffer.num_bytes) = htons(sample | valid_bit);
                     fpga->event_buffer.num_bytes += 2;
