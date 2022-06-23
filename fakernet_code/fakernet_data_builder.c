@@ -69,6 +69,7 @@ int NUM_CHANNELS = 16;
 #define MAGIC_VALUE 0xFFFFFFFF
 #define HEADER_SIZE 20 // 128-bits aka 16 bytes
 #define BUFFER_SIZE (10*1024*1024) // 10 MB
+#define EVENT_BUFFER_SIZE BUFFER_SIZE
 
 uint32_t crc32(uint32_t crc, uint32_t * buf, unsigned int len);
 void crc8(unsigned char *crc, unsigned char m);
@@ -97,6 +98,12 @@ typedef struct RingBuffer {
     size_t write_pointer;
     int is_empty;
 } RingBuffer;
+
+//  Just a big long contiguous chunk of data for holding waveforms
+typedef struct EventBuffer {
+    unsigned char* data;
+    long num_bytes;
+} EventBuffer;
 
 typedef struct ProcessingStats {
     unsigned int event_count;
@@ -289,7 +296,8 @@ void ring_buffer_update_read_pntr(RingBuffer* buffer, size_t nbytes) {
 typedef struct FPGA_IF {
     int fd; // File descriptor for tcp connection
     struct fnet_ctrl_client* udp_client; // UDP connection
-    RingBuffer ring_buffer; // Data buffer
+    RingBuffer ring_buffer; // compressed data buffer
+    EventBuffer event_buffer; // memory location for uncompressed event data
 } FPGA_IF;
 
 typedef struct TrigHeader{
@@ -308,22 +316,17 @@ typedef struct ChannelHeader {
     uint8_t channel_id2;
 } ChannelHeader;
 
-// What I plan for this is to assume sample are laid out contiguously
-// except for a few jumps between different buffers. So kinda "piece-wise
-// contiguous". The "locations" will point to the start of each contiguous
-// chunk, and the lengths indicate how many bytes are in each chunk
-#define MAX_SPLITS 16
-typedef struct Event {
-    TrigHeader header;
-    uint32_t* locations[MAX_SPLITS];
-    uint32_t lengths[MAX_SPLITS];
-} Event;
 
 // This handles keeping track of reading an event while in the middle of it
 typedef struct EventInProgress {
-    Event event;
+    TrigHeader event_header;
     int header_bytes_read;
     int data_bytes_read;
+    int current_channel;
+    int wf_header_read;
+    int samples_read;
+    int wf_crc_read;
+    uint16_t prev_sample;
 } EventInProgress;
 
 // Open socket to FPGA returns 0 if successful
@@ -434,7 +437,7 @@ size_t pull_from_fpga(FPGA_IF* fpga_if) {
     return bytes_recvd;
 }
 
-void initialize_buffer(RingBuffer* ring_buffer) {
+void initialize_ring_buffer(RingBuffer* ring_buffer) {
     ring_buffer->read_pointer = 0;
     ring_buffer->event_read_pointer = 0;
     ring_buffer->write_pointer = 0;
@@ -446,19 +449,32 @@ void initialize_buffer(RingBuffer* ring_buffer) {
     }
 }
 
+void initialize_event_buffer(EventBuffer* eb) {
+    eb->num_bytes = 0;
+    eb->data = malloc(EVENT_BUFFER_SIZE);
+    if(!eb->data) {
+        builder_log(LOG_ERROR, "Could not allocate enough space for event buffer!");
+        exit(1);
+    }
+}
+
 EventInProgress start_event() {
     EventInProgress ev;
 
     ev.header_bytes_read = 0;
     ev.data_bytes_read = 0;
+    ev. current_channel = 0;
+    ev.wf_header_read = 0;
+    ev.samples_read = 0;
+    ev.wf_crc_read = 0;
+    ev.prev_sample = 0;
+
     // Fill with magic words for debugging
-    ev.event.header.magic_number = 0xFEEDBEEF;
-    ev.event.header.trig_number = 0XDEADBEEF;
-    ev.event.header.length = 0xAABB;
-    ev.event.header.clock = 0xBEEFBABE;
-    ev.event.header.device_number =  0x71;
-    memset(ev.event.locations, 0, sizeof(uint32_t*)*MAX_SPLITS);
-    memset(ev.event.lengths, 0, sizeof(uint32_t)*MAX_SPLITS);
+    ev.event_header.magic_number = 0xFEEDBEEF;
+    ev.event_header.trig_number = 0XDEADBEEF;
+    ev.event_header.length = 0xAABB;
+    ev.event_header.clock = 0xBEEFBABE;
+    ev.event_header.device_number =  0x71;
     return ev;
 }
 
@@ -495,14 +511,14 @@ uint8_t calc_trig_header_crc(TrigHeader* header) {
     return crc ^ 0x55; // The 0x55 here makes it the ITU CRC8 implemenation
 }
 
-void display_event(Event* ev) {
+void display_event(const TrigHeader* header) {
     builder_log(LOG_INFO, "Event trig number =  %u\n"
                           "Event length = %u\n"
                           "Event time = %llu\n"
                           "device id = %u\n"
-                          "CRC  = 0x%x", ev->header.trig_number, ev->header.length,
-                                           ev->header.clock, ev->header.device_number,
-                                           ev->header.crc);
+                          "CRC  = 0x%x", header->trig_number, header->length,
+                                           header->clock, header->device_number,
+                                           header->crc);
 }
 
 void clean_up() {
@@ -533,46 +549,14 @@ void sig_handler(int signum) {
     }
 }
 
-void write_to_disk(Event* ev) {
+void write_to_disk(EventBuffer eb) {
     size_t nwritten;
-    int i;
-    unsigned int byte_count = 0;
-    // Write header
-    {
-        unsigned char header_mem[20];
-        *((uint32_t*)header_mem) = htonl(ev->header.magic_number);
-        byte_count += 4;
-        *((uint32_t*)(header_mem + byte_count)) = htonl(ev->header.trig_number);
-        byte_count += 4;
-        *((uint64_t*)(header_mem + byte_count)) = htonll(ev->header.clock);
-        byte_count += 8;
-        *((uint16_t*)(header_mem + byte_count)) = htons(ev->header.length);
-        byte_count += 2;
-        *((uint8_t*)(header_mem + byte_count)) = ev->header.device_number;
-        byte_count += 1;
-        *((uint8_t*)(header_mem + byte_count)) = ev->header.crc;
-        byte_count += 1;
-        nwritten = fwrite(header_mem, 1, byte_count, fdisk);
-    }
-
-    if(nwritten != byte_count) {
-        // TODO check errno (does fwrite set errno?)
-        builder_log(LOG_ERROR, "Error writing event header!");
-        // TODO do I want to close the file here?
+    nwritten = fwrite(eb.data, 1, eb.num_bytes, fdisk);
+    if(nwritten != eb.num_bytes) {
+        // TODO check errno
+        builder_log(LOG_ERROR, "Error writing event");
+        // TODO close the file??
         return;
-    }
-
-    for(i=0;i < MAX_SPLITS; i++) {
-        if(!ev->locations[i]) {
-            break;
-        }
-        nwritten = fwrite(ev->locations[i], 1, ev->lengths[i], fdisk);
-        if(nwritten != ev->lengths[i]) {
-            // TODO check errno
-            builder_log(LOG_ERROR, "Error writing event");
-            // TODO close the file??
-            return;
-        }
     }
     fflush(fdisk);
 }
@@ -708,7 +692,7 @@ int find_event_start(FPGA_IF* fpga) {
 }
 
 // Read events from read buffer. Returns 0 if a full event is read.
-int read_proc(FPGA_IF* fpga, Event* ret) {
+int read_proc(FPGA_IF* fpga, TrigHeader* ret) {
     static EventInProgress event;
     static int first = 1;
     uint32_t val;
@@ -718,11 +702,10 @@ int read_proc(FPGA_IF* fpga, Event* ret) {
         first = 0;
     }
 
-
     // TODO move this header reading shit to its own function
     while(event.header_bytes_read < HEADER_SIZE) {
         int word = event.header_bytes_read/sizeof(uint32_t);
-        TrigHeader* header = &(event.event.header);
+        TrigHeader* header = &(event.event_header);
 
         if(pop32(&(fpga->ring_buffer), &val)) {
             // Should only happen if we don't have enough data available to
@@ -730,116 +713,120 @@ int read_proc(FPGA_IF* fpga, Event* ret) {
             return 0;
         }
         interpret_header_word(header, val, word);
-        event.header_bytes_read += sizeof(uint32_t);
+        event.header_bytes_read += 4;
+        // Copy this word into the event buffer
+        *(uint32_t*)(fpga->event_buffer.data + fpga->event_buffer.num_bytes) = htonl(val);
+        fpga->event_buffer.num_bytes += 4;
     } // Done reading header
 
     // Check the header's CRC
-    // TODO this if_statement will get called whenver a read is done...should only
+    // TODO this if statement will get called whenver a read is done...should only
     // happen just after the header is completely read
-    if(event.event.header.crc != calc_trig_header_crc(&event.event.header) ||
-            event.event.header.magic_number != 0xFFFFFFFF ||
-            event.event.header.length < 50) {
+    if(event.event_header.crc != calc_trig_header_crc(&event.event_header) ||
+            event.event_header.magic_number != 0xFFFFFFFF ||
+            event.event_header.length < 50) {
         builder_log(LOG_ERROR, "BAD HEADER HAPPENED");
-        handle_bad_header(&(event.event.header));
+        handle_bad_header(&(event.event_header));
         event = start_event(); // This event is being trashed, just start a new one.
         ring_buffer_update_event_read_pntr(&fpga->ring_buffer);
         // (TODO! maybe try and recover the event)
         return 0;
     }
 
+    if((event.event_header.length+2)*4*NUM_CHANNELS > EVENT_BUFFER_SIZE) {
+        // Make sure we have enough space available
+        builder_log(LOG_ERROR, "Event too large to fit in memory, something's probably wrong\n");
+        return 0;
 
-    // The plus two is b/c there's one extra 32-bit word for the channel header,
-    // than another extra from the channel CRC32.
-    int event_length = event.event.header.length + 2; // Units = Num samples
-    int event_total_data_bytes = event_length*NUM_CHANNELS*sizeof(uint32_t);
-
-    // There's one 32-bit 'header' for each channel, b/c I'm lazy I'm just
-    // gonna treat them like extra samples and try to make sure they get ignored later
-    //samples_to_read += NUM_CHANNELS;
-
-    int bytes_remaining = event_total_data_bytes - event.data_bytes_read;
-    unsigned char * read_location = fpga->ring_buffer.buffer + fpga->ring_buffer.read_pointer;
+    }
 
     int bytes_in_buffer = ring_buffer_contiguous_readable(&fpga->ring_buffer);
-    if(bytes_in_buffer == 0 && bytes_remaining != 0) {
-        // Can't read anymore and the event isn't finished
-        return 0;
-    }
-
-    // Check header event length for consistency
-    int channel;
-    uint32_t offset = fpga->ring_buffer.read_pointer;
-    size_t continguous_readable = ring_buffer_contiguous_readable(&(fpga->ring_buffer));
-    for(channel=0; channel < NUM_CHANNELS; channel++) {
-        // TODO, the below line probably won't work if the event straddles the ring_buffer wrap
-	    size_t channel_start_offset = event_length*channel*sizeof(uint32_t) - event.data_bytes_read;
-        // Make sure we won't go off the end of the ring-buffer to check this channel
-	    if(channel_start_offset >= bytes_in_buffer) {
-		    break;
-	    }
-        uint32_t channel_header = *((uint32_t*)(fpga->ring_buffer.buffer + offset + channel_start_offset));
-        // Channel header is 0xXXFFXXFF where XX is the channel number, e.g. 0, 1, 2, 3...
-        uint32_t expectation = (0xFF00FF | (channel<<24) | channel<<8);
-	/*
-        if(expectation != channel_header) {
-            // This is a mis-match
-            builder_log(LOG_ERROR, "Expected = 0x%x, Got = 0x%x\n", expectation, channel_header);
-            shit_counter += 1;
-            reeling = 1;
-            //event = start_event();
-
-//	    printf("STOPPING FONTUS\n");
-//	    redisContext* fontus_conn =  create_redis_conn("localhost", 4002);
-//	    redisReply* reply = redisCommand(fontus_conn, "write_addr 0x8 0");
-//	    freeReplyObject(reply);
-//	    redisFree(fontus_conn);
-            //ring_buffer_update_event_read_pntr(&fpga->ring_buffer);
-            return 0;
-        }
-	*/
-        // else { everything's fine }
-    }
-
-    int i;
-    for(i=0; i<MAX_SPLITS; i++) {
-        if(!event.event.locations[i]) {
+    unsigned char* data = fpga->ring_buffer.buffer + fpga->ring_buffer.read_pointer;
+    int bytes_read = 0;
+    uint32_t word;
+    int ret_val = 0;
+    // We'll exit this loop either when we've consumed all available data, or when we've complete a single event
+    while(bytes_read < bytes_in_buffer) {
+        // First check if the event is done
+        if(event.current_channel == NUM_CHANNELS && event.samples_read == event.event_header.length && event.wf_crc_read) {
+            *ret = event.event_header;
+            ret_val = 1;
             break;
         }
-    }
-    if(event.event.locations[i] != NULL) {
-        builder_log(LOG_ERROR, "Error that I don't know how to handle!");
-        exit(1);
+
+        // Read in a 32-bit chunk;
+        word = ntohl(*(uint32_t*)(data+bytes_read));
+        bytes_read+=4;
+
+        // Waveform processing happens in 3 steps.
+        // First, read in the waveform header, which should always of the form 0xFFxxFFxx where xx is the channel number
+        // Second is to read in the actual samples they will either be compess (6 samples per 32-bits) or uncompessed (2 samples per 32-bits)
+        // Finally, read in the waveform CRC, which will be a single 32-bit number calculated on the above samples.
+        if(!event.wf_header_read) {
+
+            uint32_t expectation = (0xFF00FF00 | (event.current_channel<<16) | event.current_channel);
+            if(word != expectation) {
+                printf("Badness found 0x%x 0x%x\n", word, expectation);
+                // TODO should handle this better;
+                return 0;
+            }
+            // Stash the location in memory of the start of each waveform
+            *(uint32_t*)(fpga->event_buffer.data + fpga->event_buffer.num_bytes) = htonl(word);
+            fpga->event_buffer.num_bytes += 4;
+
+            event.wf_header_read = 1;
+            event.wf_crc_read = 0;
+            event.samples_read = 0;
+        }
+        else if(event.samples_read < event.event_header.length) {
+                int valid_bit = (word & 0x80000000) >> 16;
+                int compression_bit = word & 0x40000000;
+
+                uint16_t sample;
+                // Check the compression bit;
+                if(compression_bit) {
+                    // Compressed samples
+                    int i;
+                    for(i=5; i>=0; i--) {
+                        sample = event.prev_sample + ((word & (0x1F<<(i*5))) >>(i*5));
+                        event.prev_sample = sample;
+                        *(uint16_t*)(fpga->event_buffer.data+fpga->event_buffer.num_bytes) = htons(sample | valid_bit);
+                        fpga->event_buffer.num_bytes += 2;
+
+                    }
+                    event.samples_read += 3;
+                }
+                else {
+                    // not compressed samples
+                    sample = event.prev_sample + ((word & 0x3FFF0000) >> 16);
+                    event.prev_sample = sample;
+                    *(uint16_t*)(fpga->event_buffer.data+fpga->event_buffer.num_bytes) = htons(sample | valid_bit);
+                    fpga->event_buffer.num_bytes += 2;
+
+                    sample = event.prev_sample + (word & 0x3FFF);
+                    event.prev_sample = sample;
+                    *(uint16_t*)(fpga->event_buffer.data + fpga->event_buffer.num_bytes) = htons(sample | valid_bit);
+                    fpga->event_buffer.num_bytes += 2;
+
+                    event.samples_read +=1;
+                }
+        }
+        else if(!event.wf_crc_read) {
+            // Read the CRC
+            *(uint32_t*)(fpga->event_buffer.data + fpga->event_buffer.num_bytes) = htons(word);
+            fpga->event_buffer.num_bytes += 4;
+
+            event.current_channel +=1;
+            event.samples_read = 0;
+            event.wf_crc_read = 1;
+            event.wf_header_read = 0;
+        }
     }
 
-    // If this new location is going to be contiguous wiht the previous location
-    // then I should just append to that one instead of creating a new "split"
-    if(i>0 && (unsigned char*)event.event.locations[i-1] + event.event.lengths[i-1] == read_location) {
-        i-=1;
-    }
-    else {
-        event.event.locations[i] = (uint32_t*)read_location;
-        event.event.lengths[i] = 0;
-    }
-
-    // If the space in the buffer is larger than the data required to finish the event
-    // then read enough bytes to finish the event.
-    if(bytes_remaining <= bytes_in_buffer) {
-        // The rest of this event is available in the current read buffer
-        event.event.lengths[i] += bytes_remaining;
-        event.data_bytes_read += bytes_remaining;
-        ring_buffer_update_read_pntr(&fpga->ring_buffer, bytes_remaining);
-        // Now that the event is finished I need to tell someone!
-        *ret = event.event;
-        event = start_event();
-        ring_buffer_update_event_read_pntr(&fpga->ring_buffer);
-        return 1;
-    }
-    // else this buffer doesn't have enough data to finish the event
-
-    event.event.lengths[i] += bytes_in_buffer;
-    event.data_bytes_read += bytes_in_buffer;
-    ring_buffer_update_read_pntr(&fpga->ring_buffer, bytes_in_buffer);
-    return 0;
+    // Done reading stuff update the ring buffer
+    ring_buffer_update_read_pntr(&fpga->ring_buffer, bytes_read);
+    ring_buffer_update_event_read_pntr(&fpga->ring_buffer);
+    return ret_val;
 }
 
 // Connect to redis database
@@ -856,43 +843,8 @@ redisContext* create_redis_conn(const char* hostname) {
     return c;
 }
 
-// Copies an event to one contiguous chunk of data
-char* copy_event(const Event* event) {
-    static const int MEM_SIZE = BUFFER_SIZE;
-    static char* mem = NULL;
-    size_t byte_count = 0;
-    int i;
-
-    if(!mem) {
-        mem = malloc(MEM_SIZE);
-    }
-
-    // TODO this needs to protect itself from overflows!!!!!
-    *((uint32_t*)mem) = htonl(event->header.magic_number);
-    byte_count += 4;
-    *((uint32_t*)(mem + byte_count)) = htonl(event->header.trig_number);
-    byte_count += 4;
-    *((uint64_t*)(mem + byte_count)) = htonll(event->header.clock);
-    byte_count += 8;
-    *((uint16_t*)(mem + byte_count)) = htons(event->header.length);
-    byte_count += 2;
-    *((uint8_t*)(mem + byte_count)) = event->header.device_number;
-    byte_count += 1;
-    *((uint8_t*)(mem + byte_count)) = event->header.crc;
-    byte_count += 1;
-
-    for(i=0;i < MAX_SPLITS; i++) {
-        if(!event->locations[i]) {
-            break;
-        }
-        memcpy(mem+byte_count, event->locations[i], event->lengths[i]);
-        byte_count += event->lengths[i];
-    }
-    return mem;
-}
-
 // Send event to redis database
-void redis_publish_event(redisContext*c, const Event event) {
+void redis_publish_event(redisContext*c, EventBuffer eb) {
     if(!c) {
         return;
     }
@@ -904,8 +856,8 @@ void redis_publish_event(redisContext*c, const Event event) {
     arglens[0] = strlen(args[0]);
     args[1] = "event_stream";
     arglens[1] = strlen(args[1]);
-    args[2] = copy_event(&event);
-    arglens[2] = HEADER_SIZE + sizeof(uint32_t)*(event.header.length+2)*NUM_CHANNELS;
+    args[2] = (char*)eb.data;
+    arglens[2] = eb.num_bytes;
 
     r = redisCommandArgv(c, 3,  args,  arglens);
     if(!r) {
@@ -1004,6 +956,7 @@ void print_help_message() {
             "   usage:  fakernet_data_builder [--ip ip] [--out filename] [--no-save] [--num num_events]\n");
 }
 
+/*
 int calculate_channel_crcs(Event* event, uint32_t *calculated_crcs, uint32_t* given_crcs) {
     // TODO this function is a bit of a mess....should re-think things about
     // how this is dones or how data from events is laid out in memory
@@ -1102,6 +1055,7 @@ int calculate_channel_crcs(Event* event, uint32_t *calculated_crcs, uint32_t* gi
 
     return 0;
 }
+*/
 
 void initialize_stats(ProcessingStats* stats) {
     struct timeval tv;
@@ -1137,7 +1091,7 @@ int main(int argc, char **argv) {
     const double REDIS_STATS_COOLDOWN = 1e6; // 1-second in micro-seconds
     double last_status_update_time;
     ProcessingStats the_stats;
-    Event event;
+    TrigHeader event_header;
 
     initialize_stats(&the_stats);
     last_status_update_time = 0;
@@ -1219,7 +1173,8 @@ int main(int argc, char **argv) {
 
     FPGA_IF fpga_if;
     // initialize memory locations
-    initialize_buffer(&(fpga_if.ring_buffer));
+    initialize_ring_buffer(&(fpga_if.ring_buffer));
+    initialize_event_buffer(&(fpga_if.event_buffer));
 
     struct fnet_ctrl_client* udp_client = connect_fakernet_udp_client(ip);
     if(!udp_client) {
@@ -1289,7 +1244,7 @@ int main(int argc, char **argv) {
             reeling = !find_event_start(&fpga_if);
             did_warn_about_reeling = reeling;
         }
-        event_ready = read_proc(&fpga_if, &event);
+        event_ready = read_proc(&fpga_if, &event_header);
 
         gettimeofday(&current_time, NULL);
         the_stats.uptime = (current_time.tv_sec*1e6 + current_time.tv_usec) - the_stats.start_time;
@@ -1304,6 +1259,7 @@ int main(int argc, char **argv) {
 
         if(event_ready) {
             // TODO add more fun things
+            /*
             calculate_channel_crcs(&event, calculated_crcs, given_crcs);
             for(i=0; i < NUM_CHANNELS; i++) {
                 if(calculated_crcs[i] != given_crcs[i]) {
@@ -1311,24 +1267,28 @@ int main(int argc, char **argv) {
                     builder_log(LOG_ERROR, "Calculated = 0x%x, Given = 0x%x", calculated_crcs[i], given_crcs[i]);
                 }
             }
+            */
 
-                redis_publish_event(redis, event);
+                redis_publish_event(redis, fpga_if.event_buffer);
                 prev_time = current_time;
 //            if(((current_time.tv_sec - prev_time.tv_sec)*1e6 + (current_time.tv_usec - prev_time.tv_usec)) > REDIS_DATA_STREAM_COOLDOWN) {
 //                redis_publish_event(redis, event);
 //                prev_time = current_time;
 //            }
-            display_event(&event);
+            display_event(&event_header);
             if(!do_not_save) {
-                write_to_disk(&event);
+                write_to_disk(fpga_if.event_buffer);
             }
             the_stats.event_count++;
-            the_stats.trigger_id = event.header.trig_number;
+            the_stats.trigger_id = event_header.trig_number;
 
             if(num_events != 0 && the_stats.event_count >= num_events) {
                 builder_log(LOG_INFO, "Collected %i events...exiting", the_stats.event_count);
                 end_loop();
             }
+
+            // Finally clear the event buffer
+            fpga_if.event_buffer.num_bytes = 0;
         }
     }
     clean_up();
