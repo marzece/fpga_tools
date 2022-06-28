@@ -748,8 +748,9 @@ int read_proc(FPGA_IF* fpga, TrigHeader* ret) {
     // We'll exit this loop either when we've consumed all available data, or when we've complete a single event
     while(bytes_read < bytes_in_buffer) {
         // First check if the event is done
-        if(event.current_channel == NUM_CHANNELS && event.samples_read == event.event_header.length && event.wf_crc_read) {
+        if(event.current_channel == NUM_CHANNELS) {
             *ret = event.event_header;
+            event = start_event();
             ret_val = 1;
             break;
         }
@@ -782,14 +783,20 @@ int read_proc(FPGA_IF* fpga, TrigHeader* ret) {
                 int valid_bit = (word & 0x80000000) >> 16;
                 int compression_bit = word & 0x40000000;
 
-                uint16_t sample;
+                int16_t sample;
                 // Check the compression bit;
                 if(compression_bit) {
                     // Compressed samples
                     int i;
                     for(i=5; i>=0; i--) {
-                        sample = event.prev_sample + ((word & (0x1F<<(i*5))) >>(i*5));
+                        sample = ((word & (0x1F<<(i*5))) >>(i*5));
+                        // The sample is a 5-byte signed integer.
+                        // The below line forces the sign bit into the correct place for it
+                        // to get correctly interpreted, than shift the number back down to get the maginitude right
+                        sample = ((int8_t) (sample<<3))>>3;
+                        sample = event.prev_sample + sample;
                         event.prev_sample = sample;
+                        //event.prev_sample = 0;
                         *(uint16_t*)(fpga->event_buffer.data+fpga->event_buffer.num_bytes) = htons(sample | valid_bit);
                         fpga->event_buffer.num_bytes += 2;
 
@@ -808,7 +815,7 @@ int read_proc(FPGA_IF* fpga, TrigHeader* ret) {
                     *(uint16_t*)(fpga->event_buffer.data+fpga->event_buffer.num_bytes) = htons(sample | valid_bit);
                     fpga->event_buffer.num_bytes += 2;
 
-                    sample = event.prev_sample + ((int16_t)((word & 0x3FFF) << 2)) >> 2;
+                    sample = event.prev_sample + (((int16_t)((word & 0x3FFF) << 2)) >> 2);
                     event.prev_sample = sample;
                     *(uint16_t*)(fpga->event_buffer.data + fpga->event_buffer.num_bytes) = htons(sample | valid_bit);
                     fpga->event_buffer.num_bytes += 2;
@@ -825,6 +832,7 @@ int read_proc(FPGA_IF* fpga, TrigHeader* ret) {
             event.samples_read = 0;
             event.wf_crc_read = 1;
             event.wf_header_read = 0;
+            event.prev_sample =0;
         }
     }
 
