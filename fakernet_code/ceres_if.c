@@ -71,36 +71,6 @@ struct CERES_IF {
 
 static struct CERES_IF* ceres = NULL;
 
-/*
-const char* debug_bits[] = {
-"JESD-A TVALID",
-"BIG_AXIS_COPY_0 IN TREADY",
-"BIG_AXIS_COPY_0 OUT_A TVALID",
-"DC HIGH",
-"BIG_AXIS_COPY_0 OUT_B TVALID",
-"BIG_AXIS_COPY_3 IN TREADY",
-"JESD_DATA_MERGER_0 OUT TVALID",
-"DC HIGH",
-"BIG_AXIS_COPY_3 OUT_A TVALID",
-"produce_trigger_vars_0 IN TREADY",
-"BIG_AXIS_COPY_3 OUT_B TVALID",
-"produce_trigger_vars_0 IN16 TREADY",
-"BIG_AXIS_COPY_2 OUT_A TVALID",
-"produce_trigger_vars_0 IN17 TREADY",
-"BIG_AXIS_COPY_2 OUT_B TVALID",
-"produce_trigger_vars_0 IN18 TREADY",
-"produce_trigger_vars_0 IN19 TVALID",
-"AXIS_DWIDTH_CONVERTER TREADY",
-"produce_trigger_vars_0 CONTROL_OUT TVALID",
-"DC HIGH",
-"JESD_B TVALID",
-"BIG_AXIS_COPY_1 IN TREADY",
-"BIG_AXIS_COPY_1 OUT TVALID",
-"DC HIGH",
-"BIG_AXIS_COPY_1 OUT_B TVALID",
-"BIG_AXIS_COPY_2 in TREADY" };
-*/
-
 static struct CERES_IF* get_ceres_handle() {
     if(ceres == NULL) {
         ceres = malloc(sizeof(struct CERES_IF));
@@ -906,6 +876,10 @@ static uint32_t write_jesd_drp_channel_command(uint32_t* args) {
     return write_drp_transceiver(this_jesd_phy, drp_addr, drp_data);
 }
 
+static uint32_t read_build_tag_command(uint32_t* args) {
+    return read_build_info(get_ceres_handle()->pipeline);
+}
+
 ServerCommand ceres_commands[] = {
 {"read_iic_reg",NULL,                              read_iic_block_command,                                 2,  1, 0, 0},
 {"write_iic_reg",NULL,                             write_iic_block_command,                                3,  0, 0, 0},
@@ -990,5 +964,6 @@ ServerCommand ceres_commands[] = {
 {"write_drp_interface_selector",NULL,              write_drp_interface_selector_command,                   3,  1, 0, 0},
 {"read_jesd_drp_channel",NULL,                     read_jesd_drp_channel_command,                          3,  1, 0, 0},
 {"write_jesd_drp_channel",NULL,                    write_jesd_drp_channel_command,                         4,  1, 0, 0},
+{"read_build_tag",NULL,                            read_build_tag_command,                                        1,  1, 0, 0},
 {"",NULL,                                          NULL,                                                   0,  0, 0, 0}    //  Must  be  last
 };
