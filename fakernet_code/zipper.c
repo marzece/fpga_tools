@@ -251,8 +251,6 @@ void grab_data_from_pubsub_message(redisReply* message, char** data, int* length
 }
 
 void save_event(FILE* fout, int event_id) {
-    // TODO save_event free's the memory for the event, it probably shouldn't
-    // do that b/c it's not obvious. Should have a specific function handle that.
     int i;
     int nwritten;
     EventRecord* event = &(event_registry[event_id % HASH_TABLE_SIZE]);
@@ -343,7 +341,7 @@ void free_event(int event_id) {
     return;
 }
 
-void send_event_to_redis(redisContext* redis, int event_id) {
+int send_event_to_redis(redisContext* redis, int event_id) {
     int i;
     redisReply* r;
     size_t arglens[3];
@@ -356,13 +354,13 @@ void send_event_to_redis(redisContext* redis, int event_id) {
 
     if(!redis) {
         printf("BAD REDIS\n");
-        return;
+        return 0;
     }
     if(!redis_data_buf) {
         redis_data_buf = malloc(REDIS_OUT_DATA_BUF_SIZE);
         if(!redis_data_buf) {
             printf("Could not allocate memory for redis_data_buffer \n");
-            return;
+            return 0;
         }
     }
 
@@ -380,12 +378,10 @@ void send_event_to_redis(redisContext* redis, int event_id) {
     offset += sizeof(event_header.status);
 
     // Write FONTUS Trigger data...
-    if((COMPLETE_EVENT_MASK & (1ULL<<FONTUS_DEVICE_ID)) != 0) {
-        printf("WRITING FONTUS DATA\n");
-        // TODO
+    if(0 && ((COMPLETE_EVENT_MASK & (1ULL<<FONTUS_DEVICE_ID)) != 0)) {
         grab_data_from_pubsub_message(event->data[FONTUS_DEVICE_ID], &data, &data_len);
         if(!data) {
-            return;
+            return 0;
         }
         memcpy(redis_data_buf + offset, data, data_len);
         offset += data_len;
@@ -400,7 +396,7 @@ void send_event_to_redis(redisContext* redis, int event_id) {
         }
         grab_data_from_pubsub_message(event->data[i], &data, &data_len);
         if(!data) {
-            return;
+            return 0;
         }
         memcpy(redis_data_buf + offset, data, data_len);
         offset += data_len;
@@ -417,17 +413,23 @@ void send_event_to_redis(redisContext* redis, int event_id) {
     arglens[2] = offset;
 
     r = redisCommandArgv(redis, 3,  args,  arglens);
+    if(!r) {
+        // TODO
+        printf("ERROR sending data to redis!\n"); // XXX Non-block
+        //builder_log(LOG_ERROR, "Redis error!");
+    }
+
     if(r->type == REDIS_REPLY_STRING || r->type == REDIS_REPLY_ERROR) {
         printf("FUCK %s\n", r->str);
     }
-    if(!r) {
-        // TODO
-        printf("ERROR sending data to redis!\n");
-        //builder_log(LOG_ERROR, "Redis error!");
-    }
     freeReplyObject(r);
+    return  arglens[2];
 }
 
+void print_help_string() {
+    printf("zipper: recieves then combines data from CERES & FONTUS data builders via redis DB.\n"
+            "   usage:  zipper [--out filename] \n");
+}
 
 int main(int argc, char** argv) {
 
@@ -458,7 +460,7 @@ int main(int argc, char** argv) {
 
         }
     }
-    
+
     redisReply* reply = NULL;
     redisContext* redis = NULL;
     //const char* redis_hostname = "127.0.0.1";
