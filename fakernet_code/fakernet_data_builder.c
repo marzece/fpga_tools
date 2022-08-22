@@ -969,106 +969,20 @@ void print_help_message() {
             "   usage:  fakernet_data_builder [--ip ip] [--out filename] [--no-save] [--num num_events]\n");
 }
 
-/*
-int calculate_channel_crcs(Event* event, uint32_t *calculated_crcs, uint32_t* given_crcs) {
-    // TODO this function is a bit of a mess....should re-think things about
-    // how this is dones or how data from events is laid out in memory
+void calculate_channel_crcs(const TrigHeader* header, const EventBuffer* event, uint32_t* calculated_crcs, uint32_t* given_crcs) {
+    int i;
+    int length = header->length;
+    uint32_t* wf_start = (uint32_t*)(event->data + HEADER_SIZE + 4);
+    for(i=0; i<NUM_CHANNELS; i++) {
+        uint32_t this_crc = crc32(0, wf_start, length*sizeof(uint32_t));
+        uint32_t found_crc =  *(uint32_t*)(wf_start + length*sizeof(uint32_t));
+        printf("%i %i\n", this_crc, found_crc);
 
-    int num_samples = event->header.length;
-    int num_consumed = 0;
-
-    int header_is_next = 1;
-    int i = 0;
-
-    uint32_t current_crc = 0;
-    int go_to_next_split = 0;
-    int go_to_next_channel = 0;
-    int ichan = 0;
-
-    uint32_t *current = event->locations[0];
-    uint32_t* end_of_split = event->locations[0] + event->lengths[0]/sizeof(uint32_t);
-    uint32_t* end_of_channel = event->locations[0] + num_samples + 2;
-
-    memset(calculated_crcs, 0, sizeof(uint32_t)*NUM_CHANNELS);
-    memset(given_crcs, 0, sizeof(uint32_t)*NUM_CHANNELS);
-
-    while(i < MAX_SPLITS) {
-        if(go_to_next_channel) {
-            ichan += 1;
-            header_is_next = 1;
-            num_consumed = 0;
-            current_crc = 0;
-            go_to_next_channel = 0;
-            if(ichan >= NUM_CHANNELS) {
-                break;
-            }
-        }
-
-        if(go_to_next_split) {
-            i += 1;
-            if(i >= MAX_SPLITS) {
-                builder_log(LOG_ERROR, "Reached the end of memory before finding all CRCs!");
-                break;
-            }
-            go_to_next_split = 0;
-            current = event->locations[i];
-            end_of_split = event->locations[i] + event->lengths[i]/sizeof(uint32_t);
-        }
-
-        end_of_channel = current + num_samples + 2 - num_consumed;
-        // Which will end sooner, the "split" or the channel's samples
-        int split_ends_first = end_of_split < end_of_channel;
-        uint32_t* end = split_ends_first ? end_of_split : end_of_channel;
-        int num_to_read = end - current;
-
-        if(header_is_next) {
-            if(num_to_read > 1) {
-                //printf("Header = 0x%x\n", *current);
-                current += 1;
-                num_to_read -= 1;
-                num_consumed += 1;
-                header_is_next = 0;
-            } else if(num_to_read == 1) {
-                header_is_next = 0;
-                go_to_next_split = 1;
-                num_consumed += 1;
-                // Need to move to next split
-                // (shouldn't be possible for "end" to be the end of the channel
-                // unless the trigger length is 0 (which might happen?? hopefully not))
-                continue;
-            } else {
-                // Need to move to next split
-                // (shouldn't be possible for "end" to be the end of the channel
-                // unless the trigger length is 0 (which might happen?? hopefully not))
-                go_to_next_split = 1;
-                continue;
-            }
-        }
-
-        // Compute CRCs
-        if(!split_ends_first) {
-            num_to_read -= 1; // Don't want to calculate the CRC on the CRC
-        }
-
-        current_crc = crc32(current_crc, current, num_to_read*sizeof(uint32_t));
-
-        num_consumed += num_to_read;
-        current += num_to_read;
-
-        if(!split_ends_first) {
-            given_crcs[ichan] = ntohl(*current);
-            calculated_crcs[ichan] = current_crc;
-            current += 1;
-            current_crc = 0;
-            go_to_next_channel = 1;
-            continue;
-        }
-        go_to_next_split = 1;
+        calculated_crcs[i] = this_crc;
+        given_crcs[i] = found_crc;
+        wf_start += length + 2;
     }
-
-    return 0;
 }
-*/
 
 void initialize_stats(ProcessingStats* stats) {
     struct timeval tv;
@@ -1271,16 +1185,13 @@ int main(int argc, char **argv) {
         }
 
         if(event_ready) {
-            // TODO add more fun things
-            /*
-            calculate_channel_crcs(&event, calculated_crcs, given_crcs);
+            calculate_channel_crcs(&event_header, &fpga_if.event_buffer, calculated_crcs, given_crcs);
             for(i=0; i < NUM_CHANNELS; i++) {
                 if(calculated_crcs[i] != given_crcs[i]) {
-                    builder_log(LOG_ERROR, "Event %i Channel %i CRC does not match", event.header.trig_number, i);
+                    builder_log(LOG_ERROR, "Event %i Channel %i CRC does not match", event_header.trig_number, i);
                     builder_log(LOG_ERROR, "Calculated = 0x%x, Given = 0x%x", calculated_crcs[i], given_crcs[i]);
                 }
             }
-            */
 
                 redis_publish_event(redis, fpga_if.event_buffer);
                 prev_time = current_time;
