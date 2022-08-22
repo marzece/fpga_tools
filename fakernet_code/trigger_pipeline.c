@@ -61,24 +61,30 @@ uint32_t write_trig_pipeline_value(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t offset
     return write_addr(tp_axi->axi_addr, offset, data);
 }
 
+uint32_t read_multiplicity_width(AXI_TRIGGER_PIPELINE* tp_axi) {
+    return read_trig_pipeline_value(tp_axi, TRIG_VAR_COMBINER_MULTIPLICITY_WIDTH);
+}
+
+uint32_t write_multiplicity_width(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t width) {
+    return write_trig_pipeline_value(tp_axi, TRIG_VAR_COMBINER_MULTIPLICITY_WIDTH, width);
+}
+
 uint32_t read_inner_multiplicity_threshold(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel) {
     if(channel >= NUM_THRESHOLDS) {
         // TODO set error string
         return -1;
     }
-
     uint32_t offset =  INNER_MULTIPLICITY_THRESHOLD_BASE_OFFSET + REGISTER_WIDTH*channel;
     return read_trig_pipeline_value(tp_axi, offset);
 }
 
-uint32_t write_inner_multiplicity_threshold(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel, uint32_t data) {
+uint32_t write_inner_multiplicity_threshold(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel, uint32_t threshold) {
     if(channel >= NUM_THRESHOLDS) {
         // TODO set error string
         return -1;
     }
-
-    uint32_t offset =  INNER_MULTIPLICITY_THRESHOLD_BASE_OFFSET + REGISTER_WIDTH*channel;
-    return write_trig_pipeline_value(tp_axi, offset, data);
+    uint32_t offset = INNER_MULTIPLICITY_THRESHOLD_BASE_OFFSET + REGISTER_WIDTH*channel;
+    return write_trig_pipeline_value(tp_axi, offset, threshold);
 }
 
 uint32_t read_veto_multiplicity_threshold(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel) {
@@ -86,7 +92,6 @@ uint32_t read_veto_multiplicity_threshold(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t
         // TODO set error string
         return -1;
     }
-
     uint32_t offset =  VETO_MULTIPLICITY_THRESHOLD_BASE_OFFSET + REGISTER_WIDTH*channel;
     return read_trig_pipeline_value(tp_axi, offset);
 }
@@ -106,7 +111,6 @@ uint32_t read_inner_esum_threshold(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channe
         // TODO set error string
         return -1;
     }
-
     uint32_t offset = INNER_ESUM_THRESHOLD_BASE_OFFSET + REGISTER_WIDTH*channel;
     return read_trig_pipeline_value(tp_axi, offset);
 }
@@ -116,7 +120,6 @@ uint32_t write_inner_esum_threshold(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t chann
         // TODO set error string
         return -1;
     }
-
     uint32_t offset = INNER_ESUM_THRESHOLD_BASE_OFFSET + REGISTER_WIDTH*channel;
     return write_trig_pipeline_value(tp_axi, offset, data);
 }
@@ -126,7 +129,6 @@ uint32_t read_veto_esum_threshold(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel
         // TODO set error string
         return -1;
     }
-
     uint32_t offset = VETO_ESUM_THRESHOLD_BASE_OFFSET + REGISTER_WIDTH*channel;
     return read_trig_pipeline_value(tp_axi, offset);
 }
@@ -136,7 +138,6 @@ uint32_t write_veto_esum_threshold(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channe
         // TODO set error string
         return -1;
     }
-
     uint32_t offset = VETO_ESUM_THRESHOLD_BASE_OFFSET + REGISTER_WIDTH*channel;
     return write_trig_pipeline_value(tp_axi, offset, data);
 }
@@ -337,7 +338,6 @@ uint32_t read_trigger_veto_mask(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel) 
     if(channel >= NUM_TRIGGERS) {
         return -1;
     }
-
     uint32_t offset = TRIGGER_VETO_MASK_BASE_OFFSET + REGISTER_WIDTH*channel;
     return read_trig_pipeline_value(tp_axi, offset);
 }
@@ -420,4 +420,3 @@ uint32_t do_sync(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t length) {
     word &= 0xFFFFE;
     return write_trig_pipeline_value(tp_axi, SYNC_REG_OFFSET, word);
 }
-

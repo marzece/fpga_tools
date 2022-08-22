@@ -10,12 +10,17 @@ typedef struct AXI_TRIGGER_PIPELINE {
 
 AXI_TRIGGER_PIPELINE* new_trig_pipeline_if(const char* name, uint32_t axi_addr);
 
-uint32_t read_data_pipeline_value(AXI_TRIGGER_PIPELINE *tp_axi, uint32_t offset);
-uint32_t write_data_pipeline_value(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t offset, uint32_t data);
-uint32_t read_multiplicity_threshold(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel);
-uint32_t write_multiplicity_threshold(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel, uint32_t data) ;
-uint32_t read_esum_threshold(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel);
-uint32_t write_esum_threshold(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel, uint32_t data) ;
+uint32_t read_multiplicity_width(AXI_TRIGGER_PIPELINE* tp_axi);
+uint32_t write_multiplicity_width(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t width);
+
+uint32_t read_inner_multiplicity_threshold(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel);
+uint32_t write_inner_multiplicity_threshold(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel, uint32_t threshold);
+uint32_t read_veto_multiplicity_threshold(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel);
+uint32_t write_veto_multiplicity_threshold(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel, uint32_t threshold);
+uint32_t read_inner_esum_threshold(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel);
+uint32_t write_inner_esum_threshold(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel, uint32_t threshold);
+uint32_t read_veto_esum_threshold(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel);
+uint32_t write_veto_esum_threshold(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel, uint32_t threshold);
 
 uint32_t read_inner_multiplicity_delay(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel);
 uint32_t write_inner_multiplicity_delay(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel, uint32_t delay);
@@ -33,12 +38,22 @@ uint32_t write_inner_multiplicity_gate(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t ch
 uint32_t read_inner_esum_gate(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel);
 uint32_t write_inner_esum_gate(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel, uint32_t value);
 uint32_t read_veto_multiplicity_gate(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel);
+
 uint32_t write_veto_multiplicity_gate(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel, uint32_t value);
 uint32_t read_veto_esum_gate(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel);
 uint32_t write_veto_esum_gate(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel, uint32_t value);
 uint32_t read_external_gate(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t which_external, uint32_t channel);
 uint32_t write_external_gate(AXI_TRIGGER_PIPELINE* tp_axi,  uint32_t which_external, uint32_t channel, uint32_t value);
 
+uint32_t write_trigger_mask(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel, uint32_t mask);
+uint32_t read_trigger_mask(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel);
+uint32_t write_trigger_veto_mask(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel, uint32_t mask);
+uint32_t read_trigger_veto_mask(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel);
+uint32_t write_trigger_length(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel, uint32_t mask);
+uint32_t read_trigger_length(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel);
+
+uint32_t write_pulse_generator_enable(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t value);
+uint32_t read_pulse_generator_enable(AXI_TRIGGER_PIPELINE* tp_axi);
 uint32_t read_threshold_enable_mask(AXI_TRIGGER_PIPELINE *tp_axi) ;
 uint32_t write_threshold_enable_mask(AXI_TRIGGER_PIPELINE *tp_axi, uint32_t val) ;
 uint32_t read_trigger_mask_enable(AXI_TRIGGER_PIPELINE *tp_axi);
