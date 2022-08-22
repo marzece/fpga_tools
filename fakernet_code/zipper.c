@@ -5,6 +5,9 @@
 #include <assert.h>
 #include <errno.h>
 #include <signal.h>
+#include <time.h>
+#include <inttypes.h>
+#include <getopt.h>
 #include <arpa/inet.h>
 #include "hiredis/hiredis.h"
 
@@ -16,7 +19,7 @@
 //#define COMPLETE_EVENT_MASK 0xFF0ULL
 #define COMPLETE_EVENT_MASK 0x30ULL
 #define QUEUE_LENGTH 100
-#define FONTUS_DEVICE_ID 1
+#define FONTUS_DEVICE_ID 0
 #define REDIS_OUT_DATA_BUF_SIZE (32*1024*1024)
 
 // Minimum time between sending events to redis, in micro-seconds
@@ -423,18 +426,63 @@ void send_event_to_redis(redisContext* redis, int event_id) {
     freeReplyObject(r);
 }
 
-int main() {
-    // First 
-    redisReply* reply;
-    redisContext* redis = NULL;
-    const char* redis_hostname = "127.0.0.1";
 
-    FILE* fout = fopen("COMBINED_DATA_TEST.dat", "wb");
+int main(int argc, char** argv) {
+
+    const char * output_filename = "/dev/null";
+    struct option clargs[] = {{"out", required_argument, NULL, 'o'},
+                              {"help", no_argument, NULL, 'h'},
+                              { 0, 0, 0, 0}};
+    int optindex;
+    int opt;
+    while((opt = getopt_long(argc, argv, "o:", clargs, &optindex)) != -1) {
+        switch(opt) {
+            case 0:
+                // Should be here if the option has the "flag" set
+                // Currently not possible, but someday I might add
+                break;
+            case 'o':
+                printf("Output data file set to '%s'\n", optarg);
+                output_filename = optarg;
+                break;
+            case 'h':
+                print_help_string();
+                return 0;
+            case '?':
+            case ':':
+                // This should happen if there's a missing or unknown argument
+                // getopt_long outputs its own error message
+                return 0;
+
+        }
+    }
+    
+    redisReply* reply = NULL;
+    redisContext* redis = NULL;
+    //const char* redis_hostname = "127.0.0.1";
+    int done;
+
+    //FILE* fout = fopen(output_filename, "wb");
+    FILE* fout = fopen(output_filename, "ab");
+    if(!fout) {
+        printf("Could not open output file '%s'. Data will not be saved!\n", output_filename);
+        return 1;
+    }
     signal(SIGKILL, signal_handler);
     signal(SIGINT, signal_handler);
 
-    redis = create_redis_conn(redis_hostname, 6379);
-    reply = redisCommand(redis, "SUBSCRIBE event_stream");
+    redis = create_redis_unix_conn("/var/run/redis/redis-server.sock");
+    //usleep(500000);
+    redisAppendCommand(redis, "SUBSCRIBE event_stream");
+    redisBufferWrite(redis, &done);
+
+    //usleep(50000);
+
+    redisBufferRead(redis);
+    if(!reply) {
+    //usleep(500000);
+        redisGetReply(redis, (void**)&reply);
+    }
 
     if(!reply) {
         printf("Uh oh, couldn't subscribe to redis...\n");
@@ -442,7 +490,7 @@ int main() {
     }
     freeReplyObject(reply);
 
-    redisContext* publish_redis = create_redis_conn(redis_hostname, 6379);
+    redisContext* publish_redis = create_redis_unix_conn("/var/run/redis/redis-server.sock");
     struct timeval redis_update_time, event_rate_time, current_time;
     gettimeofday(&redis_update_time, NULL); // Initialize previous time to now
     event_rate_time = redis_update_time;
@@ -455,7 +503,7 @@ int main() {
     while(loop) {
         gettimeofday(&current_time, NULL);
         if(redis_is_readable) {
-            recieve_waveform__from_redis(redis);
+            recieve_waveform_from_redis(redis);
         }
         if(event_ready_queue.events_available) {
             event_id = pop_complete_event_id();
