@@ -1192,9 +1192,8 @@ int main(int argc, char **argv) {
                     builder_log(LOG_ERROR, "Calculated = 0x%x, Given = 0x%x", calculated_crcs[i], given_crcs[i]);
                 }
             }
-
-                redis_publish_event(redis, fpga_if.event_buffer);
-                prev_time = current_time;
+            redis_publish_event(redis, fpga_if.event_buffer);
+            prev_time = current_time;
 //            if(((current_time.tv_sec - prev_time.tv_sec)*1e6 + (current_time.tv_usec - prev_time.tv_usec)) > REDIS_DATA_STREAM_COOLDOWN) {
 //                redis_publish_event(redis, event);
 //                prev_time = current_time;
