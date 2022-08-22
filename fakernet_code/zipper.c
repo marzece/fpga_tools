@@ -21,6 +21,7 @@
 #define QUEUE_LENGTH 100
 #define FONTUS_DEVICE_ID 0
 #define REDIS_OUT_DATA_BUF_SIZE (32*1024*1024)
+#define PUBLISH_MAX_RATE (10*1024*1024)
 
 // Minimum time between sending events to redis, in micro-seconds
 // 30k us = 30ms = ~30hz
@@ -502,6 +503,7 @@ int main(int argc, char** argv) {
     int built_count = 0;
     double delta_t;
     int event_id = -1;
+    int bytes_sent = 0;
     printf("Starting main loop\n");
     //FullEvent event;
     while(loop) {
@@ -517,8 +519,8 @@ int main(int argc, char** argv) {
 
             delta_t = (current_time.tv_sec - redis_update_time.tv_sec)*1e6 + (current_time.tv_usec - redis_update_time.tv_usec);
             // TODO instead of just a  cooldown I should maybe include a data limit as well.
-            if(delta_t > REDIS_COOLDOWN) {
-                send_event_to_redis(publish_redis, event_id);
+            if(delta_t > REDIS_COOLDOWN && bytes_sent < PUBLISH_MAX_RATE/10) {
+                bytes_sent += send_event_to_redis(publish_redis, event_id);
                 redis_update_time = current_time;
             }
             save_event(fout, event_id);
@@ -527,8 +529,14 @@ int main(int argc, char** argv) {
             free_event(event_id);
         }
         delta_t = (current_time.tv_sec - event_rate_time.tv_sec)*1e6 + (current_time.tv_usec - event_rate_time.tv_usec);
+
+        // A 10th of a second
+        if(delta_t > 100000) {
+            bytes_sent = 0;
+        }
+
         if(delta_t > PRINT_UPDATE_COOLDOWN) {
-            printf("Event id %i. %0.2f events per second\n", event_id, (float)1e6*built_count/PRINT_UPDATE_COOLDOWN);
+            printf("Event id %i.\t%0.2f events per second.\t%iMB sent to redis\n", event_id, (float)1e6*built_count/PRINT_UPDATE_COOLDOWN, bytes_sent/(1024*1024));
             built_count = 0;
             event_rate_time = current_time;
         }
@@ -537,9 +545,12 @@ int main(int argc, char** argv) {
             redisFree(redis);
             loop = 0;
         }
+        // Just to put a bit of a speed limit on things
+        //usleep(100);
     }
     // Clean up
     fclose(fout);
     redisFree(redis);
+    printf("Bye\n");
     return 0;
 }
