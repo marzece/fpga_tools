@@ -42,12 +42,14 @@ typedef struct FONTUS_HEADER {
     uint32_t magic_number;
     uint32_t trig_number;
     uint64_t timestamp;
-    uint16_t trig_length; 
-    uint8_t device_id; 
-    uint8_t trig_flag; 
-    uint64_t beam_time; 
-    uint64_t ct_time; 
-    uint32_t crc; 
+    uint16_t trig_length;
+    uint8_t device_id;
+    uint8_t trig_flag;
+    uint32_t self_trigger_word;
+    uint64_t beam_time;
+    uint64_t led_time;
+    uint64_t ct_time;
+    uint32_t crc;
 }FONTUS_HEADER;
 
 typedef struct EVENT_HEADER {
