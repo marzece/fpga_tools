@@ -144,6 +144,14 @@ uint32_t jesd_is_synced(AXI_JESD* jesd) {
     return (val & JESD_SYNC_STATUS_SYNC_BIT);
 }
 
+uint32_t write_jesd_buffer_delay(AXI_JESD* jesd, uint32_t value) {
+    return write_jesd(jesd, JESD_RX_BUFFER_DELAY_OFFSET, value);
+}
+
+uint32_t read_jesd_buffer_delay(AXI_JESD* jesd) {
+    return read_jesd(jesd, JESD_RX_BUFFER_DELAY_OFFSET);
+}
+
 struct ILA_Config_Data read_ila_config(AXI_JESD* jesd, unsigned int channel) {
     int i;
     struct ILA_Config_Data ila_config;

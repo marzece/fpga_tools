@@ -880,6 +880,35 @@ static uint32_t read_build_tag_command(uint32_t* args) {
     return read_build_info(get_ceres_handle()->pipeline);
 }
 
+static uint32_t read_jesd_rx_lane_buffer_adj_command(uint32_t* args) {
+    uint32_t which_jesd = args[0];
+    int i;
+    uint32_t rx_lane_offset[] = {0x830, 0x870, 0x8B0, 0x8F0};
+
+    AXI_JESD* jesd = jesd_switch(which_jesd);
+    if(!jesd) { return -1; }
+
+    for(i=0; i<4;i++) {
+        args[i] = read_jesd(jesd, rx_lane_offset[i]);
+    }
+    return 0;
+}
+
+static uint32_t read_jesd_buffer_delay_command(uint32_t* args) {
+    uint32_t which_jesd = args[0];
+    AXI_JESD* jesd = jesd_switch(which_jesd);
+    if(!jesd) { return -1; }
+    return read_jesd_buffer_delay(jesd);
+}
+
+static uint32_t write_jesd_buffer_delay_command(uint32_t* args) {
+    uint32_t which_jesd = args[0];
+    uint32_t data = args[1];
+    AXI_JESD* jesd = jesd_switch(which_jesd);
+    if(!jesd) { return -1; }
+    return write_jesd_buffer_delay(jesd, data);
+}
+
 ServerCommand ceres_commands[] = {
 {"read_iic_reg",NULL,                              read_iic_block_command,                                 2,  1, 0, 0},
 {"write_iic_reg",NULL,                             write_iic_block_command,                                3,  0, 0, 0},
@@ -964,6 +993,9 @@ ServerCommand ceres_commands[] = {
 {"write_drp_interface_selector",NULL,              write_drp_interface_selector_command,                   3,  1, 0, 0},
 {"read_jesd_drp_channel",NULL,                     read_jesd_drp_channel_command,                          3,  1, 0, 0},
 {"write_jesd_drp_channel",NULL,                    write_jesd_drp_channel_command,                         4,  1, 0, 0},
-{"read_build_tag",NULL,                            read_build_tag_command,                                        1,  1, 0, 0},
+{"read_build_tag",NULL,                            read_build_tag_command,                                 1,  1, 0, 0},
+{"read_jesd_rx_lane_buffer_adj",NULL,              read_jesd_rx_lane_buffer_adj_command,                   2,  4, 0, 0},
+{"write_jesd_buffer_delay",NULL,                   write_jesd_buffer_delay_command,                        3,  1, 0, 0},
+{"read_jesd_buffer_delay",NULL,                    read_jesd_buffer_delay_command,                         2,  1, 0, 0},
 {"",NULL,                                          NULL,                                                   0,  0, 0, 0}    //  Must  be  last
 };
