@@ -201,7 +201,7 @@ void register_waveform(uint32_t device_id, uint32_t event_number, redisReply* wf
     }
 }
 
-void recieve_waveform__from_redis(redisContext* redis) {
+void recieve_waveform_from_redis(redisContext* redis) {
     redisReply* reply;
     if(redisBufferRead(redis) != REDIS_OK) {
         // Error
