@@ -796,8 +796,12 @@ int read_proc(FPGA_IF* fpga, TrigHeader* ret) {
                         sample = ((int8_t) (sample<<3))>>3;
                         sample = event.prev_sample + sample;
                         event.prev_sample = sample;
-                        //event.prev_sample = 0;
-                        *(uint16_t*)(fpga->event_buffer.data+fpga->event_buffer.num_bytes) = htons(sample | valid_bit);
+                        // Only every other sample should get marked with the valid bit
+                        if(i %2 == 1) {
+                            sample |= valid_bit;
+                        }
+
+                        *(uint16_t*)(fpga->event_buffer.data+fpga->event_buffer.num_bytes) = htons(sample);
                         fpga->event_buffer.num_bytes += 2;
 
                     }
@@ -806,7 +810,7 @@ int read_proc(FPGA_IF* fpga, TrigHeader* ret) {
                 else {
                     // not compressed samples
                     if(event.samples_read == 0) {
-                        sample = (word >> 16);
+                        sample = (word >> 16) & 0x3fff;
                     }
                     else {
                         sample = event.prev_sample + (((int16_t)(word >> 14)) >> 2);
@@ -817,22 +821,23 @@ int read_proc(FPGA_IF* fpga, TrigHeader* ret) {
 
                     sample = event.prev_sample + (((int16_t)((word & 0x3FFF) << 2)) >> 2);
                     event.prev_sample = sample;
-                    *(uint16_t*)(fpga->event_buffer.data + fpga->event_buffer.num_bytes) = htons(sample | valid_bit);
+                    *(uint16_t*)(fpga->event_buffer.data + fpga->event_buffer.num_bytes) = htons(sample);
                     fpga->event_buffer.num_bytes += 2;
 
                     event.samples_read +=1;
+
                 }
         }
         else if(!event.wf_crc_read) {
             // Read the CRC
-            *(uint32_t*)(fpga->event_buffer.data + fpga->event_buffer.num_bytes) = htons(word);
+            *(uint32_t*)(fpga->event_buffer.data + fpga->event_buffer.num_bytes) = htonl(word);
             fpga->event_buffer.num_bytes += 4;
 
-            event.current_channel +=1;
+            event.current_channel += 1;
             event.samples_read = 0;
             event.wf_crc_read = 1;
             event.wf_header_read = 0;
-            event.prev_sample =0;
+            event.prev_sample = 0;
         }
     }
 
@@ -975,9 +980,7 @@ void calculate_channel_crcs(const TrigHeader* header, const EventBuffer* event, 
     uint32_t* wf_start = (uint32_t*)(event->data + HEADER_SIZE + 4);
     for(i=0; i<NUM_CHANNELS; i++) {
         uint32_t this_crc = crc32(0, wf_start, length*sizeof(uint32_t));
-        uint32_t found_crc =  *(uint32_t*)(wf_start + length*sizeof(uint32_t));
-        printf("%i %i\n", this_crc, found_crc);
-
+        uint32_t found_crc =  ntohl(*(uint32_t*)(wf_start + length));
         calculated_crcs[i] = this_crc;
         given_crcs[i] = found_crc;
         wf_start += length + 2;
