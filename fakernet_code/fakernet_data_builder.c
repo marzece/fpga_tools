@@ -57,17 +57,21 @@ int verbosity_stdout = LOG_INFO;
 int verbosity_redis = LOG_WARN;
 int verbosity_file = LOG_WARN;
 
-//int NUM_CHANNELS = 120;
+// Number of channels to be readout
 int NUM_CHANNELS = 16;
 
+// Largest possible size for single message (in byte)
 #define LOG_MESSAGE_MAX 1024
 
 #define DEFAULT_REDIS_HOST  "127.0.0.1"
 #define DEFAULT_ERROR_LOG_FILENAME "data_builder_error_log.log"
 
 
+// Every event header starts with this magic number
 #define MAGIC_VALUE 0xFFFFFFFF
 #define HEADER_SIZE 20 // 128-bits aka 16 bytes
+
+// Space that should be allocated for data buffers
 #define BUFFER_SIZE (10*1024*1024) // 10 MB
 #define EVENT_BUFFER_SIZE BUFFER_SIZE
 
