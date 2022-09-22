@@ -14,8 +14,6 @@
 #include "server_common.h"
 #include "server.h"
 #include "util.h"
-#include "hermes_if.h"
-#include "ti_board_if.h"
 #include "ceres_if.h"
 #include "fontus_if.h"
 #include "resp.h"
@@ -47,8 +45,6 @@ static volatile int end_main_loop = 0;
 ServerCommand* board_specific_command_table = NULL;
 
 enum BOARD_SWITCH {
-    HE2TER,
-    TI,
     CERES,
     FONTUS
 };
@@ -317,9 +313,6 @@ int main(int argc, char** argv) {
                     printf("DUMMY MODE ENGAGED\n");
                     dummy_mode = 1;
                 }
-                else if(strcmp(argv[i], "--ti") == 0 || strcmp(argv[1], "--TI") ==0) {
-                    which_board = TI;
-                }
                 else if(strcmp(argv[i], "--ceres") == 0 || strcmp(argv[1], "--CERES") ==0) {
                     which_board = CERES;
                 }
@@ -363,12 +356,6 @@ int main(int argc, char** argv) {
     if(which_board == CERES) {
         printf("Using CERES board commands and address table\n");
     }
-    else if(which_board == TI) {
-        printf("Using TI board commands and address table\n");
-    }
-    else if( which_board == HE2TER) {
-        printf("Using HE2TER board commands and address table\n");
-    }
     else if( which_board == FONTUS) {
         printf("Using FONTUS board commands and address table\n");
     }
@@ -395,17 +382,9 @@ int main(int argc, char** argv) {
 
 
     // Set up command_tables
-    board_specific_command_table = hermes_commands;
-    SAFE_READ_ADDRESS = HERMES_SAFE_READ_ADDRESS;
-    if(which_board == TI) {
-        SAFE_READ_ADDRESS = TI_SAFE_READ_ADDRESS;
-        board_specific_command_table = ti_commands;
-    }
-    else if(which_board == CERES) {
-        SAFE_READ_ADDRESS = CERES_SAFE_READ_ADDRESS;
-        board_specific_command_table = ceres_commands;
-    }
-    else if(which_board == FONTUS) {
+    SAFE_READ_ADDRESS = CERES_SAFE_READ_ADDRESS;
+    board_specific_command_table = ceres_commands;
+    if(which_board == FONTUS) {
         // !TODO
         SAFE_READ_ADDRESS = FONTUS_SAFE_READ_ADDRESS;
         board_specific_command_table = fontus_commands;
