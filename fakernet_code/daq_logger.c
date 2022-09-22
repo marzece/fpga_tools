@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <time.h>
 #include "hiredis/hiredis.h"
 #include "daq_logger.h"
 
