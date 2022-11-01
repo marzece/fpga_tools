@@ -380,12 +380,10 @@ int main(int argc, char** argv) {
     memset(command_buffer, 0, BUFFER_SIZE);
     signal(SIGINT, sig_handler);
 
-
     // Set up command_tables
     SAFE_READ_ADDRESS = CERES_SAFE_READ_ADDRESS;
     board_specific_command_table = ceres_commands;
     if(which_board == FONTUS) {
-        // !TODO
         SAFE_READ_ADDRESS = FONTUS_SAFE_READ_ADDRESS;
         board_specific_command_table = fontus_commands;
     }
