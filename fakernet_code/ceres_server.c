@@ -529,14 +529,14 @@ void ceres_call(client *c) {
 
 int main(int argc, char** argv) {
     // TODO figure out how to un-hardcode these
-    XEMS[0].fnet_client = NULL; XEMS[0].device_id = 4; XEMS[0].ip = "192.168.1.196";
-    XEMS[1].fnet_client = NULL; XEMS[1].device_id = 5; XEMS[1].ip = "192.168.1.197";
-    XEMS[2].fnet_client = NULL; XEMS[2].device_id = 6; XEMS[2].ip = "192.168.1.198";
-    XEMS[3].fnet_client = NULL; XEMS[3].device_id = 7; XEMS[3].ip = "192.168.1.199";
-    XEMS[4].fnet_client = NULL; XEMS[4].device_id = 8; XEMS[4].ip = "192.168.1.200";
-    XEMS[5].fnet_client = NULL; XEMS[5].device_id = 9; XEMS[5].ip = "192.168.1.201";
-    XEMS[6].fnet_client = NULL; XEMS[6].device_id = 10; XEMS[6].ip = "192.168.1.202";
-    XEMS[7].fnet_client = NULL; XEMS[7].device_id = 11; XEMS[7].ip = "192.168.1.203";
+    XEMS[0].fnet_client = NULL; XEMS[0].device_id = 4; XEMS[0].ip = "192.168.84.196";
+    XEMS[1].fnet_client = NULL; XEMS[1].device_id = 5; XEMS[1].ip = "192.168.84.197";
+    XEMS[2].fnet_client = NULL; XEMS[2].device_id = 6; XEMS[2].ip = "192.168.84.198";
+    XEMS[3].fnet_client = NULL; XEMS[3].device_id = 7; XEMS[3].ip = "192.168.84.199";
+    XEMS[4].fnet_client = NULL; XEMS[4].device_id = 8; XEMS[4].ip = "192.168.84.200";
+    XEMS[5].fnet_client = NULL; XEMS[5].device_id = 9; XEMS[5].ip = "192.168.84.201";
+    XEMS[6].fnet_client = NULL; XEMS[6].device_id = 10; XEMS[6].ip = "192.168.84.202";
+    XEMS[7].fnet_client = NULL; XEMS[7].device_id = 11; XEMS[7].ip = "192.168.84.203";
 
     int port = -1;
     int i;
