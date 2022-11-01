@@ -10,14 +10,13 @@
 #include <getopt.h>
 #include <arpa/inet.h>
 #include "hiredis/hiredis.h"
-
 // The number of seperate data streams, each of which must
 // be present for an event to be complete.
 #define MAX_DEVICE_NUMBER 34 // Maximum device ID
 #define DATA_HEADER_NBYTES 20
 #define HASH_TABLE_SIZE 1000
-//#define COMPLETE_EVENT_MASK 0xFF0ULL
-#define COMPLETE_EVENT_MASK 0x30ULL
+#define DEFAULT_EVENT_MASK 0xFF1ULL
+
 #define QUEUE_LENGTH 100
 #define FONTUS_DEVICE_ID 0
 #define REDIS_OUT_DATA_BUF_SIZE (32*1024*1024)
@@ -35,6 +34,7 @@
 #endif
 
 uint32_t last_seen_event[MAX_DEVICE_NUMBER];
+uint64_t COMPLETE_EVENT_MASK = DEFAULT_EVENT_MASK;
 int loop = 1;
 int disconnect_from_redis = 0;
 
@@ -123,6 +123,7 @@ void signal_handler(int signum) {
         num_kills +=1;
     }
     if(num_kills > 2) {
+        printf("Dying\n");
         exit(1);
     }
 }
@@ -137,7 +138,7 @@ void flag_complete_event(uint32_t event_number) {
     event_ready_queue.event_ids[event_ready_queue.events_available++] = event_number;
 }
 
-uint32_t pop_complete_event_id() {
+uint32_t pop_complete_event_id(void) {
     if(event_ready_queue.events_available == 0) {
         printf("Trying to pop empty queue. That shouldn't happen\n");
         return -1;
@@ -154,6 +155,11 @@ void register_waveform(uint32_t device_id, uint32_t event_number, redisReply* wf
     // Device number 0-3 (inclusive) are taken by the two FONTUS boards,
     // so device number 4 is the first CERES board.
     //size_t i;
+
+    // If the waveform isn't part of the event mask just ignore it
+    if(((1<<device_id) & COMPLETE_EVENT_MASK) == 0) {
+        return;
+    }
 
     int hash_value = event_number % HASH_TABLE_SIZE;
     if(event_number == last_seen_event[device_id]+1) {
@@ -236,7 +242,6 @@ void recieve_waveform_from_redis(redisContext* redis) {
     uint32_t device_id = *((uint8_t*) (rr_dat->str+18));
 
     register_waveform(device_id, event_number, reply);
-    //freeReplyObject(reply);
 }
 
 void grab_data_from_pubsub_message(redisReply* message, char** data, int* length) {
@@ -429,18 +434,19 @@ int send_event_to_redis(redisContext* redis, int event_id) {
 
 void print_help_string() {
     printf("zipper: recieves then combines data from CERES & FONTUS data builders via redis DB.\n"
-            "   usage:  zipper [--out filename] \n");
+            "   usage:  zipper [--out filename] [--mask event_mask]\n");
 }
 
 int main(int argc, char** argv) {
 
     const char * output_filename = "/dev/null";
     struct option clargs[] = {{"out", required_argument, NULL, 'o'},
+                              {"mask", required_argument, NULL, 'm'},
                               {"help", no_argument, NULL, 'h'},
                               { 0, 0, 0, 0}};
     int optindex;
     int opt;
-    while((opt = getopt_long(argc, argv, "o:", clargs, &optindex)) != -1) {
+    while((opt = getopt_long(argc, argv, "om:", clargs, &optindex)) != -1) {
         switch(opt) {
             case 0:
                 // Should be here if the option has the "flag" set
@@ -449,6 +455,13 @@ int main(int argc, char** argv) {
             case 'o':
                 printf("Output data file set to '%s'\n", optarg);
                 output_filename = optarg;
+                break;
+            case 'm':
+                COMPLETE_EVENT_MASK = strtoul(optarg, NULL, 0);
+                if(!COMPLETE_EVENT_MASK) {
+                    printf("Event mask '%s' couldn't be interpreted. Dying\n", optarg);
+                    return 0;
+                }
                 break;
             case 'h':
                 print_help_string();
@@ -461,6 +474,8 @@ int main(int argc, char** argv) {
 
         }
     }
+
+    printf("COMPLETE EVENT MASK = 0x%lx\n", COMPLETE_EVENT_MASK);
 
     redisReply* reply = NULL;
     redisContext* redis = NULL;
@@ -524,8 +539,6 @@ int main(int argc, char** argv) {
                 redis_update_time = current_time;
             }
             save_event(fout, event_id);
-            //grab_full_event(redis, event_id, &event);
-            //save_event(fout, &event);
             free_event(event_id);
         }
         delta_t = (current_time.tv_sec - event_rate_time.tv_sec)*1e6 + (current_time.tv_usec - event_rate_time.tv_usec);
