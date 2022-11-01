@@ -12,7 +12,7 @@ typedef struct client client; // Forward declaration
 typedef void (*CLIFunc)(client* c, int argc, sds* argv);
 typedef uint32_t (*LegacyFunc)(uint32_t* args);
 typedef struct ServerCommand {
-    char* name;
+    const char* name;
     CLIFunc func;
     LegacyFunc legacy_func;
     int nargs;

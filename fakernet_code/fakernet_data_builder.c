@@ -841,7 +841,6 @@ int read_proc(FPGA_IF* fpga, TrigHeader* ret) {
 
                         *(uint16_t*)(fpga->event_buffer.data+fpga->event_buffer.num_bytes) = htons(sample);
                         fpga->event_buffer.num_bytes += 2;
-
                     }
                     event.samples_read += 3;
                 }
