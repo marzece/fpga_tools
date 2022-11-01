@@ -14,9 +14,14 @@ AXI_GPIO* new_gpio(const char* name, uint32_t axi_addr) {
     return ret;
 }
 
-uint32_t read_gpio_value(AXI_GPIO *gpio, int port_number) {
+uint32_t read_gpio_value(AXI_GPIO *gpio, int input_port, int port_number) {
     uint32_t port_offset = port_number*4;
     uint32_t ret;
+
+    if(input_port) {
+        port_offset |= 1<<11;
+    }
+
     if(double_read_addr(gpio->axi_addr, port_offset, &ret)) {
         // TODO!
          printf("ERROR occurred while doing GPIO read\n");

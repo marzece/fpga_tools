@@ -20,6 +20,8 @@
 #define  GPIO_ADC_RESET_OFFSET      1
 #define  GPIO_ADC_PDN_OFFSET        2
 #define  GPIO_LMK_RESET_OFFSET      3
+#define  GPIO_SMA_SWITCH_OFFSET     5
+#define  GPIO_HERMES_SYNC_SWITCH_OFFSET     6
 
 #define  LMK_A_AXI_ADDR             0x100000
 #define  LMK_B_AXI_ADDR             0x100300
@@ -515,7 +517,7 @@ static uint32_t set_adc_pdn_command(uint32_t* args) {
 
 static uint32_t get_adc_pdn_command(uint32_t* args) {
     UNUSED(args);
-    return read_gpio_value(get_ceres_handle()->axi_gpio, GPIO_ADC_PDN_OFFSET);
+    return read_gpio_value(get_ceres_handle()->axi_gpio, 0, GPIO_ADC_PDN_OFFSET);
 }
 
 static uint32_t adc_reset_command(uint32_t* args) {
@@ -859,6 +861,27 @@ static uint32_t read_jesd_rx_lane_buffer_adj_command(uint32_t* args) {
     return 0;
 }
 
+static uint32_t write_sma_swap_command(uint32_t* args) {
+    uint32_t val = args[0];
+    return write_gpio_value(get_ceres_handle()->axi_gpio, GPIO_SMA_SWITCH_OFFSET, val);
+}
+
+static uint32_t read_sma_swap_command(uint32_t* args) {
+    UNUSED(args);
+    return read_gpio_value(get_ceres_handle()->axi_gpio, 0, GPIO_SMA_SWITCH_OFFSET);
+}
+
+static uint32_t read_hermes_sync_command(uint32_t* args) {
+    UNUSED(args);
+    return read_gpio_value(get_ceres_handle()->axi_gpio, 0, GPIO_HERMES_SYNC_SWITCH_OFFSET);
+}
+
+static uint32_t write_hermes_sync_command(uint32_t* args) {
+    uint32_t val = args[0];
+    return write_gpio_value(get_ceres_handle()->axi_gpio, GPIO_HERMES_SYNC_SWITCH_OFFSET, val);
+
+}
+
 static uint32_t read_jesd_buffer_delay_command(uint32_t* args) {
     uint32_t which_jesd = args[0];
     AXI_JESD* jesd = jesd_switch(which_jesd);
@@ -872,6 +895,22 @@ static uint32_t write_jesd_buffer_delay_command(uint32_t* args) {
     AXI_JESD* jesd = jesd_switch(which_jesd);
     if(!jesd) { return -1; }
     return write_jesd_buffer_delay(jesd, data);
+}
+
+static uint32_t write_gpio_register_command(uint32_t* args) {
+    uint32_t channel = args[0];
+    uint32_t data = args[1];
+    return write_gpio_value(get_ceres_handle()->axi_gpio, channel, data);
+}
+
+static uint32_t read_gpio_output_register_command(uint32_t* args) {
+    uint32_t channel = args[0];
+    return read_gpio_value(get_ceres_handle()->axi_gpio, 0, channel);
+}
+
+static uint32_t read_gpio_input_register_command(uint32_t* args) {
+    uint32_t channel = args[0];
+    return read_gpio_value(get_ceres_handle()->axi_gpio, 1, channel);
 }
 
 static uint32_t reset_clock_wiz_command(uint32_t* args) {
@@ -1014,8 +1053,15 @@ ServerCommand ceres_commands[] = {
 {"write_jesd_drp_channel",NULL,                    write_jesd_drp_channel_command,                         4,  1, 0, 0},
 {"read_build_tag",NULL,                            read_build_tag_command,                                 1,  1, 0, 0},
 {"read_jesd_rx_lane_buffer_adj",NULL,              read_jesd_rx_lane_buffer_adj_command,                   2,  4, 0, 0},
+{"read_sma_swap",NULL,                             read_sma_swap_command,                                  1,  1, 0, 0},
+{"write_sma_swap",NULL,                            write_sma_swap_command,                                 2,  1, 0, 0},
+{"read_hermes_sync",NULL,                          read_hermes_sync_command,                               1,  1, 0, 0},
+{"write_hermes_sync",NULL,                         write_hermes_sync_command,                              2,  1, 0, 0},
 {"write_jesd_buffer_delay",NULL,                   write_jesd_buffer_delay_command,                        3,  1, 0, 0},
 {"read_jesd_buffer_delay",NULL,                    read_jesd_buffer_delay_command,                         2,  1, 0, 0},
+{"write_gpio_register",NULL,                       write_gpio_register_command,                            3,  1, 0, 0},
+{"read_gpio_output_register",NULL,                 read_gpio_output_register_command,                      2,  1, 0, 0},
+{"read_gpio_input_register",NULL,                  read_gpio_input_register_command,                       2,  1, 0, 0},
 {"reset_clock_wiz",NULL,                           reset_clock_wiz_command,                                1,  1, 0, 0},
 {"read_clock_wiz_phase",NULL,                      read_clock_wiz_phase_command,                           2,  1, 0, 0},
 {"write_clock_wiz_phase",NULL,                     write_clock_wiz_phase_command,                          3,  1, 0, 0},
