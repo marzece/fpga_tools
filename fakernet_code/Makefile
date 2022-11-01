@@ -17,7 +17,7 @@ zipper: zipper.c hiredis/libhiredis.a
 tail_daq_log: tail_daq_log.o hiredis/libhiredis.a
 	$(CC) -ggdb3 -o $@ $(CFLAGS) $^
 
-kintex_client_server: kintex_client_server.o gpio.o lmk_if.o ads_if.o iic.o fnet_client.o dac_if.o axi_qspi.o jesd.o jesd_phy.o adc_sample_fanout.o channel_trigger.o data_pipeline.o ceres_if.o reset_gen_if.o server.o ae.o sds.o adlist.o connection.o anet.o networking.o util.o trigger_pipeline.o fontus_if.o daq_logger.o hiredis/libhiredis.a
+kintex_client_server: kintex_client_server.o gpio.o lmk_if.o ads_if.o iic.o fnet_client.o dac_if.o axi_qspi.o jesd.o jesd_phy.o adc_sample_fanout.o channel_trigger.o data_pipeline.o ceres_if.o reset_gen_if.o server.o ae.o sds.o adlist.o connection.o anet.o networking.o util.o trigger_pipeline.o fontus_if.o clock_wiz.o daq_logger.o hiredis/libhiredis.a
 	$(CC) -ggdb3 -o $@ $(CFLAGS) $^
 
 ceres_server: ceres_server.o gpio.o lmk_if.o ads_if.o iic.o fnet_client.o dac_if.o axi_qspi.o jesd.o jesd_phy.o adc_sample_fanout.o channel_trigger.o data_pipeline.o ceres_if.o reset_gen_if.o server.o ae.o sds.o adlist.o connection.o anet.o networking.o util.o trigger_pipeline.o clock_wiz.o daq_logger.o hiredis/libhiredis.a
