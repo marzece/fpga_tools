@@ -38,7 +38,7 @@ uint32_t SAFE_READ_ADDRESS;
 typedef struct XEMConn {
     struct fnet_ctrl_client* fnet_client;
     int device_id;
-    char* ip;
+    const char* ip;
 //    int is_up;
 } XEMConn;
 XEMConn XEMS[NUM_XEMS];
