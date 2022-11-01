@@ -8,6 +8,7 @@
 #include "jesd_phy.h"
 #include "reset_gen_if.h"
 #include "data_pipeline.h"
+#include "clock_wiz.h"
 
 #define  ADC_A_AXI_ADDR             0x100100
 #define  ADC_B_AXI_ADDR             0x100200
@@ -25,7 +26,6 @@
 #define  CERES_LMK_AXI_ADDR         0x100600
 #define  RESET_GEN_AXI_ADDR         0x500000
 #define  IIC_AXI_ADDR               0x300000
-#define  CLKGEN_IIC_AXI_ADDR        0xD000
 #define  JESD_A_AXI_ADDR            0x204000
 #define  JESD_B_AXI_ADDR            0x205000
 #define  JESD_C_AXI_ADDR            0x206000
@@ -35,7 +35,8 @@
 #define  JESD_PHY_C_AXI_ADDR        0x202000
 #define  JESD_PHY_D_AXI_ADDR        0x203000
 #define  DATA_PIPELINE_0_ADDR       0x0
-#define  CLKGEN_IIC_ADDR            0xD0
+
+#define CLOCK_WIZARD_ADDR           0x600000
 
 #define RESET_GEN_JESD_BIT 0
 #define RESET_GEN_PIPELINE_BIT 1
@@ -67,6 +68,7 @@ struct CERES_IF {
     AXI_JESD_PHY* jesd_phy_c;
     AXI_JESD_PHY* jesd_phy_d;
     AXI_DATA_PIPELINE* pipeline;
+    AXI_CLOCK_WIZ* clk_wiz;
 };
 
 static struct CERES_IF* ceres = NULL;
@@ -84,7 +86,6 @@ static struct CERES_IF* get_ceres_handle() {
         ceres->axi_gpio = new_gpio("gpio", GPIO_AXI_ADDR);
         ceres->reset_gen = new_reset_gen("reset_gen", RESET_GEN_AXI_ADDR);
         ceres->iic_main = new_iic("iic_main", IIC_AXI_ADDR,1, 1);
-        ceres->clk_gen_iic = new_iic("clkgen_iic", CLKGEN_IIC_AXI_ADDR, 2, 2);
         ceres->jesd_a = new_jesd("jesd_a", JESD_A_AXI_ADDR);
         ceres->jesd_b = new_jesd("jesd_b", JESD_B_AXI_ADDR);
         ceres->jesd_c = new_jesd("jesd_c", JESD_C_AXI_ADDR);
@@ -94,6 +95,7 @@ static struct CERES_IF* get_ceres_handle() {
         ceres->jesd_phy_c = new_jesd_phy("jesd_phy_c", JESD_PHY_C_AXI_ADDR);
         ceres->jesd_phy_d = new_jesd_phy("jesd_phy_d", JESD_PHY_D_AXI_ADDR);
         ceres->pipeline = new_data_pipeline_if("dp0", DATA_PIPELINE_0_ADDR);
+        ceres->clk_wiz = new_clock_wiz("clock_wiz", CLOCK_WIZARD_ADDR);
     }
     return ceres;
 }
@@ -138,44 +140,6 @@ static uint32_t write_iic_bus_with_reg_command(uint32_t* args) {
     uint32_t reg_value = args[2];
     return write_iic_bus_with_reg(get_ceres_handle()->iic_main, iic_addr, reg_addr, reg_value); 
 }
-
-static uint32_t read_clkgen_iic_command(uint32_t *args) {
-    uint32_t offset = args[0];
-    return iic_read(get_ceres_handle()->clk_gen_iic, offset);
-}
-
-static uint32_t write_clkgen_iic_command(uint32_t *args) {
-    uint32_t offset = args[0];
-    uint32_t value = args[1];
-    return iic_write(get_ceres_handle()->clk_gen_iic, offset, value);
-}
-
-static uint32_t write_clkgen_register_command(uint32_t *args) {
-    uint32_t iic_addr = CLKGEN_IIC_ADDR;
-    uint16_t reg_addr = args[0];
-    uint16_t reg_value = args[1];
-    // IIC Stuff
-    return write_iic_bus_with_reg(get_ceres_handle()->clk_gen_iic, iic_addr, reg_addr, reg_value);
-}
-
-static uint32_t read_clkgen_register_command(uint32_t *args) {
-    uint32_t iic_addr = CLKGEN_IIC_ADDR;
-    uint16_t reg_addr = args[0];
-    // IIC Stuff
-    return read_iic_bus_with_reg(get_ceres_handle()->clk_gen_iic, iic_addr, reg_addr);
-}
-
-static uint32_t write_clkgen_gpio_command(uint32_t *args) {
-    uint32_t val = args[0];
-    return write_iic_gpio(get_ceres_handle()->clk_gen_iic, val);
-}
-
-static uint32_t read_clkgen_gpio_command(uint32_t *args) {
-    UNUSED(args);
-    return read_iic_gpio(get_ceres_handle()->clk_gen_iic);
-}
-
-//static uint32_t write_clkgen_eeprom(uint32*t args) { }
 
 AXI_QSPI* adc_switch(int which_adc) {
     AXI_QSPI* this_adc = NULL;
@@ -434,6 +398,7 @@ static uint32_t fnet_sys_reset_command(uint32_t* args) {
     generic_sys_reset(1<<RESET_GEN_FNET_BIT);
     return 0;
 }
+
 static uint32_t pipeline_sys_reset_command(uint32_t* args) {
     UNUSED(args);
     generic_sys_reset(1<<RESET_GEN_PIPELINE_BIT);
@@ -909,6 +874,66 @@ static uint32_t write_jesd_buffer_delay_command(uint32_t* args) {
     return write_jesd_buffer_delay(jesd, data);
 }
 
+static uint32_t reset_clock_wiz_command(uint32_t* args) {
+    UNUSED(args);
+    return clock_wiz_reset(get_ceres_handle()->clk_wiz);
+}
+
+static uint32_t read_clock_wiz_phase_command(uint32_t* args) {
+    uint32_t which_clock = args[0];
+    return clock_wiz_read_phase(get_ceres_handle()->clk_wiz, which_clock);
+}
+
+static uint32_t write_clock_wiz_phase_command(uint32_t* args) {
+    uint32_t which_clock = args[0];
+    uint32_t value = args[1];
+    return clock_wiz_write_phase(get_ceres_handle()->clk_wiz, which_clock, value);
+}
+
+static uint32_t register_clock_wiz_changes_command(uint32_t* args) {
+    return clock_wiz_register_changes(get_ceres_handle()->clk_wiz);
+}
+
+static uint32_t increment_clock_wiz_phase_command(uint32_t* args) {
+    uint32_t inc = args[0];
+    inc = inc % 360000;
+    uint32_t ph1 = clock_wiz_read_phase(get_ceres_handle()->clk_wiz, 0);
+    uint32_t ph2 = clock_wiz_read_phase(get_ceres_handle()->clk_wiz, 1);
+    uint32_t ph3 = clock_wiz_read_phase(get_ceres_handle()->clk_wiz, 2);
+    uint32_t ph4 = clock_wiz_read_phase(get_ceres_handle()->clk_wiz, 3);
+
+    printf("Before = %u %u %u %u\n", ph1, ph2, ph3, ph4);
+    ph1 = ((ph1+inc) % 360000);
+    ph2 = ((ph2+inc) % 360000);
+    ph3 = ((ph3+inc) % 360000);
+    ph4 = ((ph4+inc) % 360000);
+    printf("After = %u %u %u %u\n", ph1, ph2, ph3, ph4);
+    clock_wiz_write_phase(get_ceres_handle()->clk_wiz, 0, ph1);
+    clock_wiz_write_phase(get_ceres_handle()->clk_wiz, 1, ph2);
+    clock_wiz_write_phase(get_ceres_handle()->clk_wiz, 2, ph3);
+    clock_wiz_write_phase(get_ceres_handle()->clk_wiz, 3, ph4);
+    return clock_wiz_register_changes(get_ceres_handle()->clk_wiz);
+}
+
+static uint32_t decrement_clock_wiz_phase_command(uint32_t* args) {
+    int i;
+    uint32_t decr = args[0];
+    uint32_t phase;
+    decr = decr % 360000;
+
+
+    for(i=0; i<4; i++) {
+        phase = clock_wiz_read_phase(get_ceres_handle()->clk_wiz, i);
+        if(decr > phase) {
+            phase = 360000 - (decr - phase);
+        } else {
+            phase -= decr;
+        }
+    clock_wiz_write_phase(get_ceres_handle()->clk_wiz, i, phase);
+    }
+    return clock_wiz_register_changes(get_ceres_handle()->clk_wiz);
+}
+
 ServerCommand ceres_commands[] = {
 {"read_iic_reg",NULL,                              read_iic_block_command,                                 2,  1, 0, 0},
 {"write_iic_reg",NULL,                             write_iic_block_command,                                3,  0, 0, 0},
@@ -916,12 +941,6 @@ ServerCommand ceres_commands[] = {
 {"write_iic_bus",NULL,                             write_iic_bus_command,                                  3,  1, 0, 0},
 {"read_iic_bus_with_reg",NULL,                     read_iic_bus_with_reg_command,                          3,  1, 0, 0},
 {"write_iic_bus_with_reg",NULL,                    write_iic_bus_with_reg_command,                         4,  1, 0, 0},
-{"write_clkgen_iic",NULL,                          write_clkgen_iic_command,                               3,  1, 0, 0},
-{"read_clkgen_iic",NULL,                           read_clkgen_iic_command,                                2,  1, 0, 0},
-{"read_clkgen_gpio",NULL,                          read_clkgen_gpio_command,                               1,  1, 0, 0},
-{"write_clkgen_gpio",NULL,                         write_clkgen_gpio_command,                              2,  1, 0, 0},
-{"write_clkgen_register",NULL,                     write_clkgen_register_command,                          3,  1, 0, 0},
-{"read_clkgen_register",NULL,                      read_clkgen_register_command,                           2,  1, 0, 0},
 {"set_adc_power",NULL,                             set_adc_power_command,                                  2,  1, 0, 0},
 {"read_ads",NULL,                                  read_ads_if_command,                                    3,  1, 0, 0},
 {"write_ads",NULL,                                 write_ads_if_command,                                   4,  1, 0, 0},
@@ -997,5 +1016,11 @@ ServerCommand ceres_commands[] = {
 {"read_jesd_rx_lane_buffer_adj",NULL,              read_jesd_rx_lane_buffer_adj_command,                   2,  4, 0, 0},
 {"write_jesd_buffer_delay",NULL,                   write_jesd_buffer_delay_command,                        3,  1, 0, 0},
 {"read_jesd_buffer_delay",NULL,                    read_jesd_buffer_delay_command,                         2,  1, 0, 0},
+{"reset_clock_wiz",NULL,                           reset_clock_wiz_command,                                1,  1, 0, 0},
+{"read_clock_wiz_phase",NULL,                      read_clock_wiz_phase_command,                           2,  1, 0, 0},
+{"write_clock_wiz_phase",NULL,                     write_clock_wiz_phase_command,                          3,  1, 0, 0},
+{"register_clock_wiz_changes",NULL,                register_clock_wiz_changes_command,                     1,  1, 0, 0},
+{"increment_clock_wiz_phase",NULL,                 increment_clock_wiz_phase_command,                      2,  1, 0, 0},
+{"decrement_clock_wiz_phase",NULL,                 decrement_clock_wiz_phase_command,                      2,  1, 0, 0},
 {"",NULL,                                          NULL,                                                   0,  0, 0, 0}    //  Must  be  last
 };
