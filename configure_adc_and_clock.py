@@ -23,11 +23,11 @@ def parse_config_file(f):
             addr, val = line.split()
         except ValueError:
             addr = line.split()[0]
-            # The only command that has no arguement is 'pause'
+            # The only command that has no arguement is 'pause' or reset
             # should this be ignored if 'add_pauses" is on?
-            if(addr.lower() != "pause"):
-                raise ValueError
-            instructions.append((current_device, "pause", None))
+            if(addr.lower() != "pause" and addr.lower() != 'reset'):
+                raise ValueError("%s isn't valid" % addr.lower())
+            instructions.append((current_device, addr.lower(), None))
             continue
         if("sleep" in addr.lower()):
             instructions.append((current_device, "sleep", float(val)))
@@ -62,7 +62,13 @@ def do_programming(server, adcs, instructions):
         if(addr == "pause"):
             input("Paused, press enter to continue")
             continue
+        if(addr == "reset"):
+            adc_hard_reset(server, adcs)
+            continue
+
+
         #print(device, hex(addr), hex(value))
+
         #input("Paused, press enter to continue")
         if(device.lower()== "lmk"):
             for this_lmk in lmks:

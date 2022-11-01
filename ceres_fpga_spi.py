@@ -1,17 +1,17 @@
 import socket
 import hiredis
 from time import sleep
-from enum import Enum, auto
+from enum import Enum
 
 class SPI_Device(Enum):
-    ADC_A = auto()
-    ADC_B = auto()
-    ADC_C = auto()
-    ADC_D = auto()
-    LMK_A = auto()
-    LMK_B = auto()
-    CERES_LMK = auto()
-    TI_ADC = auto()
+    ADC_A = 1
+    ADC_B = 2
+    ADC_C = 3
+    ADC_D = 4
+    LMK_A = 5
+    LMK_B = 6
+    CERES_LMK = 7
+    TI_ADC = 8
 
 # Map from enum to server id
 server_device_ids = { SPI_Device.ADC_A: 0, SPI_Device.ADC_B:1,
