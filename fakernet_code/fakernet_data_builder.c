@@ -31,6 +31,7 @@ Author: Eric Marzec <marzece@gmail.com>
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <stdarg.h>
 #include <string.h>
 #include <sys/time.h>
@@ -57,6 +58,8 @@ int verbosity_stdout = LOG_INFO;
 int verbosity_redis = LOG_WARN;
 int verbosity_file = LOG_WARN;
 
+// Counter for how many events have been built
+int built_counter = 0;
 // Number of channels to be readout
 int NUM_CHANNELS = 16;
 
@@ -167,7 +170,7 @@ size_t ring_buffer_contiguous_readable(RingBuffer* buffer) {
     /* This is a little bit tricky b/c of the two read pointers...but it's not too bad.
      * Basically there are two cases where are all three pointers are equal, full or empty,
      * those cases are disambiguated by the "is_empty" flag.
-     * If the "read_pointer" and the write_pointer are equal that can only happen if we've
+     * If only the "read_pointer" and the write_pointer are equal that will only happen if we've
      * read all available data (no more is readable).
      * Every other case can ignore the event_read_pointer and just do reading like a normal
      * ring buffer.
@@ -549,7 +552,7 @@ void display_event(const TrigHeader* header) {
                           "device id = %u\n"
                           "CRC  = 0x%x", header->trig_number, header->length,
                                            header->clock, header->device_number,
-                                           header->crc);
+                                           header->crc, built_counter);
 }
 
 void clean_up() {
@@ -662,9 +665,10 @@ void handle_bad_header(TrigHeader* header) {
                            "Bad trig # =  %i\n"
                            "Bad length = %i\n"
                            "Bad time = %llu\n"
-                           "Bad channel id = %i", header->magic_number, header->trig_number,
+                           "Bad channel id = %i",
+                           "Bad CRC id = %i", header->magic_number, header->trig_number,
                                                     header->length, (unsigned long long) header->clock,
-                                                    header->device_number);
+                                                    header->device_number, header->crc);
     reeling = 1;
 }
 
@@ -800,6 +804,9 @@ int read_proc(FPGA_IF* fpga, TrigHeader* ret) {
             if(word != expectation) {
                 printf("Badness found 0x%x 0x%x\n", word, expectation);
                 // TODO should handle this better;
+                reeling = 1;
+                // This event's trash...TODO, it'd be nice to try and do some better recovery
+                fpga->event_buffer.num_bytes = 0;
                 return 0;
             }
             // Stash the location in memory of the start of each waveform
@@ -1220,6 +1227,7 @@ int main(int argc, char **argv) {
 //                redis_publish_event(redis, event);
 //                prev_time = current_time;
 //            }
+            built_counter += 1;
             display_event(&event_header);
             if(!do_not_save) {
                 write_to_disk(fpga_if.event_buffer);

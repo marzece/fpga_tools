@@ -457,7 +457,7 @@ static uint32_t write_coax_dir_select_command(uint32_t* args) {
 
 static uint32_t read_coax_dir_select_command(uint32_t* args) {
     UNUSED(args);
-    return read_gpio_value(get_fontus_handle()->gpio, COAX_GPIO_OFFSET);
+    return read_gpio_value(get_fontus_handle()->gpio, 0, COAX_GPIO_OFFSET);
 }
 
 static int get_bit_for_trigger_specifier(client* c, sds* argv) {

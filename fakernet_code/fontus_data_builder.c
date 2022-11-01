@@ -411,10 +411,6 @@ size_t pull_from_fpga(FPGA_IF* fpga_if) {
     contiguous_space_left = ring_buffer_contiguous_space_available(&(fpga_if->ring_buffer));
     if(contiguous_space_left > 0) {
         bytes_recvd = recv(fpga_if->fd, w_buffer + w_buffer_idx, contiguous_space_left, 0);
-        if(bytes_recvd > 0) {
-            printf("Got %i bytes\n", bytes_recvd);
-            //fwrite(w_buffer+ w_buffer_idx, 1, bytes_recvd, fdump);
-        }
         if(bytes_recvd < 0) {
             //printf("Error retrieving data from socket: %s\n", strerror(errno));
             return 0;
@@ -465,13 +461,14 @@ void display_event(FontusTrigHeader* ev) {
                           "Event trig number =  %u\n"   
                           "Time = %llu\n"
                           "Length =  %u\n"
+                          "DeviceID =  %u\n"
                           "Flags =  %u\n"
                           "Self trigger word =  %u\n"
                           "beam_trigger_time =  %llu\n"
                           "LED trigger time  =  %llu\n"
                           "CT time  =  %llu\n"
                           "CRC = 0x%x\n",
-                          ev->magic_number, ev->trig_number, ev->clock, ev->length, ev->trigger_flags,
+                          ev->magic_number, ev->trig_number, ev->clock, ev->length, ev->device_number, ev->trigger_flags,
                           ev->self_trigger_word, ev->beam_trigger_time,
                           ev->led_trigger_time, ev->ct_time, ev->crc);
 }
@@ -731,6 +728,7 @@ int read_proc(FPGA_IF* fpga, FontusTrigHeader* ret) {
     } // Done reading header
     uint32_t calcd_crc = calc_trig_header_crc(&event.header);
     if(event.header.crc !=  calcd_crc || event.header.magic_number != MAGIC_VALUE) {
+	    printf("Expected = 0x%x\tRead = 0x%x\n", calcd_crc, event.header.crc);
         handle_bad_header(&event.header);
         return 0;
     }
@@ -766,18 +764,44 @@ void redis_publish_event(redisContext*c, const FontusTrigHeader event) {
     if(!c) {
         return;
     }
+    char publish_buffer[HEADER_SIZE];
+    unsigned int offset = 0;
+
     redisReply* r;
     size_t arglens[3];
     const char* args[3];
 
     args[0] = "PUBLISH";
     arglens[0] = strlen(args[0]);
-    args[1] = "trig_header_stream";
+    //args[1] = "trig_header_stream";
+    args[1] = "event_stream";
     arglens[1] = strlen(args[1]);
 
-    // args[2] already contains the whole event, including the header.
-    // So just send the first HEADER_SIZE of the event
+    *(uint32_t*)(publish_buffer+offset) = htonl(event.magic_number);
+    offset += 4;
+    *(uint32_t*)(publish_buffer+offset) = htonl(event.trig_number);
+    offset += 4;
+    *(uint64_t*)(publish_buffer+offset) = htonll(event.clock);
+    offset += 8;
+    *(uint16_t*)(publish_buffer+offset) = htons(event.length);
+    offset += 2;
+    *(uint8_t*)(publish_buffer+offset) = event.device_number;
+    offset += 1;
+    *(uint8_t*)(publish_buffer+offset) = event.trigger_flags;
+    offset += 1;
+    *(uint32_t*)(publish_buffer+offset) = htonl(event.self_trigger_word);
+    offset += 4;
+    *(uint64_t*)(publish_buffer+offset) = htonll(event.beam_trigger_time);
+    offset += 8;
+    *(uint64_t*)(publish_buffer+offset) = htonll(event.led_trigger_time);
+    offset += 8;
+    *(uint64_t*)(publish_buffer+offset) = htonll(event.ct_time);
+    offset += 8;
+    *(uint32_t*)(publish_buffer+offset) = htonl(event.crc);
+    offset += 4;
+
     arglens[2] = HEADER_SIZE;
+    args[2] = publish_buffer;
     r = redisCommandArgv(c, 3,  args,  arglens);
     if(!r) {
         builder_log(LOG_ERROR, "Redis error!");
@@ -1029,7 +1053,7 @@ int main(int argc, char **argv) {
         event_ready = read_proc(&fpga_if, &event);
 
         if(event_ready) {
-            //redis_publish_event(redis, event);
+            redis_publish_event(redis, event);
             display_event(&event);
             if(!do_not_save) {
                 write_to_disk(&event);
