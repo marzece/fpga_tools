@@ -465,7 +465,7 @@ int main(int argc, char** argv) {
                               { 0, 0, 0, 0}};
     int optindex;
     int opt;
-    while((opt = getopt_long(argc, argv, "om:", clargs, &optindex)) != -1) {
+    while((opt = getopt_long(argc, argv, "o:m:", clargs, &optindex)) != -1) {
         switch(opt) {
             case 0:
                 // Should be here if the option has the "flag" set
