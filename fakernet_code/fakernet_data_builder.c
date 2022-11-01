@@ -391,7 +391,7 @@ int connect_to_fpga(const char* fpga_ip) {
                 break;
             }
             builder_log(LOG_ERROR, "Error connecting TCP socket: %s", strerror(errno));
-            sleep(5);
+            sleep(2);
             continue;
         }
         break;
@@ -960,7 +960,7 @@ struct fnet_ctrl_client* connect_fakernet_udp_client(const char* fnet_hname) {
         fnet_client = fnet_ctrl_connect(fnet_hname, reliable, &err_string, NULL);
         if(!fnet_client) {
             builder_log(LOG_ERROR, "ERROR Connecting on UDP channel: %s. Will retry", err_string);
-            sleep(3);
+            sleep(1);
         }
     }
     builder_log(LOG_INFO, "UDP channel connected");
@@ -1146,14 +1146,14 @@ int main(int argc, char **argv) {
         if(send_tcp_reset(udp_client)) {
             printf("Sending TCP Reset");
             builder_log(LOG_ERROR, "Error sending TCP reset. Will retry.");
-            sleep(5);
+            sleep(2);
             continue;
         }
         fpga_if.fd = connect_to_fpga(ip);
 
         if(fpga_if.fd < 0) {
             builder_log(LOG_ERROR, "error ocurred connecting to FPGA. Will retry.");
-            sleep(5);
+            sleep(2);
         }
     } while(fpga_if.fd < 0);
     builder_log(LOG_INFO, "FPGA TCP connection made");

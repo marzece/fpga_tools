@@ -234,7 +234,12 @@ int setup_udp(XEMConn* xem) {
         return 0;
     }
 
-    xem->fnet_client = fnet_ctrl_connect(xem->ip, reliable, &err_string, NULL);
+    int loop_count = 0;
+    do {
+        xem->fnet_client = fnet_ctrl_connect(xem->ip, reliable, &err_string, NULL);
+        usleep(10000);
+    }while(!xem->fnet_client && loop_count++ < 10);
+
     if(!xem->fnet_client) {
         return -1;
     }
