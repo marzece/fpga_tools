@@ -125,8 +125,6 @@ typedef struct ProcessingStats {
     //unsigned int bytes_written;
 } ProcessingStats;
 
-
-
 // TODO could consider merging the contiguous & total space available functions
 // by have both values calculated and returned in argument pointers..and just only fill in
 // the non-NULL ones.
@@ -331,6 +329,8 @@ typedef struct EventInProgress {
     int samples_read;
     int wf_crc_read;
     uint16_t prev_sample;
+    uint16_t max;
+    uint16_t min;
 } EventInProgress;
 
 // Open socket to FPGA returns 0 if successful
@@ -460,6 +460,33 @@ void initialize_event_buffer(EventBuffer* eb) {
         builder_log(LOG_ERROR, "Could not allocate enough space for event buffer!");
         exit(1);
     }
+}
+
+// Connect to redis database
+redisContext* create_redis_conn(const char* hostname, const int port) {
+    builder_log(LOG_INFO, "Opening Redis Connection: %s", hostname);
+
+    redisContext* c;
+    c = redisConnect(hostname, port);
+    if(c == NULL || c->err) {
+        builder_log(LOG_ERROR, "Redis connection error %s", (c ? c->errstr : ""));
+        redisFree(c);
+        return NULL;
+    }
+    return c;
+}
+
+redisContext* create_redis_unix_conn(const char* path) {
+    printf("Opening Redis Connection\n");
+    redisContext* c;
+    c = redisConnectUnix(path);
+    //c = redisConnectUnix("/var/run/redis/redis-server.sock");
+    if(c == NULL || c->err) {
+        printf("Redis connection error %s\n", c->errstr);
+        redisFree(c);
+        return NULL;
+    }
+    return c;
 }
 
 EventInProgress start_event() {
@@ -851,20 +878,6 @@ int read_proc(FPGA_IF* fpga, TrigHeader* ret) {
     return ret_val;
 }
 
-// Connect to redis database
-redisContext* create_redis_conn(const char* hostname) {
-    builder_log(LOG_INFO, "Opening Redis Connection: %s", hostname);
-
-    redisContext* c;
-    c = redisConnect(hostname, 6379);
-    if(c == NULL || c->err) {
-        builder_log(LOG_ERROR, "Redis connection error %s", (c ? c->errstr : ""));
-        redisFree(c);
-        return NULL;
-    }
-    return c;
-}
-
 // Send event to redis database
 void redis_publish_event(redisContext*c, EventBuffer eb) {
     if(!c) {
@@ -1014,7 +1027,7 @@ int main(int argc, char **argv) {
     const char* ip = "192.168.1.192";
     enum ArgIDs expecting_value;
     int do_not_save = 0;
-    const char* FOUT_FILENAME = "fpga_data.dat";
+    const char* FOUT_FILENAME = "/dev/null";
     const char* ERROR_FILENAME = DEFAULT_ERROR_LOG_FILENAME;
     const char* redis_host = DEFAULT_REDIS_HOST;
     int event_ready;
@@ -1154,8 +1167,8 @@ int main(int argc, char **argv) {
     }
 
     gettimeofday(&prev_time, NULL);
-    redis = create_redis_conn(redis_host);
-    usleep(100000);
+    redis = create_redis_unix_conn("/var/run/redis/redis-server.sock");
+    usleep(100000); // Give redis time to connect
 
     // Do authentication
     // Immediatly free the reply cause I don't care about it
@@ -1178,7 +1191,9 @@ int main(int argc, char **argv) {
             reeling = !find_event_start(&fpga_if);
             did_warn_about_reeling = reeling;
         }
-        event_ready = read_proc(&fpga_if, &event_header);
+        else {
+            event_ready = read_proc(&fpga_if, &event_header);
+        }
 
         gettimeofday(&current_time, NULL);
         the_stats.uptime = (current_time.tv_sec*1e6 + current_time.tv_usec) - the_stats.start_time;
