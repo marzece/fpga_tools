@@ -1,4 +1,5 @@
 import json
+import hiredis
 import socket
 import copy
 from ceres_fpga_spi import connect_to_fpga, grab_response, SPI_Device
@@ -67,7 +68,7 @@ class JESDReg:
             addr_str = addr_str + hex(self.addr)
         return self.name + "\n" + str(addr_str) + "\n\t" + '\n\t'.join(field_strs) + "\n"
 
-def write_to_fpga(conn, device, addr, value):
+def write_to_fpga_jesd(conn, device, addr, value):
     if(device == SPI_Device.ADC_A):
         command = "jesd_write 0x0 0x%x 0x%x\r\n" % (addr, value)
     elif(device == SPI_Device.ADC_B):
@@ -84,7 +85,7 @@ def write_to_fpga(conn, device, addr, value):
     data = grab_response(conn)
     return data
 
-def read_from_fpga(conn, device, addr):
+def read_from_fpga_jesd(conn, device, addr):
     if(device == SPI_Device.ADC_A):
         command = "jesd_read 0x0 0x%x\r\n" % addr
     elif(device == SPI_Device.ADC_B):
@@ -100,20 +101,22 @@ def read_from_fpga(conn, device, addr):
 
     conn.sendall(command.encode("ascii"))
     data = grab_response(conn)
-    if(type(data) != int):
+    if(type(data) != int and type(data) != list):
         import ipdb;ipdb.set_trace()
+    if(type(data) == list):
+        data = data[0]
     return data
 
 def read_reg(conn, device, reg):
     if(reg.per_lane_reg):
         reg.raw_value = []
         for fields, addr in zip(reg.fields, reg.addr):
-            word = read_from_fpga(conn, device, addr)
+            word = read_from_fpga_jesd(conn, device, addr)
             reg.raw_value.append(word)
             for f in fields:
                 f.get_value(word)
     else:
-        word = read_from_fpga(conn, device, reg.addr)
+        word = read_from_fpga_jesd(conn, device, reg.addr)
         reg.raw_value = word
         for f in reg.fields:
             f.get_value(word)
@@ -167,6 +170,7 @@ if __name__ == "__main__":
     parser.add_argument("--adc_d", action="store_true", help="send commands to ADC D")
     parser.add_argument("--ti", action="store_true", help="Use commands for TI board")
     parser.add_argument("--port", type=int, default=4002, help="Port to connect to server at")
+    parser.add_argument("xem", type=int, help="Device ID of which XEM to ought to be read")
 
 
     args = parser.parse_args()
@@ -181,12 +185,17 @@ if __name__ == "__main__":
 
 
     conn = connect_to_fpga(port=args.port)
+    conn.sendall(("set_active_xem_mask %i\r\n" % (1<<args.xem)).encode('ascii'))
+    resp = grab_response(conn)
+    if(type(resp) == hiredis.ReplyError):
+        print("Error %s" % str(resp))
+        exit()
 
     jesd_info_fn = "xil_jesd_regs.json"
     regs = read_reg_info_file(jesd_info_fn)
     results = {device:copy.deepcopy(regs) for device in devices}
     for device, these_regs in results.items():
-        write_to_fpga(conn, device, 0x34, 0x1)
+        write_to_fpga_jesd(conn, device, 0x34, 0x1)
         for r in these_regs:
                 read_reg(conn, device, r)
 

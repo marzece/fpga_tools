@@ -1,5 +1,6 @@
 import socket
 import argparse
+import hiredis
 from time import sleep
 from collections import defaultdict, namedtuple
 from ceres_fpga_spi import adc_spi, connect_to_fpga, SPI_Device
@@ -70,6 +71,7 @@ if __name__ == "__main__":
     parser.add_argument("--adc_b", action="store_true", help="send commands to ADC B")
     parser.add_argument("--adc_c", action="store_true", help="send commands to ADC C")
     parser.add_argument("--adc_d", action="store_true", help="send commands to ADC D")
+    parser.add_argument("xem", type=int, help="which xem to talk to")
     parser.add_argument("--port", type=int, default=4002, help="Port to connect to server on")
     args = parser.parse_args()
 
@@ -82,6 +84,16 @@ if __name__ == "__main__":
     if not adcs:
         print("Must specify if you want to send to ADC A or B")
         exit()
+    reader = hiredis.Reader()
 
     fpga_conn = connect_to_fpga(port=args.port)
+
+    mask = (1<<args.xem)
+    fpga_conn.sendall(("set_active_xem_mask %i\r\n" % mask).encode("ascii"))
+    reader.feed(fpga_conn.recv(1024))
+    resp = reader.gets()
+    if(type(resp) == hiredis.ReplyError):
+        print("Error %s" % str(resp))
+        exit()
+
     adc_readback(fpga_conn, adcs)

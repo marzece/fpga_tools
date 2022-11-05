@@ -46,9 +46,10 @@ class Clock:
         return hash(self) == hash(lhs)
 
 class LMK:
-    def __init__(self, config_fn, port=4005, lmk_id=SPI_Device.CERES_LMK):
+    def __init__(self, config_fn, port=4005, lmk_id=SPI_Device.CERES_LMK, xem_id = 4):
         self.reg_info = {}
         self.port = port
+        self.xem_id = xem_id
         self.lmk_id = lmk_id
         with open("lmk_tools/ti_lmk_regs.json") as reg_file:
             reg_json = json.load(reg_file)
@@ -141,6 +142,12 @@ class LMK:
 
     def readback_config(self):
         conn = connect_to_fpga(port=self.port)
+        command = "set_active_xem_mask %i\r\n" % (1<<self.xem_id)
+        conn.sendall(command.encode("ascii"))
+        resp = conn.recv(1024)
+        if(resp[0] == '-'):
+            print(resp.decode("ascii"))
+            return
         ret = {}
         for reg_addr, reg in self.reg_info.items():
             mode = reg["Mode"]
