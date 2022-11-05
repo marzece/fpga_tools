@@ -129,7 +129,4 @@ daq_logger.o: daq_logger.c
 	$(CC) -ggdb3 -o $@ -c $(CFLAGS) $^
 
 clean:
-	rm -f *.o
-	rm -f fnetctrl
-	rm -f kintex_client_server
-	rm -f kinex_cli
+	rm -f *.o fnetctrl kintex_client_server kintex_cli fakernet_data_builder tail_daq_log fontus_data_builder zipper ceres_server
