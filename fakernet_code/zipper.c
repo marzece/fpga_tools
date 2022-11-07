@@ -454,9 +454,13 @@ void print_help_string() {
 
 int main(int argc, char** argv) {
 
+    int run_mode;
+    unsigned long long file_size_threshold = 0;
+
     const char * output_filename = "/dev/null";
     struct option clargs[] = {{"out", required_argument, NULL, 'o'},
                               {"mask", required_argument, NULL, 'm'},
+                              {"run-mode", no_argument, NULL, 'r'},
                               {"help", no_argument, NULL, 'h'},
                               { 0, 0, 0, 0}};
     int optindex;
@@ -477,6 +481,10 @@ int main(int argc, char** argv) {
                     printf("Event mask '%s' couldn't be interpreted. Dying\n", optarg);
                     return 0;
                 }
+                break;
+            case 'r':
+                return printf("RUN MODE\n");
+                file_size_threshold = DEFAULT_FILE_SIZE_THRESHOLD;
                 break;
             case 'h':
                 print_help_string();
