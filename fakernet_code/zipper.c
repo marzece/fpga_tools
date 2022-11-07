@@ -439,13 +439,11 @@ int send_event_to_redis(redisContext* redis, int event_id) {
 
     r = redisCommandArgv(redis, 3,  args,  arglens);
     if(!r) {
-        // TODO
-        printf("ERROR sending data to redis!\n"); // XXX Non-block
-        //builder_log(LOG_ERROR, "Redis error!");
+        return 0;
     }
 
     if(r->type == REDIS_REPLY_STRING || r->type == REDIS_REPLY_ERROR) {
-        printf("FUCK %s\n", r->str);
+        printf("ERROR sending data to redis: %s\n", r->str);
     }
     freeReplyObject(r);
     return  arglens[2];
