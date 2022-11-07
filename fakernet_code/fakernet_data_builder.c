@@ -801,11 +801,14 @@ int read_proc(FPGA_IF* fpga, TrigHeader* ret) {
 
             uint32_t expectation = (0xFF00FF00 | (event.current_channel<<16) | event.current_channel);
             if(word != expectation) {
-                printf("Badness found 0x%x 0x%x\n", word, expectation);
-                // TODO should handle this better;
-                reeling = 1;
+                if(!reeling) {
+                    printf("Badness found 0x%x 0x%x\n", word, expectation);
+                    // TODO should handle this better;
+                    reeling = 1;
+                }
                 // This event's trash...TODO, it'd be nice to try and do some better recovery
                 fpga->event_buffer.num_bytes = 0;
+                event = start_event();
                 return 0;
             }
             // Stash the location in memory of the start of each waveform
