@@ -449,7 +449,7 @@ int send_event_to_redis(redisContext* redis, int event_id) {
     return  arglens[2];
 }
 
-void print_help_string() {
+void print_help_string(void) {
     printf("zipper: recieves then combines data from CERES & FONTUS data builders via redis DB.\n"
             "   usage:  zipper [--out filename] [--mask event_mask]\n");
 }
