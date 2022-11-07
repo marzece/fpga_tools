@@ -5,6 +5,14 @@
 #include <time.h>
 #include "hiredis/hiredis.h"
 
+#define KNRM  "\x1B[0m"
+#define KRED  "\x1B[31m"
+#define KGRN  "\x1B[32m"
+#define KYEL  "\x1B[33m"
+#define KBLU  "\x1B[34m"
+#define KMAG  "\x1B[35m"
+#define KCYN  "\x1B[36m"
+#define KWHT  "\x1B[37m"
 #define MESSAGE_LOGGER_ID_BIT 0x1
 #define MESSAGE_MESSAGE_BIT 0x2
 #define MESSAGE_TAG_BIT 0x4
@@ -71,7 +79,8 @@ int main(int argc, char** argv) {
     const char* redis_host = "127.0.0.1";
     const char* get_messages_command = "XREAD BLOCK 0 COUNT 50 streams daq_log %s";
     char latest_id[256];
-    strcpy(latest_id, "0");
+    //strcpy(latest_id, "0");
+    strcpy(latest_id, "$");
     size_t i,j;
     char time_buffer[128];
     struct tm* local_time;
