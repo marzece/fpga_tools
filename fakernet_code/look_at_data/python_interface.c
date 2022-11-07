@@ -120,7 +120,21 @@ static PyObject* _get_event(PyObject *self, PyObject *args) {
     free(samples);
     samples=NULL;
 
-    return result;
+    // Six fields in the header
+    PyObject* header_result = PyTuple_New(6);
+    PyTuple_SET_ITEM(header_result, 0, PyLong_FromLong((long)header.magic_number));
+    PyTuple_SET_ITEM(header_result, 1, PyLong_FromLong((long)header.trig_number));
+    PyTuple_SET_ITEM(header_result, 2, PyLong_FromLongLong((long long)header.clock));
+    PyTuple_SET_ITEM(header_result, 3, PyLong_FromLong((long)header.length));
+    PyTuple_SET_ITEM(header_result, 4, PyLong_FromLong((long)header.device_number));
+    PyTuple_SET_ITEM(header_result, 5, PyLong_FromLong((long)header.crc));
+
+    PyObject* tuple_result = PyTuple_New(2);
+    PyTuple_SET_ITEM(tuple_result, 0, header_result);
+    PyTuple_SET_ITEM(tuple_result, 1, result);
+
+
+    return tuple_result;
 }
 
 /*
