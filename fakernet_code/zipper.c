@@ -21,6 +21,7 @@
 #define FONTUS_DEVICE_ID 0
 #define REDIS_OUT_DATA_BUF_SIZE (32*1024*1024)
 #define PUBLISH_MAX_RATE (10*1024*1024)
+#define DEFAULT_FILE_SIZE_THRESHOLD (1024*1024*1024*1024ULL) // 1GB
 
 // Minimum time between sending events to redis, in micro-seconds
 // 30k us = 30ms = ~30hz
@@ -256,9 +257,14 @@ void grab_data_from_pubsub_message(redisReply* message, char** data, int* length
     *length = rr_dat->len;
 }
 
-void save_event(FILE* fout, int event_id) {
+unsigned long long save_event(FILE* fout, int event_id) {
+    // If the file isn't valid I can't write to it
+    if(!fout) {
+        return 0;
+    }
+
     int i;
-    int nwritten;
+    unsigned long long nwritten;
     EventRecord* event = &(event_registry[event_id % HASH_TABLE_SIZE]);
     EVENT_HEADER event_header;
     event_header.trig_number = htonl(event_id);
@@ -266,31 +272,40 @@ void save_event(FILE* fout, int event_id) {
     event_header.status = htonl((event->bit_word == COMPLETE_EVENT_MASK) ? 0 : 1);
     char* data = NULL;
     int data_len;
+    unsigned long long total_bytes_written = 0;
 
     // First write the event header, the write the FONTUS Trigger DATA;
     // then write the waveform data
-    if(!fwrite(&event_header.trig_number, sizeof(event_header.trig_number), 1, fout)) {
+    if(!(nwritten = fwrite(&event_header.trig_number, sizeof(event_header.trig_number), 1, fout))) {
         printf("Error writing event header to disk\n");
         goto ERROR;
     }
-    if(!fwrite(&event_header.status, sizeof(event_header.status), 1, fout)) {
+    total_bytes_written += nwritten*sizeof(event_header.trig_number);
+
+    if(!(nwritten = fwrite(&event_header.status, sizeof(event_header.status), 1, fout))) {
         printf("Error writing event header to disk\n");
         goto ERROR;
     }
-    if(!fwrite(&event_header.device_mask, sizeof(event_header.device_mask), 1, fout)) {
+    total_bytes_written += nwritten*sizeof(event_header.status);
+
+    if(!(nwritten = fwrite(&event_header.device_mask, sizeof(event_header.device_mask), 1, fout))) {
         printf("Error writing event header to disk\n");
         goto ERROR;
     }
+    total_bytes_written += nwritten*sizeof(event_header.device_mask);
 
     // Write FONTUS Trigger data...
     if((COMPLETE_EVENT_MASK & (1ULL<<FONTUS_DEVICE_ID)) != 0) {
-        // TODO
         grab_data_from_pubsub_message(event->data[FONTUS_DEVICE_ID], &data, &data_len);
         if(!data) {
             printf("Error getting FONTUS data\n");
             goto ERROR;
         }
-        fwrite(data, data_len, 1, fout);
+        if(!(nwritten = fwrite(data, data_len, 1, fout))) {
+            printf("Error writing FONTUS data to disk\n");
+            goto ERROR;
+        }
+        total_bytes_written += nwritten*data_len;
         fflush(fout);
     }
 
@@ -313,18 +328,19 @@ void save_event(FILE* fout, int event_id) {
             printf("Error writing event to disk: %s\n", strerror(errno));
             goto ERROR;
         }
+        total_bytes_written += data_len*nwritten;
         // TODO, I'm really not sure when it's necessary to fflush things.
         // Does it have to be done before data is freed??  Idk I tried googling
         // it but I couldn't find anything
         fflush(fout);
     }
-    return;
+    return total_bytes_written;
 
 ERROR:;
       // TODO this isn't good error handling lol
       printf("I'm gonna die now\n");
       loop = 0;
-      return;
+      return -1;
 }
 
 void free_event(int event_id) {
@@ -344,7 +360,6 @@ void free_event(int event_id) {
         }
         freeReplyObject(event->data[i]);
     }
-    return;
 }
 
 int send_event_to_redis(redisContext* redis, int event_id) {
@@ -519,8 +534,14 @@ int main(int argc, char** argv) {
     double delta_t;
     int event_id = -1;
     int bytes_sent = 0;
+    unsigned long long bytes_in_file = 0;
+    int nbytes_written;
+    int run_number = 0;
+    int sub_run_number = 0;
+    const char* file_name_template = "%s_r%06i_f%06i.dat";
+    char buffer[128];
+
     printf("Starting main loop\n");
-    //FullEvent event;
     while(loop) {
         gettimeofday(&current_time, NULL);
         if(redis_is_readable) {
@@ -533,13 +554,30 @@ int main(int argc, char** argv) {
             // should see if I can combine them or something like that.
 
             delta_t = (current_time.tv_sec - redis_update_time.tv_sec)*1e6 + (current_time.tv_usec - redis_update_time.tv_usec);
-            // TODO instead of just a  cooldown I should maybe include a data limit as well.
             if(delta_t > REDIS_COOLDOWN && bytes_sent < PUBLISH_MAX_RATE/10) {
                 bytes_sent += send_event_to_redis(publish_redis, event_id);
                 redis_update_time = current_time;
             }
-            save_event(fout, event_id);
+            if((nbytes_written = save_event(fout, event_id)) == -1) {
+
+            }
+            bytes_in_file += nbytes_written;
             free_event(event_id);
+
+            // Check if it's time to change to a new sub-run
+            if(file_size_threshold && bytes_in_file > file_size_threshold) {
+                // Time to rotate files
+                fflush(fout);
+                fclose(fout);
+
+                snprintf(buffer, 128, file_name_template, "jsns_data", run_number, ++sub_run_number);
+                fout = fopen(buffer, "ab");
+                if(!fout) {
+                    printf("Could not open file '%s': %s", buffer, strerror(errno));
+                    printf("Events will not be saved!");
+                }
+                bytes_in_file = 0;
+            }
         }
         delta_t = (current_time.tv_sec - event_rate_time.tv_sec)*1e6 + (current_time.tv_usec - event_rate_time.tv_usec);
 
