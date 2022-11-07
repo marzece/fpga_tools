@@ -122,14 +122,14 @@ redisContext* create_redis_unix_conn(const char* path, int nonblock) {
 void signal_handler(int signum) {
     // TODO think of more signals that would be useful
     static int num_kills = 0;
+    if(num_kills >= 1) {
+        printf("Dying\n");
+        exit(1);
+    }
     if(signum == SIGINT || signum == SIGKILL) {
         printf("Cntrl-C caught. Will attempt graceful exit. Cntrl-C again for immediate exit.\n");
         loop = 0;
         num_kills +=1;
-    }
-    if(num_kills > 2) {
-        printf("Dying\n");
-        exit(1);
     }
 }
 
