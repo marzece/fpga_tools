@@ -103,10 +103,14 @@ redisContext* create_redis_conn(const char* redis_hostname, int port) {
     return c;
 }
 
-redisContext* create_redis_unix_conn(const char* path) {
+redisContext* create_redis_unix_conn(const char* path, int nonblock) {
     printf("Opening Redis Connection\n");
     redisContext* c;
-    c = redisConnectUnix(path);
+    if(!nonblock) {
+        c = redisConnectUnix(path);
+    }  else {
+        c = redisConnectUnixNonBlock(path);
+    }
     if(c == NULL || c->err) {
         printf("Redis connection error %s\n", c->errstr);
         redisFree(c);
@@ -514,16 +518,15 @@ int main(int argc, char** argv) {
     signal(SIGKILL, signal_handler);
     signal(SIGINT, signal_handler);
 
-    redis = create_redis_unix_conn("/var/run/redis/redis-server.sock");
-    //usleep(500000);
+    redis = create_redis_unix_conn("/var/run/redis/redis-server.sock", 1);
     redisAppendCommand(redis, "SUBSCRIBE event_stream");
     redisBufferWrite(redis, &done);
 
-    //usleep(50000);
+    // TODO! need to improve the non-blocking connectivity scheme
+    usleep(50000);
 
     redisBufferRead(redis);
     if(!reply) {
-    //usleep(500000);
         redisGetReply(redis, (void**)&reply);
     }
 
@@ -533,7 +536,7 @@ int main(int argc, char** argv) {
     }
     freeReplyObject(reply);
 
-    redisContext* publish_redis = create_redis_unix_conn("/var/run/redis/redis-server.sock");
+    redisContext* publish_redis = create_redis_unix_conn("/var/run/redis/redis-server.sock", 0);
     struct timeval redis_update_time, event_rate_time, current_time;
     gettimeofday(&redis_update_time, NULL); // Initialize previous time to now
     event_rate_time = redis_update_time;
