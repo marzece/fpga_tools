@@ -483,7 +483,6 @@ redisContext* create_redis_unix_conn(const char* path) {
     printf("Opening Redis Connection\n");
     redisContext* c;
     c = redisConnectUnix(path);
-    //c = redisConnectUnix("/var/run/redis/redis-server.sock");
     if(c == NULL || c->err) {
         printf("Redis connection error %s\n", c->errstr);
         redisFree(c);
@@ -497,7 +496,7 @@ EventInProgress start_event() {
 
     ev.header_bytes_read = 0;
     ev.data_bytes_read = 0;
-    ev. current_channel = 0;
+    ev.current_channel = 0;
     ev.wf_header_read = 0;
     ev.samples_read = 0;
     ev.wf_crc_read = 0;
