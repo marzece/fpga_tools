@@ -464,7 +464,7 @@ int main(int argc, char** argv) {
 
     struct option clargs[] = {{"out", required_argument, NULL, 'o'},
                               {"mask", required_argument, NULL, 'm'},
-                              {"run-mode", no_argument, NULL, 'r'},
+                              {"run-mode", no_argument, NULL, 'z'},
                               {"rate", required_argument, NULL, 'r'},
                               {"help", no_argument, NULL, 'h'},
                               { 0, 0, 0, 0}};
@@ -487,7 +487,7 @@ int main(int argc, char** argv) {
                     return 0;
                 }
                 break;
-            case 'r':
+            case 'z':
                 return printf("RUN MODE\n");
                 file_size_threshold = DEFAULT_FILE_SIZE_THRESHOLD;
                 break;
