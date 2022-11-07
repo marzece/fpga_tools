@@ -20,8 +20,8 @@
 #define QUEUE_LENGTH 100
 #define FONTUS_DEVICE_ID 0
 #define REDIS_OUT_DATA_BUF_SIZE (32*1024*1024)
-#define PUBLISH_MAX_RATE (10*1024*1024)
 #define DEFAULT_FILE_SIZE_THRESHOLD (1024*1024*1024*1024ULL) // 1GB
+#define DEFAULT_PUBLISH_MAX_RATE (10*1024*1024)
 
 // Minimum time between sending events to redis, in micro-seconds
 // 30k us = 30ms = ~30hz
@@ -462,14 +462,17 @@ int main(int argc, char** argv) {
     unsigned long long file_size_threshold = 0;
 
     const char * output_filename = "/dev/null";
+    double publish_rate = DEFAULT_PUBLISH_MAX_RATE;
+
     struct option clargs[] = {{"out", required_argument, NULL, 'o'},
                               {"mask", required_argument, NULL, 'm'},
                               {"run-mode", no_argument, NULL, 'r'},
+                              {"rate", required_argument, NULL, 'r'},
                               {"help", no_argument, NULL, 'h'},
                               { 0, 0, 0, 0}};
     int optindex;
     int opt;
-    while((opt = getopt_long(argc, argv, "o:m:", clargs, &optindex)) != -1) {
+    while((opt = getopt_long(argc, argv, "o:m:r:", clargs, &optindex)) != -1) {
         switch(opt) {
             case 0:
                 // Should be here if the option has the "flag" set
@@ -489,6 +492,10 @@ int main(int argc, char** argv) {
             case 'r':
                 return printf("RUN MODE\n");
                 file_size_threshold = DEFAULT_FILE_SIZE_THRESHOLD;
+                break;
+            case 'r':
+                publish_rate = atof(optarg);
+                printf("Publish rate set to %f\n", publish_rate);
                 break;
             case 'h':
                 print_help_string();
@@ -564,10 +571,12 @@ int main(int argc, char** argv) {
             // TODO save_event and send_to_redis are very similar functions,
             // should see if I can combine them or something like that.
 
-            delta_t = (current_time.tv_sec - redis_update_time.tv_sec)*1e6 + (current_time.tv_usec - redis_update_time.tv_usec);
-            if(delta_t > REDIS_COOLDOWN && bytes_sent < PUBLISH_MAX_RATE/10) {
-                bytes_sent += send_event_to_redis(publish_redis, event_id);
-                redis_update_time = current_time;
+            if(publish_rate) {
+                delta_t = (current_time.tv_sec - redis_update_time.tv_sec)*1e6 + (current_time.tv_usec - redis_update_time.tv_usec);
+                if(delta_t > REDIS_COOLDOWN && bytes_sent < publish_rate/10) {
+                    bytes_sent += send_event_to_redis(publish_redis, event_id);
+                    redis_update_time = current_time;
+                }
             }
             if((nbytes_written = save_event(fout, event_id)) == -1) {
 
@@ -590,6 +599,7 @@ int main(int argc, char** argv) {
                 bytes_in_file = 0;
             }
         }
+
         delta_t = (current_time.tv_sec - event_rate_time.tv_sec)*1e6 + (current_time.tv_usec - event_rate_time.tv_usec);
 
         // A 10th of a second
