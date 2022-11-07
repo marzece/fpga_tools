@@ -4,6 +4,10 @@
 #include "lmk_if.h"
 #include "axi_qspi.h"
 
+// TODO this should be removed once an error string is used
+// instead of printf
+#include <stdio.h>
+
 AXI_QSPI* new_lmk_spi(const char* name, uint32_t axi_addr) {
     AXI_QSPI *lmk_axi_qspi = new_axi_qspi(name, axi_addr);
     // Initialze CR values

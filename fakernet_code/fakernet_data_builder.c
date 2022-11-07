@@ -29,6 +29,9 @@ Author: Eric Marzec <marzece@gmail.com>
    for the start of a new event (demarcated by the 32-bit word 0xFFFFFFFF). Once that is
    found the program exits "reeling" mode and resumes normal data processing.
  */
+
+// TODO
+// Redo the "reeling" functionality
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -50,9 +53,6 @@ Author: Eric Marzec <marzece@gmail.com>
 #define ntohll(x) htonll(x)
 #endif
 
-
-// TODO need to capture some of these global state variables into a struct
-// or soemthing that of nature
 
 int verbosity_stdout = LOG_INFO;
 int verbosity_redis = LOG_WARN;
@@ -1003,6 +1003,8 @@ void calculate_channel_crcs(const TrigHeader* header, const EventBuffer* event, 
     uint32_t* wf_start = (uint32_t*)(event->data + HEADER_SIZE + 4);
     for(i=0; i<NUM_CHANNELS; i++) {
         uint32_t this_crc = crc32(0, wf_start, length*sizeof(uint32_t));
+        //uint32_t found_crc =  *(uint32_t*)(wf_start + length);
+        // TODO I don't understand why this need's to be ntohl'd ???
         uint32_t found_crc =  ntohl(*(uint32_t*)(wf_start + length));
         calculated_crcs[i] = this_crc;
         given_crcs[i] = found_crc;
