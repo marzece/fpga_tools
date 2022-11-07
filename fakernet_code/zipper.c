@@ -403,7 +403,7 @@ int send_event_to_redis(redisContext* redis, int event_id) {
     offset += sizeof(event_header.status);
 
     // Write FONTUS Trigger data...
-    if(0 && ((COMPLETE_EVENT_MASK & (1ULL<<FONTUS_DEVICE_ID)) != 0)) {
+    if((COMPLETE_EVENT_MASK & (1ULL<<FONTUS_DEVICE_ID)) != 0) {
         grab_data_from_pubsub_message(event->data[FONTUS_DEVICE_ID], &data, &data_len);
         if(!data) {
             return 0;
