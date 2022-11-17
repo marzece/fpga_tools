@@ -20,7 +20,7 @@
 #define QUEUE_LENGTH 100
 #define FONTUS_DEVICE_ID 0
 #define REDIS_OUT_DATA_BUF_SIZE (32*1024*1024)
-#define DEFAULT_FILE_SIZE_THRESHOLD (1024*1024*1024*1024ULL) // 1GB
+#define DEFAULT_FILE_SIZE_THRESHOLD (1024*1024*1024ULL) // 1GB
 #define DEFAULT_PUBLISH_MAX_RATE (10*1024*1024)
 
 // Minimum time between sending events to redis, in micro-seconds
