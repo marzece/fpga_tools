@@ -5,7 +5,7 @@ CFLAGS += -O0 -std=gnu99 -Wall -W -Wshadow -Wwrite-strings \
 
 LDLIBS += -lm
 
-all: fnetctrl kintex_client_server kintex_cli fakernet_data_builder tail_daq_log fontus_data_builder zipper ceres_server
+all: fnetctrl kintex_client_server kintex_cli fakernet_data_builder tail_daq_log fontus_data_builder zipper ceres_server fake_data_gen
 
 fnetctrl: fnetctrl.o fnet_client.o
 
@@ -33,6 +33,9 @@ fakernet_data_builder: fakernet_data_builder.c crc32.o crc8.o daq_logger.o
 
 fontus_data_builder: fontus_data_builder.c crc32.o crc8.o daq_logger.o
 	$(CC) -Wall $(CFLAGS) -O0 -ggdb3 -o $@ $^ fnet_client.o hiredis/libhiredis.a
+
+fake_data_gen: fake_data_gen.c crc32.o crc8.o
+	$(CC) -ggdb3 -o $@ $(CFLAGS) $^
 
 kintex_client_server.o: kintex_client_server.c
 	$(CC) -ggdb3 -o $@ -c $(CFLAGS) $^
