@@ -9,6 +9,7 @@
 #include <inttypes.h>
 #include <getopt.h>
 #include <arpa/inet.h>
+#include "util.h"
 #include "hiredis/hiredis.h"
 // The number of seperate data streams, each of which must
 // be present for an event to be complete.
@@ -92,6 +93,10 @@ typedef struct EventRecord {
 } EventRecord;
 EventRecord event_registry[HASH_TABLE_SIZE];
 
+typedef struct RunInfo {
+    long long run_number;
+    long long sub_run;
+} RunInfo;
 
 redisContext* create_redis_conn(const char* redis_hostname, int port) {
     printf("Opening Redis Connection\n");
@@ -437,15 +442,8 @@ int send_event_to_redis(redisContext* redis, int event_id) {
     args[2] = (char*)redis_data_buf;
     arglens[2] = offset;
 
-    r = redisCommandArgv(redis, 3,  args,  arglens);
-    if(!r) {
-        return 0;
-    }
-
-    if(r->type == REDIS_REPLY_STRING || r->type == REDIS_REPLY_ERROR) {
-        printf("ERROR sending data to redis: %s\n", r->str);
-    }
-    freeReplyObject(r);
+    redisAppendCommandArgv(redis, 3,  args,  arglens);
+    redisBufferWrite(redis, NULL);
     return  arglens[2];
 }
 
@@ -454,13 +452,122 @@ void print_help_string(void) {
             "   usage:  zipper [--out filename] [--mask event_mask]\n");
 }
 
+int wait_for_redis_readable(const redisContext* r, int timeout) {
+    fd_set readfds;
+    struct timeval _timeout;
+    _timeout.tv_sec = timeout / 1000000;
+    _timeout.tv_usec = timeout % 1000000;
+    FD_ZERO(&readfds);
+    FD_SET(r->fd, &readfds);
+    return select(r->fd+1, &readfds, NULL, NULL, &_timeout);
+}
+
+RunInfo parse_run_info_redis_reply(redisReply* reply, int skip_steps) {
+    // TODO replace all the asserts here with goto ERROR type things
+    RunInfo ret;
+    ret.run_number = 0;
+    ret.sub_run = 0;
+
+    // Got run info, have to parse the array
+    // First thing should just be a list of all the responses
+    // there should only be one
+
+    redisReply* stream_data;
+    // If XREVRANGE was called instead of XREAD we can skip a few stpes
+    if(!skip_steps) {
+        assert(reply->elements == 1);
+        // Then next element down
+        redisReply* stream_info = reply->element[0];
+        assert(stream_info->type == REDIS_REPLY_ARRAY && stream_info->elements == 2);
+        //The first element is the stream name "run_info"
+        //The second element is the actual new data
+        stream_data = stream_info->element[1];
+
+    }
+    else {
+        stream_data = reply;
+    }
+    // The data is array that should be of length 1, but
+    // can be longer if several new runs were submitted at the same
+    // time...not sure why that would happen, but it's possible.
+    // Either way, we take the last record
+    assert(stream_data->type==REDIS_REPLY_ARRAY);
+    redisReply* record = stream_data->element[reply->elements-1];
+
+    // This SHOULD be a record of length 2
+    // The first value is the redis KEY,we'll store that for later use.
+    // The second value is the values
+    assert(record->type == REDIS_REPLY_ARRAY && record->elements == 2);
+    redisReply* key = record->element[0];
+    assert(key->type == REDIS_REPLY_STRING);
+    // TODO this should be a memcpy/malloc or something like that
+    // so that I can free() the reply safely
+    //char* last_key = key->str;
+
+    redisReply* values = record->element[1];
+    assert(values->type==REDIS_REPLY_ARRAY && values->elements >= 2);
+
+    unsigned int i;
+    for(i=0; i<values->elements; i+=2) {
+        // Values come in key-value pairs
+        redisReply* k = values->element[i];
+        redisReply* v = values->element[i+1];
+        assert(k->type == REDIS_REPLY_STRING);
+
+        if(strncmp("run_number", k->str, k->len) == 0) {
+            if(string2ll(v->str, v->len, &ret.run_number) == 0) {
+                printf("Cannot parse run number from redis. "
+                        "Will default to RUN=0\n");
+
+                ret.run_number = 0;
+            }
+
+
+        }
+        else if(strncmp("sub_run", k->str, k->len) == 0) {
+            if(string2ll(v->str, v->len, &ret.sub_run) == 0) {
+                // TODO not sure what I should do here
+                printf("Cannot parse sub_run number from redis. "
+                        "Will default to 0\n");
+
+                ret.sub_run = 0;
+            }
+        }
+        // TODO maybe wanna add a run_type so I can throw into the
+        // output data or something like that.
+    }
+    return ret;
+}
+
 int main(int argc, char** argv) {
 
-    int run_mode;
+    int run_mode = 0;
+    int start_new_run = 0;
+    redisContext* run_info_redis = NULL;
+    redisContext* data_redis = NULL;
+    redisContext* publish_redis = NULL;
+    redisReply* reply = NULL;
     unsigned long long file_size_threshold = 0;
 
     const char * output_filename = "/dev/null";
     double publish_rate = DEFAULT_PUBLISH_MAX_RATE;
+    int built_count = 0;
+    double delta_t;
+    int event_id = -1;
+    int bytes_sent = 0;
+    unsigned long long bytes_in_file = 0;
+    int nbytes_written;
+    int run_number = 0;
+    RunInfo run_info;
+    int resume_last_run = 0;
+    struct timeval redis_update_time, event_rate_time, current_time;
+    struct timeval timeout;
+    const char* file_name_template = "%s_r%06i_f%06i.dat";
+    char buffer[128];
+
+    timeout.tv_sec = 0; timeout.tv_usec=0;
+    run_info.run_number = 0;
+    run_info.sub_run = 0;
 
     struct option clargs[] = {{"out", required_argument, NULL, 'o'},
                               {"mask", required_argument, NULL, 'm'},
@@ -488,8 +595,9 @@ int main(int argc, char** argv) {
                 }
                 break;
             case 'z':
-                return printf("RUN MODE\n");
+                printf("RUN MODE\n");
                 file_size_threshold = DEFAULT_FILE_SIZE_THRESHOLD;
+                run_mode = 1;
                 break;
             case 'r':
                 publish_rate = atof(optarg);
@@ -507,12 +615,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    printf("COMPLETE EVENT MASK = 0x%lx\n", COMPLETE_EVENT_MASK);
-
-    redisReply* reply = NULL;
-    redisContext* redis = NULL;
-    //const char* redis_hostname = "127.0.0.1";
-    int done;
+    printf("COMPLETE EVENT MASK = 0x%llx\n", COMPLETE_EVENT_MASK);
 
     //FILE* fout = fopen(output_filename, "wb");
     FILE* fout = fopen(output_filename, "ab");
@@ -528,41 +631,123 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    // TODO! need to improve the non-blocking connectivity scheme
-    usleep(50000);
 
     publish_redis = create_redis_unix_conn(REDIS_UNIX_SOCK_PATH, 1);
     if(!publish_redis) {
         printf("Could not connect to redis for publishing data\n");
     }
 
-    if(!reply) {
-        printf("Uh oh, couldn't subscribe to redis...\n");
-        return -1;
+    // Connect to redis so I can get run info
+    if(run_mode) {
+        run_info_redis = create_redis_unix_conn(REDIS_UNIX_SOCK_PATH, 1);
+        if(!run_info_redis) {
+            printf("Could not connect to redis for run info. Will be using default run 0.\n");
+            run_number = 0;
+        }
+        else if(resume_last_run) {
+            // Get the last run
+            redisAppendCommand(run_info_redis, "XREVRANGE run_info + - COUNT 1");
+            redisBufferWrite(run_info_redis, NULL);
+
+            if(wait_for_redis_readable(run_info_redis, (int)1e6) > 0) {
+                // Socket is readable
+                redisBufferRead(run_info_redis);
+                redisGetReply(run_info_redis, (void**)&reply);
+                if(!reply) {
+                    // I'm not sure why this would happen?
+                    // We got some reply but it was not well formed?
+
+                }
+                else if(reply->type == REDIS_REPLY_ERROR) {
+
+                }
+                else if(reply->type == REDIS_REPLY_NIL) {
+                    // No runs have been put in the stream
+
+
+                } else if(reply->type == REDIS_REPLY_ARRAY) {
+                    run_info = parse_run_info_redis_reply(reply, 1);
+                    printf("Got initial run info. "
+                            " Run = %lli-%lli\n", run_info.run_number, run_info.sub_run);
+                }
+                else {
+                    // The reply is neither an error, nor empty, nor an array
+                    // I'm not sure how you end up here...this really should
+                    // never happen.
+                    printf("Unexpected response from run_info response. "
+                            "Will be ignoring this response. "
+                            "Type = %i\n", reply->type);
+                }
+
+                freeReplyObject(reply);
+            }
+            else {
+                // Either an error happened while waiting for reply,
+                // or the timeout expired (which probably is an error too)
+                printf("Response timed out while getting initial run info. "
+                        "Will be default to Run 0-0");
+            }
+        } else {
+            printf("Starting at RUN 0-0\n");
+        }
+        if(run_info_redis) {
+            redisAppendCommand(run_info_redis, "XREAD BLOCK 0 STREAMS run_info $");
+            redisBufferWrite(run_info_redis, NULL);
+        }
     }
-    freeReplyObject(reply);
 
     // Initialize some of the timers
     gettimeofday(&redis_update_time, NULL);
     event_rate_time = redis_update_time;
-    int redis_is_readable = 1; // TODO this should come from select or something like that
-    int built_count = 0;
-    double delta_t;
-    int event_id = -1;
-    int bytes_sent = 0;
-    unsigned long long bytes_in_file = 0;
-    int nbytes_written;
-    int run_number = 0;
-    int sub_run_number = 0;
-    const char* file_name_template = "%s_r%06i_f%06i.dat";
-    char buffer[128];
+
+    redisAppendCommand(data_redis, "SUBSCRIBE event_stream");
+    redisBufferWrite(data_redis, NULL);
+    // Need to get the welcome message
+    if(wait_for_redis_readable(data_redis, 1000000) > 0) {
+        redisBufferRead(data_redis);
+        redisGetReply(data_redis, (void**)&reply);
+        freeReplyObject(reply);
+    }
 
     printf("Starting main loop\n");
     while(loop) {
         gettimeofday(&current_time, NULL);
-        if(redis_is_readable) {
-            recieve_waveform_from_redis(redis);
+
+        // TODO, should check for error (return = -1) instead of just >0
+        if(wait_for_redis_readable(data_redis, 10000) > 0) {
+            recieve_waveform_from_redis(data_redis);
         }
+
+        if(run_info_redis && wait_for_redis_readable(run_info_redis, 0) > 0) {
+            redisBufferRead(run_info_redis);
+            redisGetReply(run_info_redis, (void**)&reply);
+            RunInfo new_run_info = parse_run_info_redis_reply(reply, 0);
+            // TODO need a better way of handling bad run info
+            if(new_run_info.run_number != 0 && new_run_info.run_number != run_info.run_number) {
+                run_info = new_run_info;
+                start_new_run = 1;
+            }
+            printf("GOT NEW RUN %lli-%lli\n", run_info.run_number, run_info.sub_run);
+
+            // Ask for next run, block until it arrives
+            redisAppendCommand(run_info_redis, "XREAD BLOCK 0 STREAMS run_info $");
+            redisBufferWrite(run_info_redis, NULL);
+        }
+
+        if(wait_for_redis_readable(publish_redis, 0) > 0) {
+            // When publishing data the redis-db will respond
+            // I don't care about those responses, but I need to handle them anyways
+            redisBufferRead(publish_redis);
+            redisGetReply(publish_redis, (void**)&reply);
+
+            if(reply->type == REDIS_REPLY_STRING || reply->type == REDIS_REPLY_ERROR) {
+                printf("ERROR sending data to redis: %s\n", reply->str);
+            }
+            freeReplyObject(reply);
+            reply=NULL;
+        }
+
+
         if(event_ready_queue.events_available) {
             event_id = pop_complete_event_id();
             built_count += 1;
@@ -576,25 +761,32 @@ int main(int argc, char** argv) {
                     redis_update_time = current_time;
                 }
             }
-            if((nbytes_written = save_event(fout, event_id)) == -1) {
 
+            if((nbytes_written = save_event(fout, event_id)) == -1) {
+                // TODO shold try and recover from an error instead of dying
+                continue;
             }
+
             bytes_in_file += nbytes_written;
             free_event(event_id);
 
             // Check if it's time to change to a new sub-run
-            if(file_size_threshold && bytes_in_file > file_size_threshold) {
+            if(start_new_run || (file_size_threshold && bytes_in_file > file_size_threshold)){
                 // Time to rotate files
                 fflush(fout);
                 fclose(fout);
 
-                snprintf(buffer, 128, file_name_template, "jsns_data", run_number, ++sub_run_number);
+
+                snprintf(buffer, 128, file_name_template, "jsns_data", run_info.run_number, ++run_info.sub_run);
                 fout = fopen(buffer, "ab");
                 if(!fout) {
                     printf("Could not open file '%s': %s", buffer, strerror(errno));
                     printf("Events will not be saved!");
                 }
+                printf("Writing data to new file %s\n", buffer);
+
                 bytes_in_file = 0;
+                start_new_run = 0;
             }
         }
 
