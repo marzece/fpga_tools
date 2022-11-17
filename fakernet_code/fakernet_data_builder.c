@@ -771,8 +771,8 @@ int read_proc(FPGA_IF* fpga, TrigHeader* ret) {
     if((event.event_header.length+2)*4*NUM_CHANNELS > EVENT_BUFFER_SIZE) {
         // Make sure we have enough space available
         builder_log(LOG_ERROR, "Event too large to fit in memory, something's probably wrong\n");
+        reeling = 1;
         return 0;
-
     }
 
     int bytes_in_buffer = ring_buffer_contiguous_readable(&fpga->ring_buffer);
@@ -975,6 +975,10 @@ struct fnet_ctrl_client* connect_fakernet_udp_client(const char* fnet_hname) {
 }
 
 int send_tcp_reset(struct fnet_ctrl_client* client) {
+    if(!client) {
+        builder_log(LOG_ERROR, "Cannot send TCP reset: UDP client not established");
+        return -1;
+    }
     int ret;
     fakernet_reg_acc_item* send_buf;
     fnet_ctrl_get_send_recv_bufs(client, &send_buf, NULL);
@@ -1109,7 +1113,7 @@ int main(int argc, char **argv) {
                         break;
                     case ARG_NUM_CHANNELS_:
                         NUM_CHANNELS = strtoul(argv[i], NULL, 0);
-                        printf("FPGA IP set to %s\n", ip);
+                        printf("FPGA NUM channels set to %i\n", NUM_CHANNELS);
                         break;
                     case ARG_ERR_FILENAME:
                         printf("Log file set to %s\n", argv[i]);
@@ -1187,7 +1191,9 @@ int main(int argc, char **argv) {
 
     // Do authentication
     // Immediatly free the reply cause I don't care about it
-    freeReplyObject(redisCommand(redis, "AUTH numubarnuebar"));
+    if(redis) {
+        freeReplyObject(redisCommand(redis, "AUTH numubarnuebar"));
+    }
 
     signal(SIGINT, sig_handler);
     signal(SIGKILL, sig_handler);
