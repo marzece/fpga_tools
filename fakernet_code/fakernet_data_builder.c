@@ -757,9 +757,9 @@ int read_proc(FPGA_IF* fpga, TrigHeader* ret) {
     // Check the header's CRC
     // TODO this if statement will get called whenver a read is done...should only
     // happen just after the header is completely read
-    if(event.event_header.crc != calc_trig_header_crc(&event.event_header) ||
-            event.event_header.magic_number != 0xFFFFFFFF ||
-            event.event_header.length < 50) {
+    uint8_t expected_crc = calc_trig_header_crc(&event.event_header);
+    if(event.event_header.crc != expected_crc ||
+            event.event_header.magic_number != 0xFFFFFFFF) {
         builder_log(LOG_ERROR, "BAD HEADER HAPPENED");
         handle_bad_header(&(event.event_header));
         event = start_event(); // This event is being trashed, just start a new one.
