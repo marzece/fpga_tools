@@ -19,6 +19,7 @@
 
 #define QUEUE_LENGTH 100
 #define FONTUS_DEVICE_ID 0
+#define REDIS_UNIX_SOCK_PATH "/var/run/redis/redis-server.sock"
 #define REDIS_OUT_DATA_BUF_SIZE (32*1024*1024)
 #define DEFAULT_FILE_SIZE_THRESHOLD (1024*1024*1024ULL) // 1GB
 #define DEFAULT_PUBLISH_MAX_RATE (10*1024*1024)
@@ -522,16 +523,17 @@ int main(int argc, char** argv) {
     signal(SIGKILL, signal_handler);
     signal(SIGINT, signal_handler);
 
-    redis = create_redis_unix_conn("/var/run/redis/redis-server.sock", 1);
-    redisAppendCommand(redis, "SUBSCRIBE event_stream");
-    redisBufferWrite(redis, &done);
+    data_redis = create_redis_unix_conn(REDIS_UNIX_SOCK_PATH, 0);
+    if(!data_redis) {
+        return 1;
+    }
 
     // TODO! need to improve the non-blocking connectivity scheme
     usleep(50000);
 
-    redisBufferRead(redis);
-    if(!reply) {
-        redisGetReply(redis, (void**)&reply);
+    publish_redis = create_redis_unix_conn(REDIS_UNIX_SOCK_PATH, 1);
+    if(!publish_redis) {
+        printf("Could not connect to redis for publishing data\n");
     }
 
     if(!reply) {
@@ -540,9 +542,8 @@ int main(int argc, char** argv) {
     }
     freeReplyObject(reply);
 
-    redisContext* publish_redis = create_redis_unix_conn("/var/run/redis/redis-server.sock", 0);
-    struct timeval redis_update_time, event_rate_time, current_time;
-    gettimeofday(&redis_update_time, NULL); // Initialize previous time to now
+    // Initialize some of the timers
+    gettimeofday(&redis_update_time, NULL);
     event_rate_time = redis_update_time;
     int redis_is_readable = 1; // TODO this should come from select or something like that
     int built_count = 0;
@@ -568,9 +569,9 @@ int main(int argc, char** argv) {
             // TODO save_event and send_to_redis are very similar functions,
             // should see if I can combine them or something like that.
 
-            if(publish_rate) {
+            if(publish_rate && publish_redis) {
                 delta_t = (current_time.tv_sec - redis_update_time.tv_sec)*1e6 + (current_time.tv_usec - redis_update_time.tv_usec);
-                if(delta_t > REDIS_COOLDOWN && bytes_sent < publish_rate/10) {
+                if(delta_t > REDIS_COOLDOWN && bytes_sent < publish_rate/10.) {
                     bytes_sent += send_event_to_redis(publish_redis, event_id);
                     redis_update_time = current_time;
                 }
@@ -611,15 +612,13 @@ int main(int argc, char** argv) {
         }
         if(disconnect_from_redis) {
             printf("Killing redis\n");
-            redisFree(redis);
+            redisFree(data_redis);
             loop = 0;
         }
-        // Just to put a bit of a speed limit on things
-        //usleep(100);
     }
     // Clean up
     fclose(fout);
-    redisFree(redis);
+    redisFree(data_redis);
     printf("Bye\n");
     return 0;
 }
