@@ -659,15 +659,16 @@ void interpret_header_word(TrigHeader* header, const uint32_t word, const int wh
 }
 
 void handle_bad_header(TrigHeader* header) {
+    uint8_t expected_crc = calc_trig_header_crc(header);
     builder_log(LOG_ERROR, "Likely error found\n"
                            "Bad magic  =  0x%x\n"
                            "Bad trig # =  %i\n"
                            "Bad length = %i\n"
                            "Bad time = %llu\n"
-                           "Bad channel id = %i",
-                           "Bad CRC id = %i", header->magic_number, header->trig_number,
+                           "Bad channel id = %i\n"
+                           "Bad CRC = %i, expected = %i\n", header->magic_number, header->trig_number,
                                                     header->length, (unsigned long long) header->clock,
-                                                    header->device_number, header->crc);
+                                                    header->device_number, header->crc, expected_crc);
     reeling = 1;
 }
 
