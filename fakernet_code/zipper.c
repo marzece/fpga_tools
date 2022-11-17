@@ -66,6 +66,16 @@ typedef struct FullEvent {
     int counter;
 } FullEvent;
 
+// TODO this should be defined in some common header file
+typedef struct TrigHeader {
+    uint32_t magic_number;
+    uint32_t trig_number;
+    uint64_t clock;
+    uint16_t length;
+    uint8_t device_id;
+    uint8_t crc;
+} TrigHeader;
+
 typedef struct ReadyEventQueue {
     uint32_t event_ids[QUEUE_LENGTH];
     int events_available;
@@ -81,15 +91,6 @@ typedef struct EventRecord {
 } EventRecord;
 EventRecord event_registry[HASH_TABLE_SIZE];
 
-// TODO this should be defined in some common header file
-typedef struct TrigHeader {
-    uint32_t magic_number;
-    uint32_t trig_number;
-    uint64_t clock;
-    uint16_t length;
-    uint8_t device_id;
-    uint8_t crc;
-} TrigHeader;
 
 redisContext* create_redis_conn(const char* redis_hostname, int port) {
     printf("Opening Redis Connection\n");
