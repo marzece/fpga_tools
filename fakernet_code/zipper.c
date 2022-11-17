@@ -368,8 +368,10 @@ void free_event(int event_id) {
 }
 
 int send_event_to_redis(redisContext* redis, int event_id) {
+    if(!redis) {
+        return 0;
+    }
     int i;
-    redisReply* r;
     size_t arglens[3];
     const char* args[3];
 
@@ -378,10 +380,6 @@ int send_event_to_redis(redisContext* redis, int event_id) {
     static unsigned char* redis_data_buf = NULL;
     unsigned long offset = 0;
 
-    if(!redis) {
-        printf("BAD REDIS\n");
-        return 0;
-    }
     if(!redis_data_buf) {
         redis_data_buf = malloc(REDIS_OUT_DATA_BUF_SIZE);
         if(!redis_data_buf) {
