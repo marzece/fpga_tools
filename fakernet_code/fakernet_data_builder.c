@@ -780,12 +780,16 @@ int read_proc(FPGA_IF* fpga, TrigHeader* ret) {
     uint32_t word;
     int ret_val = 0;
     // We'll exit this loop either when we've consumed all available data, or when we've complete a single event
-    while(bytes_read < bytes_in_buffer) {
+    while(bytes_read <= bytes_in_buffer) {
         // First check if the event is done
         if(event.current_channel == NUM_CHANNELS) {
             *ret = event.event_header;
             event = start_event();
             ret_val = 1;
+            break;
+        }
+        if(bytes_read == bytes_in_buffer) {
+            ret_val = 0;
             break;
         }
 
