@@ -1204,6 +1204,19 @@ int main(int argc, char **argv) {
     int did_warn_about_reeling = 0;
     while(loop) {
 
+        // If there's no data to process, we wait for data to show up.
+        // Don't block forever though so stats can continue to be updates
+        if(fpga_if.ring_buffer.is_empty) {
+            fd_set readfds;
+            struct timeval _timeout;
+            _timeout.tv_sec = 0;
+            _timeout.tv_usec = 100000; // 0.1 seconds
+            FD_ZERO(&readfds);
+            FD_SET(fpga_if.fd, &readfds);
+            // TODO, should also try and detect disconnect here
+            select(fpga_if.fd+1, &readfds, NULL, NULL, &_timeout);
+        }
+
         pull_from_fpga(&fpga_if);
         if(reeling) {
             if(!did_warn_about_reeling) {
