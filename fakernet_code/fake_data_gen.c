@@ -187,18 +187,23 @@ int main(int argc, char** argv) {
 
     int connected_fds[64];
     int num_connected_fds = 0;
-    struct timeval event_rate_time, current_time;
+    struct timeval event_rate_time, current_time, print_update_time;
     struct timeval timeout;
     event_rate_time.tv_sec = 0;
+    event_rate_time.tv_usec = 0;
+    print_update_time.tv_sec = 0;
+    print_update_time.tv_usec = 0;
     timeout.tv_sec = 0;
-    timeout.tv_usec = 5000;
+    timeout.tv_usec = 0;
 
-    double RATE = 0.1; // Hz
+    double RATE = 1;
 
     double time_interval = 1e6/RATE;
 
-    unsigned char* buffer = malloc((1024*1024*1024));
+    unsigned char* buffer = malloc((1024*1024));
     int count = 0;
+    int sent_count;
+    //ssize_t nbytes = produce_data(buffer, count, 4, 400);
 
     while(1) {  // main accept() loop
         gettimeofday(&current_time, NULL);
@@ -224,13 +229,20 @@ int main(int argc, char** argv) {
             continue;
         }
 
-        double delta_t = (current_time.tv_sec - event_rate_time.tv_sec)*1e6 + (current_time.tv_usec - event_rate_time.tv_usec);
+        double delta_t_send = (current_time.tv_sec - event_rate_time.tv_sec)*1e6 + (current_time.tv_usec - event_rate_time.tv_usec);
+        double delta_t_print = (current_time.tv_sec - print_update_time.tv_sec)*1e6 + (current_time.tv_usec - print_update_time.tv_usec);
 
-        if(delta_t > time_interval && num_connected_fds > 0) {
+        if(delta_t_print > 1e6) {
+            printf("Num Sent = %i\n", sent_count);
+            print_update_time = current_time;
+            sent_count = 0;
+        }
+
+        if(delta_t_send > time_interval && num_connected_fds > 0) {
             event_rate_time = current_time;
             // Send event
             for(int i =0; i<num_connected_fds; i++) {
-                ssize_t nbytes = produce_data(buffer, count, i+4, 100);
+                ssize_t nbytes = produce_data(buffer, count, i+4, 400);
                 ssize_t nsent = 0;
 
                 do {
@@ -242,6 +254,7 @@ int main(int argc, char** argv) {
                     nsent +=  bytes;
                 } while(nsent < nbytes);
             }
+            sent_count += 1;
             count += 1;
         }
         else {
