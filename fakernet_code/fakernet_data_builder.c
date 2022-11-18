@@ -491,7 +491,7 @@ redisContext* create_redis_unix_conn(const char* path) {
     return c;
 }
 
-EventInProgress start_event() {
+EventInProgress start_event(void) {
     EventInProgress ev;
 
     ev.header_bytes_read = 0;
@@ -554,7 +554,7 @@ void display_event(const TrigHeader* header) {
                                            header->crc, built_counter);
 }
 
-void clean_up() {
+void clean_up(void) {
     builder_log(LOG_INFO, "Closing and cleaning up");
     if(fdisk) {
         builder_log(LOG_INFO, "Closing data file");
@@ -565,7 +565,7 @@ void clean_up() {
     redis = NULL;
 }
 
-void end_loop() {
+void end_loop(void) {
     loop = 0;
 }
 
@@ -1003,7 +1003,7 @@ enum ArgIDs {
     ARG_NUM_CHANNELS_
 };
 
-void print_help_message() {
+void print_help_message(void) {
     printf("fakernet_data_builder\n"
             "   usage:  fakernet_data_builder [--ip ip] [--out filename] [--no-save] [--num num_events]\n");
 }
