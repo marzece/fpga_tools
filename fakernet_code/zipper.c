@@ -444,11 +444,12 @@ int send_event_to_redis(redisContext* redis, int event_id) {
 
 void print_help_string(void) {
     printf("zipper: recieves then combines data from CERES & FONTUS data builders via redis DB.\n"
-            "\tusage:  zipper [-o filename] [-m event_mask] [-l log-filename] [--run-mode] [-v] [-q]\n"
+            "\tusage:  zipper [-o filename] [-m event_mask] [-l log-filename] [--rate rate] [--run-mode] [-v] [-q]\n"
             "\targuments:\n"
             "\t--out -o\tFile to write built data to. Default is '%s'\n"
             "\t--mask -m\tBit mask corresponding to a complete event. Default 0x%llX.\n"
             "\t--log-file -l\tFilename that log messages should be recorded to. Default '%s'\n"
+            "\t--rate -r\tMax publish rate in Hz. [NOT IMPLEMENTED!]\n"
             "\t--verbose -v\tIncrease verbosity. Can be done multiple times.\n"
             "\t--quiet -q\tDecrease verbosity. Can be done multiple times.\n"
             "\t--run-mode\tOperate in run-mode. Will recieve run updates from redis. Default off\n",
@@ -548,7 +549,6 @@ int main(int argc, char** argv) {
     redisContext* publish_redis = NULL;
     redisReply* reply = NULL;
     unsigned long long file_size_threshold = 0;
-
     const char * output_filename = DEFAULT_DATA_OUT_FILE;
     double publish_rate = DEFAULT_PUBLISH_MAX_RATE;
     int built_count = 0;
@@ -726,7 +726,7 @@ int main(int argc, char** argv) {
                                    "Will be default to Run 0-0");
             }
         } else {
-            daq_log(LOG_INFO, "Starting at RUN 0-0\n");
+            daq_log(LOG_INFO, "Starting at RUN 0-0");
         }
         if(run_info_redis) {
             redisAppendCommand(run_info_redis, "XREAD BLOCK 0 STREAMS run_info $");
@@ -747,7 +747,7 @@ int main(int argc, char** argv) {
         freeReplyObject(reply);
     }
 
-    daq_log(LOG_INFO, "Starting main loop\n");
+    daq_log(LOG_INFO, "Starting main loop");
     while(loop) {
         gettimeofday(&current_time, NULL);
 
@@ -836,7 +836,7 @@ int main(int argc, char** argv) {
         }
 
         if(delta_t > PRINT_UPDATE_COOLDOWN) {
-            daq_log(LOG_INFO, "Event id %i.\t%0.2f events per second.\t%iMB sent to redis\n", event_id, (float)1e6*built_count/PRINT_UPDATE_COOLDOWN, bytes_sent/(1024*1024));
+            daq_log(LOG_INFO, "Event id %i.\t%0.2f events per second.\t%iMB sent to redis", event_id, (float)1e6*built_count/PRINT_UPDATE_COOLDOWN, bytes_sent/(1024*1024));
             built_count = 0;
             event_rate_time = current_time;
         }
