@@ -637,7 +637,6 @@ int main(int argc, char** argv) {
             run_mode = 1;
             break;
         }
-
     }
 
     setup_logger(DAQ_LOG_NAME, LOG_REDIS_HOST_NAME, log_filename,
