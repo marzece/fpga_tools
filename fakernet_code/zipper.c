@@ -11,11 +11,14 @@
 #include <arpa/inet.h>
 #include "util.h"
 #include "hiredis/hiredis.h"
+#include "daq_logger.h"
+
 // The number of seperate data streams, each of which must
 // be present for an event to be complete.
 #define MAX_DEVICE_NUMBER 34 // Maximum device ID
 #define DATA_HEADER_NBYTES 20
 #define HASH_TABLE_SIZE 1000
+#define DEFAULT_DATA_OUT_FILE "/dev/null"
 #define DEFAULT_EVENT_MASK 0xFF1ULL
 
 #define QUEUE_LENGTH 100
@@ -28,7 +31,11 @@
 // Minimum time between sending events to redis, in micro-seconds
 // 30k us = 30ms = ~30hz
 #define REDIS_COOLDOWN 30000
+#define LOG_REDIS_HOST_NAME "localhost"
 #define PRINT_UPDATE_COOLDOWN 1000000
+#define LOG_MESSAGE_MAX 1024
+#define DAQ_LOG_NAME "data-zipper"
+#define DEFAULT_LOG_FILENAME "zipper_error_log.log"
 
 // For some reason linux doesn't always have htonll...so this can be used instead
 #if __linux__
@@ -99,11 +106,11 @@ typedef struct RunInfo {
 } RunInfo;
 
 redisContext* create_redis_conn(const char* redis_hostname, int port) {
-    printf("Opening Redis Connection\n");
+    daq_log(LOG_INFO, "Opening Redis Connection");
     redisContext* c;
     c = redisConnect(redis_hostname, port);
     if(c == NULL || c->err) {
-        printf("Redis connection error %s\n", c->errstr);
+        daq_log(LOG_ERROR, "Redis connection error %s", c->errstr);
         redisFree(c);
         return NULL;
     }
@@ -111,7 +118,7 @@ redisContext* create_redis_conn(const char* redis_hostname, int port) {
 }
 
 redisContext* create_redis_unix_conn(const char* path, int nonblock) {
-    printf("Opening Redis Connection\n");
+    daq_log(LOG_INFO, "Opening Redis Connection");
     redisContext* c;
     if(!nonblock) {
         c = redisConnectUnix(path);
@@ -119,7 +126,7 @@ redisContext* create_redis_unix_conn(const char* path, int nonblock) {
         c = redisConnectUnixNonBlock(path);
     }
     if(c == NULL || c->err) {
-        printf("Redis connection error %s\n", c->errstr);
+        daq_log(LOG_ERROR, "Redis connection error %s", c->errstr);
         redisFree(c);
         return NULL;
     }
@@ -130,11 +137,11 @@ void signal_handler(int signum) {
     // TODO think of more signals that would be useful
     static int num_kills = 0;
     if(num_kills >= 1) {
-        printf("Dying\n");
+        daq_log(LOG_WARN, "Dying...");
         exit(1);
     }
     if(signum == SIGINT || signum == SIGKILL) {
-        printf("Cntrl-C caught. Will attempt graceful exit. Cntrl-C again for immediate exit.\n");
+        daq_log(LOG_WARN, "Cntrl-C caught. Will attempt graceful exit. Cntrl-C again for immediate exit.");
         loop = 0;
         num_kills +=1;
     }
@@ -144,7 +151,7 @@ void flag_complete_event(uint32_t event_number) {
 
     if(event_ready_queue.events_available == QUEUE_LENGTH) {
         // TODO figure out how this could be handled
-        printf("Error?QUEUE FULL\n");
+        daq_log(LOG_ERROR, "QUEUE FULL! Events not being saved!");
         return;
     }
     event_ready_queue.event_ids[event_ready_queue.events_available++] = event_number;
@@ -152,7 +159,7 @@ void flag_complete_event(uint32_t event_number) {
 
 uint32_t pop_complete_event_id(void) {
     if(event_ready_queue.events_available == 0) {
-        printf("Trying to pop empty queue. That shouldn't happen\n");
+        daq_log(LOG_ERROR, "Trying to pop empty queue. That shouldn't happen");
         return -1;
     }
     return event_ready_queue.event_ids[--event_ready_queue.events_available];
@@ -178,23 +185,11 @@ void register_waveform(uint32_t device_id, uint32_t event_number, redisReply* wf
         // Pass
     }
     else if(event_number > last_seen_event[device_id]+1) {
-        // Events were skipped
-        /*
-        for(i=last_seen_event[device_id]+1; i<event_number; i++) {
-            // Mark event as skipped
-            // What if I skip ahead like 10 zillion events due to a readout error?
-            // I dont think that should ever happen b/c of the CRC check though?
-            //mark_as_skipped(device_id, i);
-            printf("Events skipped FPGA-%i: %i - %i\n", device_id,
-                                                        last_seen_event[device_id],
-                                                        event_number);
-        }
-        */
     }
     else {
         // Event comes before previous event. Unclear how this happened and how
         // it should be handled...
-        printf("Event skipped backwards! Why did this happen?\n");
+        daq_log(LOG_WARN, "Event skipped backwards!");
     }
     last_seen_event[device_id] = event_number;
 
@@ -208,7 +203,7 @@ void register_waveform(uint32_t device_id, uint32_t event_number, redisReply* wf
         event_registry[hash_value].event_number = event_number;
         event_registry[hash_value].bit_word = 1ULL<<device_id;
         event_registry[hash_value].data[device_id] = wf_data;
-        printf("Hash collision!\n");
+        daq_log(LOG_WARN, "Hash collision!");
         //exit(1);
         // TODO, figure out how this should be handled
     }
@@ -224,13 +219,13 @@ void recieve_waveform_from_redis(redisContext* redis) {
     redisReply* reply;
     if(redisBufferRead(redis) != REDIS_OK) {
         // Error
-        printf("REDIS BUF READ ERROR1: %s\n", redis->errstr);
+        daq_log(LOG_ERROR, "REDIS BUF READ ERROR1: %s", redis->errstr);
         exit(1);
 
     }
     if(redisGetReplyFromReader(redis, (void**)&reply) != REDIS_OK) {
         // Error
-        printf("REDIS BUF READ ERROR2: %s\n", redis->errstr);
+        daq_log(LOG_ERROR, "REDIS BUF READ ERROR2: %s", redis->errstr);
         exit(1);
     }
 
@@ -288,19 +283,19 @@ unsigned long long save_event(FILE* fout, int event_id) {
     // First write the event header, the write the FONTUS Trigger DATA;
     // then write the waveform data
     if(!(nwritten = fwrite(&event_header.trig_number, sizeof(event_header.trig_number), 1, fout))) {
-        printf("Error writing event header to disk\n");
+        daq_log(LOG_ERROR, "Error writing event header to disk");
         goto ERROR;
     }
     total_bytes_written += nwritten*sizeof(event_header.trig_number);
 
     if(!(nwritten = fwrite(&event_header.status, sizeof(event_header.status), 1, fout))) {
-        printf("Error writing event header to disk\n");
+        daq_log(LOG_ERROR, "Error writing event header to disk");
         goto ERROR;
     }
     total_bytes_written += nwritten*sizeof(event_header.status);
 
     if(!(nwritten = fwrite(&event_header.device_mask, sizeof(event_header.device_mask), 1, fout))) {
-        printf("Error writing event header to disk\n");
+        daq_log(LOG_ERROR, "Error writing event header to disk");
         goto ERROR;
     }
     total_bytes_written += nwritten*sizeof(event_header.device_mask);
@@ -309,11 +304,11 @@ unsigned long long save_event(FILE* fout, int event_id) {
     if((COMPLETE_EVENT_MASK & (1ULL<<FONTUS_DEVICE_ID)) != 0) {
         grab_data_from_pubsub_message(event->data[FONTUS_DEVICE_ID], &data, &data_len);
         if(!data) {
-            printf("Error getting FONTUS data\n");
+            daq_log(LOG_ERROR, "Error getting FONTUS data");
             goto ERROR;
         }
         if(!(nwritten = fwrite(data, data_len, 1, fout))) {
-            printf("Error writing FONTUS data to disk\n");
+            daq_log(LOG_ERROR, "Error writing FONTUS data to disk");
             goto ERROR;
         }
         total_bytes_written += nwritten*data_len;
@@ -329,14 +324,14 @@ unsigned long long save_event(FILE* fout, int event_id) {
         }
         grab_data_from_pubsub_message(event->data[i], &data, &data_len);
         if(!data) {
-            printf("Error, bad data in 'complete' event!\n");
+            daq_log(LOG_ERROR, "Error, bad data in 'complete' event!");
             goto ERROR;
             exit(1);
         }
         nwritten = fwrite(data, data_len, 1, fout);
         if(nwritten != 1) {
             // Print errno...
-            printf("Error writing event to disk: %s\n", strerror(errno));
+            daq_log(LOG_ERROR, "Error writing event to disk: %s", strerror(errno));
             goto ERROR;
         }
         total_bytes_written += data_len*nwritten;
@@ -349,7 +344,7 @@ unsigned long long save_event(FILE* fout, int event_id) {
 
 ERROR:;
       // TODO this isn't good error handling lol
-      printf("I'm gonna die now\n");
+      daq_log(LOG_ERROR, "I'm gonna die now");
       loop = 0;
       return -1;
 }
@@ -389,7 +384,7 @@ int send_event_to_redis(redisContext* redis, int event_id) {
     if(!redis_data_buf) {
         redis_data_buf = malloc(REDIS_OUT_DATA_BUF_SIZE);
         if(!redis_data_buf) {
-            printf("Could not allocate memory for redis_data_buffer \n");
+            daq_log(LOG_ERROR, "Could not allocate memory for redis_data_buffer");
             return 0;
         }
     }
@@ -449,7 +444,15 @@ int send_event_to_redis(redisContext* redis, int event_id) {
 
 void print_help_string(void) {
     printf("zipper: recieves then combines data from CERES & FONTUS data builders via redis DB.\n"
-            "   usage:  zipper [--out filename] [--mask event_mask]\n");
+            "\tusage:  zipper [-o filename] [-m event_mask] [-l log-filename] [--run-mode] [-v] [-q]\n"
+            "\targuments:\n"
+            "\t--out -o\tFile to write built data to. Default is '%s'\n"
+            "\t--mask -m\tBit mask corresponding to a complete event. Default 0x%llX.\n"
+            "\t--log-file -l\tFilename that log messages should be recorded to. Default '%s'\n"
+            "\t--verbose -v\tIncrease verbosity. Can be done multiple times.\n"
+            "\t--quiet -q\tDecrease verbosity. Can be done multiple times.\n"
+            "\t--run-mode\tOperate in run-mode. Will recieve run updates from redis. Default off\n",
+          DEFAULT_DATA_OUT_FILE, DEFAULT_EVENT_MASK, DEFAULT_LOG_FILENAME);
 }
 
 int wait_for_redis_readable(const redisContext* r, int timeout) {
@@ -516,19 +519,16 @@ RunInfo parse_run_info_redis_reply(redisReply* reply, int skip_steps) {
 
         if(strncmp("run_number", k->str, k->len) == 0) {
             if(string2ll(v->str, v->len, &ret.run_number) == 0) {
-                printf("Cannot parse run number from redis. "
-                        "Will default to RUN=0\n");
-
+                daq_log(LOG_ERROR, "Cannot parse run number from redis. "
+                                   "Will default to RUN=0");
                 ret.run_number = 0;
             }
-
-
         }
         else if(strncmp("sub_run", k->str, k->len) == 0) {
             if(string2ll(v->str, v->len, &ret.sub_run) == 0) {
                 // TODO not sure what I should do here
-                printf("Cannot parse sub_run number from redis. "
-                        "Will default to 0\n");
+                daq_log(LOG_ERROR, "Cannot parse sub_run number from redis. "
+                                   "Will default to 0");
 
                 ret.sub_run = 0;
             }
@@ -549,7 +549,7 @@ int main(int argc, char** argv) {
     redisReply* reply = NULL;
     unsigned long long file_size_threshold = 0;
 
-    const char * output_filename = "/dev/null";
+    const char * output_filename = DEFAULT_DATA_OUT_FILE;
     double publish_rate = DEFAULT_PUBLISH_MAX_RATE;
     int built_count = 0;
     double delta_t;
@@ -563,21 +563,29 @@ int main(int argc, char** argv) {
     struct timeval redis_update_time, event_rate_time, current_time;
     struct timeval timeout;
     const char* file_name_template = "%s_r%06i_f%06i.dat";
+    const char* log_filename = DEFAULT_LOG_FILENAME;
     char buffer[128];
 
     timeout.tv_sec = 0; timeout.tv_usec=0;
     run_info.run_number = 0;
     run_info.sub_run = 0;
+    int arg_run_mode = 0;
+
+    int verbosity_stdout = LOG_INFO;
+    int verbosity_redis = LOG_WARN;
+    int verbosity_file = LOG_WARN;
 
     struct option clargs[] = {{"out", required_argument, NULL, 'o'},
                               {"mask", required_argument, NULL, 'm'},
-                              {"run-mode", no_argument, NULL, 'z'},
+                              {"run-mode", no_argument, &arg_run_mode, 1},
+                              {"log-file", required_argument, NULL, 'l'},
+                              {"verbose", no_argument, NULL, 'v'},
                               {"rate", required_argument, NULL, 'r'},
                               {"help", no_argument, NULL, 'h'},
                               { 0, 0, 0, 0}};
     int optindex;
     int opt;
-    while((opt = getopt_long(argc, argv, "o:m:r:", clargs, &optindex)) != -1) {
+    while((opt = getopt_long(argc, argv, "o:m:r:l:vq", clargs, &optindex)) != -1) {
         switch(opt) {
             case 0:
                 // Should be here if the option has the "flag" set
@@ -590,18 +598,29 @@ int main(int argc, char** argv) {
             case 'm':
                 COMPLETE_EVENT_MASK = strtoul(optarg, NULL, 0);
                 if(!COMPLETE_EVENT_MASK) {
-                    printf("Event mask '%s' couldn't be interpreted. Dying\n", optarg);
+                    printf("Event mask '%s' couldn't be interpreted.\n", optarg);
                     return 0;
                 }
-                break;
-            case 'z':
-                printf("RUN MODE\n");
-                file_size_threshold = DEFAULT_FILE_SIZE_THRESHOLD;
-                run_mode = 1;
                 break;
             case 'r':
                 publish_rate = atof(optarg);
                 printf("Publish rate set to %f\n", publish_rate);
+                break;
+            case 'v':
+                // Reduce the threshold on all the verbosity levels
+                verbosity_stdout = verbosity_stdout-1 < LOG_NEVER ? verbosity_stdout-1 : LOG_NEVER;
+                verbosity_file = verbosity_file-1 < LOG_NEVER ? verbosity_file-1 : LOG_NEVER;
+                verbosity_redis = verbosity_redis-1 < LOG_NEVER ? verbosity_redis-1 : LOG_NEVER;
+                break;
+            case 'q':
+                // Raise the threshold on all the verbosity levels
+                verbosity_stdout = verbosity_stdout+1 > LOG_ERROR ? verbosity_stdout-1 : LOG_ERROR;
+                verbosity_file = verbosity_file+1 < LOG_ERROR ? verbosity_file+1 : LOG_ERROR;
+                verbosity_redis = verbosity_redis+1 < LOG_ERROR ? verbosity_redis+1 : LOG_ERROR;
+                break;
+            case 'l':
+                printf("Log file set to %s\n", optarg);
+                log_filename = optarg;
                 break;
             case 'h':
                 print_help_string();
@@ -611,16 +630,35 @@ int main(int argc, char** argv) {
                 // This should happen if there's a missing or unknown argument
                 // getopt_long outputs its own error message
                 return 0;
-
         }
+        if(arg_run_mode) {
+            printf("RUN MODE\n");
+            file_size_threshold = DEFAULT_FILE_SIZE_THRESHOLD;
+            run_mode = 1;
+            break;
+        }
+
     }
 
-    printf("COMPLETE EVENT MASK = 0x%llx\n", COMPLETE_EVENT_MASK);
+    setup_logger(DAQ_LOG_NAME, LOG_REDIS_HOST_NAME, log_filename,
+                 verbosity_stdout, verbosity_file, verbosity_redis,
+                 LOG_MESSAGE_MAX);
+    the_logger->add_newlines = 1;
 
-    //FILE* fout = fopen(output_filename, "wb");
+
+    // Print the configuration
+    daq_log(LOG_WARN, "Data zipper running.\n"
+                      "Data file='%s'\n"
+                      "Complete event mask = 0x%llX.\n"
+                      "Log file='%s'\n"
+                      "Run Mode: %s",
+            output_filename, COMPLETE_EVENT_MASK, log_filename, run_mode ? "ON" : "OFF");
+
+
+
     FILE* fout = fopen(output_filename, "ab");
     if(!fout) {
-        printf("Could not open output file '%s'. Data will not be saved!\n", output_filename);
+        daq_log(LOG_ERROR, "Could not open output file '%s'. Data will not be saved!", output_filename);
         return 1;
     }
     signal(SIGKILL, signal_handler);
@@ -628,20 +666,21 @@ int main(int argc, char** argv) {
 
     data_redis = create_redis_unix_conn(REDIS_UNIX_SOCK_PATH, 0);
     if(!data_redis) {
+        daq_log(LOG_ERROR, "Could not connect to redis for receiving data");
         return 1;
     }
 
 
     publish_redis = create_redis_unix_conn(REDIS_UNIX_SOCK_PATH, 1);
     if(!publish_redis) {
-        printf("Could not connect to redis for publishing data\n");
+        daq_log(LOG_ERROR, "Could not connect to redis for publishing data");
     }
 
     // Connect to redis so I can get run info
     if(run_mode) {
         run_info_redis = create_redis_unix_conn(REDIS_UNIX_SOCK_PATH, 1);
         if(!run_info_redis) {
-            printf("Could not connect to redis for run info. Will be using default run 0.\n");
+            daq_log(LOG_ERROR, "Could not connect to redis for run info. Will be using default run 0.");
             run_number = 0;
         }
         else if(resume_last_run) {
@@ -667,16 +706,16 @@ int main(int argc, char** argv) {
 
                 } else if(reply->type == REDIS_REPLY_ARRAY) {
                     run_info = parse_run_info_redis_reply(reply, 1);
-                    printf("Got initial run info. "
-                            " Run = %lli-%lli\n", run_info.run_number, run_info.sub_run);
+                    daq_log(LOG_INFO, "Got initial run info. "
+                                      "Run = %lli-%lli\n", run_info.run_number, run_info.sub_run);
                 }
                 else {
                     // The reply is neither an error, nor empty, nor an array
                     // I'm not sure how you end up here...this really should
                     // never happen.
-                    printf("Unexpected response from run_info response. "
-                            "Will be ignoring this response. "
-                            "Type = %i\n", reply->type);
+                    daq_log(LOG_WARN,"Unexpected response from run_info response. "
+                                     "Will be ignoring this response. "
+                                     "Type = %i\n", reply->type);
                 }
 
                 freeReplyObject(reply);
@@ -684,11 +723,11 @@ int main(int argc, char** argv) {
             else {
                 // Either an error happened while waiting for reply,
                 // or the timeout expired (which probably is an error too)
-                printf("Response timed out while getting initial run info. "
-                        "Will be default to Run 0-0");
+                daq_log(LOG_ERROR, "Response timed out while getting initial run info. "
+                                   "Will be default to Run 0-0");
             }
         } else {
-            printf("Starting at RUN 0-0\n");
+            daq_log(LOG_INFO, "Starting at RUN 0-0\n");
         }
         if(run_info_redis) {
             redisAppendCommand(run_info_redis, "XREAD BLOCK 0 STREAMS run_info $");
@@ -709,7 +748,7 @@ int main(int argc, char** argv) {
         freeReplyObject(reply);
     }
 
-    printf("Starting main loop\n");
+    daq_log(LOG_INFO, "Starting main loop\n");
     while(loop) {
         gettimeofday(&current_time, NULL);
 
@@ -727,7 +766,7 @@ int main(int argc, char** argv) {
                 run_info = new_run_info;
                 start_new_run = 1;
             }
-            printf("GOT NEW RUN %lli-%lli\n", run_info.run_number, run_info.sub_run);
+            daq_log(LOG_WARN, "GOT NEW RUN %lli-%lli", run_info.run_number, run_info.sub_run);
 
             // Ask for next run, block until it arrives
             redisAppendCommand(run_info_redis, "XREAD BLOCK 0 STREAMS run_info $");
@@ -741,7 +780,7 @@ int main(int argc, char** argv) {
             redisGetReply(publish_redis, (void**)&reply);
 
             if(reply->type == REDIS_REPLY_STRING || reply->type == REDIS_REPLY_ERROR) {
-                printf("ERROR sending data to redis: %s\n", reply->str);
+                daq_log(LOG_ERROR, "ERROR sending data to redis: %s", reply->str);
             }
             freeReplyObject(reply);
             reply=NULL;
@@ -780,10 +819,10 @@ int main(int argc, char** argv) {
                 snprintf(buffer, 128, file_name_template, "jsns_data", run_info.run_number, ++run_info.sub_run);
                 fout = fopen(buffer, "ab");
                 if(!fout) {
-                    printf("Could not open file '%s': %s", buffer, strerror(errno));
-                    printf("Events will not be saved!");
+                    daq_log(LOG_ERROR, "Could not open file '%s': %s", buffer, strerror(errno));
+                    daq_log(LOG_ERROR, "Events will not be saved!");
                 }
-                printf("Writing data to new file %s\n", buffer);
+                daq_log(LOG_WARN, "Writing data to new file %s\n", buffer);
 
                 bytes_in_file = 0;
                 start_new_run = 0;
@@ -798,12 +837,12 @@ int main(int argc, char** argv) {
         }
 
         if(delta_t > PRINT_UPDATE_COOLDOWN) {
-            printf("Event id %i.\t%0.2f events per second.\t%iMB sent to redis\n", event_id, (float)1e6*built_count/PRINT_UPDATE_COOLDOWN, bytes_sent/(1024*1024));
+            daq_log(LOG_INFO, "Event id %i.\t%0.2f events per second.\t%iMB sent to redis\n", event_id, (float)1e6*built_count/PRINT_UPDATE_COOLDOWN, bytes_sent/(1024*1024));
             built_count = 0;
             event_rate_time = current_time;
         }
         if(disconnect_from_redis) {
-            printf("Killing redis\n");
+            daq_log(LOG_WARN, "Killing redis\n");
             redisFree(data_redis);
             loop = 0;
         }
@@ -811,6 +850,6 @@ int main(int argc, char** argv) {
     // Clean up
     fclose(fout);
     redisFree(data_redis);
-    printf("Bye\n");
+    daq_log(LOG_WARN, "Bye\n");
     return 0;
 }

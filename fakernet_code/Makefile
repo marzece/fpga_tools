@@ -11,7 +11,7 @@ fnetctrl: fnetctrl.o fnet_client.o
 
 fnetctrl.o fnet_client.o: fakernet.h fnet_client.h
 
-zipper: zipper.c hiredis/libhiredis.a
+zipper: zipper.c hiredis/libhiredis.a util.o daq_logger.o
 	$(CC) -ggdb3 -O0 -o $@ $(CFLAGS) $^
 
 tail_daq_log: tail_daq_log.o hiredis/libhiredis.a
