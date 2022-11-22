@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <arpa/inet.h>
-#include <signal.h>
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -17,14 +16,6 @@
 uint32_t crc32(uint32_t crc, uint32_t * buf, unsigned int len);
 void crc8(unsigned char *crc, unsigned char m);
 
-void sigchld_handler(int s) {
-    // waitpid() might overwrite errno, so we save and restore it:
-    int saved_errno = errno;
-
-    while(waitpid(-1, NULL, WNOHANG) > 0);
-
-    errno = saved_errno;
-}
 // get sockaddr, IPv4
 void *get_in_addr(struct sockaddr *sa) {
         return &(((struct sockaddr_in*)sa)->sin_addr);
@@ -78,8 +69,8 @@ size_t produce_data(unsigned char* buffer, int number, int device_id, int len) {
 
             *(uint32_t*)(buffer-4) = htonl(*((uint32_t*)(buffer-4)));
         }
-        uint32_t crc = crc32(0, (uint32_t*)channel_start, (buffer-channel_start));
-        *((uint32_t*)buffer) = htonl(crc);
+        uint32_t channel_crc = crc32(0, (uint32_t*)channel_start, (buffer-channel_start));
+        *((uint32_t*)buffer) = htonl(channel_crc);
         buffer += 4;
 
         // Now do delta-encoding
@@ -125,9 +116,7 @@ int main(int argc, char** argv) {
     struct addrinfo hints, *servinfo, *p;
     struct sockaddr_storage their_addr; // connector's address information
     socklen_t sin_size;
-    struct sigaction sa;
     int yes=1;
-    char s[INET6_ADDRSTRLEN];
     int rv;
 
     memset(&hints, 0, sizeof hints);
@@ -172,14 +161,6 @@ int main(int argc, char** argv) {
 
     if (listen(sockfd, BACKLOG) == -1) {
         perror("listen");
-        exit(1);
-    }
-
-    sa.sa_handler = sigchld_handler; // reap all dead processes
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = SA_RESTART;
-    if (sigaction(SIGCHLD, &sa, NULL) == -1) {
-        perror("sigaction");
         exit(1);
     }
 
