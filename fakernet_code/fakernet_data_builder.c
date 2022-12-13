@@ -66,8 +66,6 @@ int const NUM_CHANNELS = 16;
 
 //int channel_order [NUM_CHANNELS]={15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0};
 int channel_order [16]={0,1,2,3,4,5,6,7,15,14,13,12,11,10,9,8};
-int const channel_length=500;
-int channel_order_size=4*channel_length+8;
 
 
 // Largest possible size for single message (in byte)
@@ -688,7 +686,7 @@ void handle_bad_header(TrigHeader* header) {
     reeling = 1;
 }
 //HW
-void Stash_with_Reorder(EventBuffer* eb, uint32_t word, int current_channel){
+void Stash_with_Reorder(EventBuffer* eb, uint32_t word, int current_channel, int channel_order_size){
     // Reordering for CRC, Uncompressed Data
     // In this function, if reorder is needed change buffer_locatioin and write data in buffer,
     // After that going back to original buffer_location before reordering. 
@@ -709,7 +707,7 @@ void Stash_with_Reorder(EventBuffer* eb, uint32_t word, int current_channel){
     }
 }
 
-int Stash_with_Reorder_Compressed(EventBuffer* eb, int current_channel){
+int Stash_with_Reorder_Compressed(EventBuffer* eb, int current_channel, int channel_order_size){
     // Reordering for Compressed Data
     // In this function, buffer_locatioin is changing.
     // And return original buffer_location for going back after put data in buffer.
@@ -838,6 +836,9 @@ int read_proc(FPGA_IF* fpga, TrigHeader* ret) {
     int bytes_read = 0;
     uint32_t word;
     int ret_val = 0;
+    int channel_length=event.event_header.length;	
+    int channel_order_size=4*channel_length+8;
+    printf("num	%d	%d\n",channel_length,channel_order_size);
     // We'll exit this loop either when we've consumed all available data, or when we've complete a single event
     while(bytes_read <= bytes_in_buffer) {
         // First check if the event is done
@@ -875,9 +876,7 @@ int read_proc(FPGA_IF* fpga, TrigHeader* ret) {
                 return 0;
             }
             // Stash the location in memory of the start of each waveform
-
-            //HW
-            Stash_with_Reorder((&fpga->event_buffer),word,event.current_channel);
+            Stash_with_Reorder((&fpga->event_buffer),word,event.current_channel,channel_order_size);
             event.wf_header_read = 1;
             event.wf_crc_read = 0;
             event.samples_read = 0;
@@ -919,7 +918,7 @@ int read_proc(FPGA_IF* fpga, TrigHeader* ret) {
 
 
 
-                int Stash_Compressed_Val=Stash_with_Reorder_Compressed((&fpga->event_buffer),event.current_channel);
+                int Stash_Compressed_Val=Stash_with_Reorder_Compressed((&fpga->event_buffer),event.current_channel,channel_order_size);
                 // Write for event buffer, buffer_location is changed on Stash_Compressed_Val function.
                 // Val=0 means this data does not need reordering.
                 // if Val is not 0, data would be reodered with buffer_location=Val.
@@ -942,7 +941,7 @@ int read_proc(FPGA_IF* fpga, TrigHeader* ret) {
         }
         else if(!event.wf_crc_read) {
             // Read the CRC
-            Stash_with_Reorder((&fpga->event_buffer),word,event.current_channel);
+            Stash_with_Reorder((&fpga->event_buffer),word,event.current_channel,channel_order_size);
             event.current_channel += 1;
             event.samples_read = 0;
             event.wf_crc_read = 1;
