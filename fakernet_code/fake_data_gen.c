@@ -13,6 +13,7 @@
 #define BACKLOG 10
 
 
+int const channel_length=500;
 uint32_t crc32(uint32_t crc, uint32_t * buf, unsigned int len);
 void crc8(unsigned char *crc, unsigned char m);
 
@@ -25,6 +26,7 @@ size_t produce_data(unsigned char* buffer, int number, int device_id, int len) {
     const int NCHAN = 16;
     uint8_t i;
     unsigned char* start = buffer;
+
 
     (*(uint32_t*)buffer) = 0xFFFFFFFF;
     buffer += 4;
@@ -50,6 +52,7 @@ size_t produce_data(unsigned char* buffer, int number, int device_id, int len) {
     *buffer = (crc ^ 0x55);
     buffer +=1;
 
+
     for(i=0; i<NCHAN; i++) {
         buffer[0] = 0xFF;
         buffer[1] = i;
@@ -58,17 +61,19 @@ size_t produce_data(unsigned char* buffer, int number, int device_id, int len) {
         buffer += 4;
 
         unsigned char* channel_start = buffer;
+        
         for(int j=0; j<len; j++) {
-            uint16_t val = 128 + ((rand() % 9) - 8);
+            uint16_t val = i;
             (*(uint16_t*)buffer) = val;
             buffer += 2;
 
-            val = 128 + ((rand() % 9) - 8);
+            val = i;
             (*(uint16_t*)buffer) = val;
             buffer += 2;
 
             *(uint32_t*)(buffer-4) = htonl(*((uint32_t*)(buffer-4)));
         }
+
         uint32_t channel_crc = crc32(0, (uint32_t*)channel_start, (buffer-channel_start));
         *((uint32_t*)buffer) = htonl(channel_crc);
         buffer += 4;
@@ -166,6 +171,7 @@ int main(int argc, char** argv) {
 
     printf("server: waiting for connections...\n");
 
+    //file_discripter
     int connected_fds[64];
     int num_connected_fds = 0;
     struct timeval event_rate_time, current_time, print_update_time;
@@ -223,7 +229,7 @@ int main(int argc, char** argv) {
             event_rate_time = current_time;
             // Send event
             for(int i =0; i<num_connected_fds; i++) {
-                ssize_t nbytes = produce_data(buffer, count, i+4, 400);
+                ssize_t nbytes = produce_data(buffer, count, i+4, channel_length);
                 ssize_t nsent = 0;
 
                 do {
@@ -234,6 +240,7 @@ int main(int argc, char** argv) {
                     }
                     nsent +=  bytes;
                 } while(nsent < nbytes);
+	    
             }
             sent_count += 1;
             count += 1;

@@ -1,9 +1,12 @@
 CC = cc
 
+HIREDIS_DIR = /mnt/c/Users/USER/LINUX/
+
 CFLAGS += -O0 -std=gnu99 -Wall -W -Wshadow -Wwrite-strings \
-        -Wno-unused-function -Wno-unused-label -Wstrict-prototypes
+        -Wno-unused-function -Wno-unused-label -Wstrict-prototypes -iquote$(HIREDIS_DIR)
 
 LDLIBS += -lm
+
 
 all: fnetctrl kintex_client_server kintex_cli fakernet_data_builder tail_daq_log fontus_data_builder zipper ceres_server fake_data_gen
 
@@ -30,6 +33,7 @@ fakernet_data_builder: fakernet_data_builder.c crc32.o crc8.o daq_logger.o
 	$(CC) -Wall $(CFLAGS) -O0 -ggdb3 -o $@ $^ fnet_client.o hiredis/libhiredis.a
 # -DDEBUG
 #$(CC) -Wall -pedantic -O -g -o $@ $^ 
+
 
 fontus_data_builder: fontus_data_builder.c crc32.o crc8.o daq_logger.o
 	$(CC) -Wall $(CFLAGS) -O0 -ggdb3 -o $@ $^ fnet_client.o hiredis/libhiredis.a

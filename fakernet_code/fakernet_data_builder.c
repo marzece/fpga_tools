@@ -54,6 +54,7 @@ Author: Eric Marzec <marzece@gmail.com>
 #endif
 
 
+
 int verbosity_stdout = LOG_INFO;
 int verbosity_redis = LOG_WARN;
 int verbosity_file = LOG_WARN;
@@ -61,7 +62,13 @@ int verbosity_file = LOG_WARN;
 // Counter for how many events have been built
 int built_counter = 0;
 // Number of channels to be readout
-int NUM_CHANNELS = 16;
+int const NUM_CHANNELS = 16;
+
+//int channel_order [NUM_CHANNELS]={15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0};
+int channel_order [16]={0,1,2,3,4,5,6,7,15,14,13,12,11,10,9,8};
+int const channel_length=500;
+int channel_order_size=4*channel_length+8;
+
 
 // Largest possible size for single message (in byte)
 #define LOG_MESSAGE_MAX 1024
@@ -111,6 +118,7 @@ typedef struct EventBuffer {
     unsigned char* data;
     long num_bytes;
 } EventBuffer;
+
 
 typedef struct ProcessingStats {
     unsigned int event_count;
@@ -305,6 +313,12 @@ typedef struct FPGA_IF {
     EventBuffer event_buffer; // memory location for uncompressed event data
 } FPGA_IF;
 
+/*
+   type def struct FPGA_VIRTURE{
+   RingBuffer virture_ring_buffer;
+   EventBuffer virture_event_buffer;
+   }
+   */
 typedef struct TrigHeader{
     uint32_t magic_number;
     uint32_t trig_number;
@@ -338,7 +352,7 @@ typedef struct EventInProgress {
 
 // Open socket to FPGA returns 0 if successful
 int connect_to_fpga(const char* fpga_ip) {
-    const int port = 1; // FPGA doesn't use ports, so this doesn't matter
+    const int port = 5009; // FPGA doesn't use ports, so this doesn't matter
     int args;
     int res;
     struct sockaddr_in fpga_addr;
@@ -429,6 +443,7 @@ size_t pull_from_fpga(FPGA_IF* fpga_if) {
     unsigned char* w_buffer = fpga_if->ring_buffer.buffer;
     size_t w_buffer_idx = fpga_if->ring_buffer.write_pointer;
 
+
     // TODO could consider checking total_space, not just contiguous space and doing two
     // recv's, one at the "end" then one at the start of the ring buffer.
     // That might help if this gets a lot of chump reads that are only like 100 bytes.
@@ -464,6 +479,7 @@ void initialize_event_buffer(EventBuffer* eb) {
         exit(1);
     }
 }
+
 
 // Connect to redis database
 redisContext* create_redis_conn(const char* hostname, const int port) {
@@ -671,6 +687,47 @@ void handle_bad_header(TrigHeader* header) {
                                                     header->device_number, header->crc, expected_crc);
     reeling = 1;
 }
+//HW
+void Stash_with_Reorder(EventBuffer* eb, uint32_t word, int current_channel){
+    // Reordering for CRC, Uncompressed Data
+    // In this function, if reorder is needed change buffer_locatioin and write data in buffer,
+    // After that going back to original buffer_location before reordering. 
+    if(channel_order[current_channel]!=current_channel){
+        int origin_loc=eb->num_bytes;
+        int moved_loc_in_channel=origin_loc-(channel_order_size*current_channel+HEADER_SIZE);
+        int loc=channel_order_size*channel_order[current_channel]+HEADER_SIZE+moved_loc_in_channel;
+        eb->num_bytes=loc;
+
+        *(uint32_t*)(eb->data + eb->num_bytes)= htonl(word);
+        eb->num_bytes=origin_loc;
+        eb->num_bytes += 4;
+    }
+    else{
+
+        *(uint32_t*)(eb->data + eb->num_bytes) = htonl(word);
+        eb->num_bytes += 4;
+    }
+}
+
+int Stash_with_Reorder_Compressed(EventBuffer* eb, int current_channel){
+    // Reordering for Compressed Data
+    // In this function, buffer_locatioin is changing.
+    // And return original buffer_location for going back after put data in buffer.
+    int origin_loc=eb->num_bytes;
+    if(channel_order[current_channel]!=current_channel){
+        int moved_loc_in_channel=origin_loc-(channel_order_size*current_channel+HEADER_SIZE);
+        int loc=channel_order_size*channel_order[current_channel]+HEADER_SIZE+moved_loc_in_channel;
+        eb->num_bytes=loc;
+        return origin_loc;
+    }
+    else if(channel_order[current_channel]==current_channel){
+        return 0;
+    }
+    else{
+        printf("ERROR WITH REORDER\n");
+        return -1;
+    }
+}
 
 int find_event_start(FPGA_IF* fpga) {
     /* This just searches through the readable memory buffer and tries to find the
@@ -750,6 +807,7 @@ int read_proc(FPGA_IF* fpga, TrigHeader* ret) {
         interpret_header_word(header, val, word);
         event.header_bytes_read += 4;
         // Copy this word into the event buffer
+        //
         *(uint32_t*)(fpga->event_buffer.data + fpga->event_buffer.num_bytes) = htonl(val);
         fpga->event_buffer.num_bytes += 4;
     } // Done reading header
@@ -817,9 +875,9 @@ int read_proc(FPGA_IF* fpga, TrigHeader* ret) {
                 return 0;
             }
             // Stash the location in memory of the start of each waveform
-            *(uint32_t*)(fpga->event_buffer.data + fpga->event_buffer.num_bytes) = htonl(word);
-            fpga->event_buffer.num_bytes += 4;
 
+            //HW
+            Stash_with_Reorder((&fpga->event_buffer),word,event.current_channel);
             event.wf_header_read = 1;
             event.wf_crc_read = 0;
             event.samples_read = 0;
@@ -852,13 +910,19 @@ int read_proc(FPGA_IF* fpga, TrigHeader* ret) {
                     event.samples_read += 3;
                 }
                 else {
-                    // not compressed samples
                     if(event.samples_read == 0) {
                         sample = (word >> 16) & 0x3fff;
                     }
                     else {
                         sample = event.prev_sample + (((int16_t)(word >> 14)) >> 2);
                     }
+
+
+
+                int Stash_Compressed_Val=Stash_with_Reorder_Compressed((&fpga->event_buffer),event.current_channel);
+                // Write for event buffer, buffer_location is changed on Stash_Compressed_Val function.
+                // Val=0 means this data does not need reordering.
+                // if Val is not 0, data would be reodered with buffer_location=Val.
                     event.prev_sample = sample;
                     *(uint16_t*)(fpga->event_buffer.data+fpga->event_buffer.num_bytes) = htons(sample | valid_bit);
                     fpga->event_buffer.num_bytes += 2;
@@ -867,16 +931,18 @@ int read_proc(FPGA_IF* fpga, TrigHeader* ret) {
                     event.prev_sample = sample;
                     *(uint16_t*)(fpga->event_buffer.data + fpga->event_buffer.num_bytes) = htons(sample);
                     fpga->event_buffer.num_bytes += 2;
-
                     event.samples_read +=1;
+
+                if(Stash_Compressed_Val!=0){
+                    fpga->event_buffer.num_bytes=Stash_Compressed_Val+4;		
+                    // this line is for going back to buffer_location, before the reordering.
+                }
 
                 }
         }
         else if(!event.wf_crc_read) {
             // Read the CRC
-            *(uint32_t*)(fpga->event_buffer.data + fpga->event_buffer.num_bytes) = htonl(word);
-            fpga->event_buffer.num_bytes += 4;
-
+            Stash_with_Reorder((&fpga->event_buffer),word,event.current_channel);
             event.current_channel += 1;
             event.samples_read = 0;
             event.wf_crc_read = 1;
@@ -884,6 +950,7 @@ int read_proc(FPGA_IF* fpga, TrigHeader* ret) {
             event.prev_sample = 0;
         }
     }
+
 
     // Done reading stuff update the ring buffer
     ring_buffer_update_read_pntr(&fpga->ring_buffer, bytes_read);
@@ -1112,7 +1179,8 @@ int main(int argc, char **argv) {
                         printf("FPGA IP set to %s\n", ip);
                         break;
                     case ARG_NUM_CHANNELS_:
-                        NUM_CHANNELS = strtoul(argv[i], NULL, 0);
+                        // HW
+                        //	NUM_CHANNELS = strtoul(argv[i], NULL, 0);
                         printf("FPGA NUM channels set to %i\n", NUM_CHANNELS);
                         break;
                     case ARG_ERR_FILENAME:
@@ -1142,11 +1210,11 @@ int main(int argc, char **argv) {
     initialize_ring_buffer(&(fpga_if.ring_buffer));
     initialize_event_buffer(&(fpga_if.event_buffer));
 
-    struct fnet_ctrl_client* udp_client = connect_fakernet_udp_client(ip);
-    if(!udp_client) {
-        builder_log(LOG_ERROR, "couldn't make UDP client");
-        return 1;
-    }
+    //    struct fnet_ctrl_client* udp_client = connect_fakernet_udp_client(ip);
+    //    if(!udp_client) {
+    //        builder_log(LOG_ERROR, "couldn't make UDP client");
+    //        return 1;
+    //    }
 
     setup_logger("fakernet_data_builder", redis_host, ERROR_FILENAME,
                  verbosity_stdout, verbosity_file, verbosity_redis,
@@ -1156,12 +1224,12 @@ int main(int argc, char **argv) {
     // connect to FPGA
     do {
         // Send a TCP reset_command
-        if(send_tcp_reset(udp_client)) {
-            printf("Sending TCP Reset");
-            builder_log(LOG_ERROR, "Error sending TCP reset. Will retry.");
-            sleep(2);
-            continue;
-        }
+        //        if(send_tcp_reset(udp_client)) {
+        //            printf("Sending TCP Reset");
+        //            builder_log(LOG_ERROR, "Error sending TCP reset. Will retry.");
+        //            sleep(2);
+        //            continue;
+        //        }
         fpga_if.fd = connect_to_fpga(ip);
 
         if(fpga_if.fd < 0) {
