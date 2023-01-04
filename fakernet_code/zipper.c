@@ -169,6 +169,9 @@ void mark_as_skipped(uint32_t device_id, uint32_t event_number) {
     (void) device_id;
     (void) event_number;
 }
+static inline unsigned  int event_id_hash(uint32_t event_id) {
+    return event_id % HASH_TABLE_SIZE;
+}
 
 void register_waveform(uint32_t device_id, uint32_t event_number, redisReply* wf_data) {
     // Device number 0-3 (inclusive) are taken by the two FONTUS boards,
@@ -180,7 +183,7 @@ void register_waveform(uint32_t device_id, uint32_t event_number, redisReply* wf
         return;
     }
 
-    int hash_value = event_number % HASH_TABLE_SIZE;
+    unsigned int hash_value = event_id_hash(event_number);
     if(event_number == last_seen_event[device_id]+1) {
         // Pass
     }
@@ -210,8 +213,6 @@ void register_waveform(uint32_t device_id, uint32_t event_number, redisReply* wf
 
     if(event_registry[hash_value].bit_word == COMPLETE_EVENT_MASK) {
         flag_complete_event(event_number);
-        // Clear the event registry for this event
-        event_registry[hash_value].bit_word = 0;
     }
 }
 
@@ -271,7 +272,7 @@ unsigned long long save_event(FILE* fout, int event_id) {
 
     int i;
     unsigned long long nwritten;
-    EventRecord* event = &(event_registry[event_id % HASH_TABLE_SIZE]);
+    EventRecord* event = &(event_registry[event_id_hash(event_id)]);
     EVENT_HEADER event_header;
     event_header.trig_number = htonl(event_id);
     event_header.device_mask = htonll(event->bit_word);
@@ -351,7 +352,13 @@ ERROR:;
 
 void free_event(int event_id) {
     int i;
-    EventRecord* event = &(event_registry[event_id % HASH_TABLE_SIZE]);
+    const unsigned int hash_value = event_id_hash(event_id);
+    EventRecord* event = &(event_registry[hash_value]);
+
+    // Clear the event registry for this event
+    // Setting the bit_word to zero basically flags the event as
+    // "new" therefore making the entry valid for future events
+    event_registry[hash_value].bit_word = 0;
 
     // Write FONTUS Trigger data...
     if((COMPLETE_EVENT_MASK & (1ULL<<FONTUS_DEVICE_ID)) != 0) {
