@@ -180,6 +180,8 @@ void register_waveform(uint32_t device_id, uint32_t event_number, redisReply* wf
 
     // If the waveform isn't part of the event mask just ignore it
     if(((1<<device_id) & COMPLETE_EVENT_MASK) == 0) {
+        // Toss the data, we're not gonna use it (perhaps should warn user?)
+        freeReplyObject(wf_data);
         return;
     }
 
