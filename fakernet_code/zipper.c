@@ -44,7 +44,6 @@
 uint32_t last_seen_event[MAX_DEVICE_NUMBER];
 uint64_t COMPLETE_EVENT_MASK = DEFAULT_EVENT_MASK;
 int loop = 1;
-int disconnect_from_redis = 0;
 
 // TODO
 typedef struct FONTUS_HEADER {
@@ -826,7 +825,6 @@ int main(int argc, char** argv) {
                 fflush(fout);
                 fclose(fout);
 
-
                 snprintf(buffer, 128, file_name_template, "jsns_data", run_info.run_number, ++run_info.sub_run);
                 fout = fopen(buffer, "ab");
                 if(!fout) {
@@ -840,7 +838,9 @@ int main(int argc, char** argv) {
             }
         }
 
-        // A 10th of a second
+        // Reset the publish data-rate limit every 10th of a second.
+        // Do it every 10th of a second otherwise the publish'd data will look
+        // very stuttery if it's reset every second.
         delta_t = (current_time.tv_sec - byte_sent_time.tv_sec)*1e6 + (current_time.tv_usec - byte_sent_time.tv_usec);
         if(delta_t > 100000) {
             bytes_sent = 0;
@@ -852,11 +852,6 @@ int main(int argc, char** argv) {
             daq_log(LOG_INFO, "Event id %i.\t%0.2f events per second.\t%0.0fkB to redis.", event_id, (float)1e6*built_count/PRINT_UPDATE_COOLDOWN, bytes_sent/1024.);
             built_count = 0;
             event_rate_time = current_time;
-        }
-        if(disconnect_from_redis) {
-            daq_log(LOG_WARN, "Killing redis\n");
-            redisFree(data_redis);
-            loop = 0;
         }
     }
     // Clean up
