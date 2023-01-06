@@ -762,7 +762,7 @@ int main(int argc, char** argv) {
         gettimeofday(&current_time, NULL);
 
         // TODO, should check for error (return = -1) instead of just >0
-        if(wait_for_redis_readable(data_redis, 10000) > 0) {
+        if(wait_for_redis_readable(data_redis, 50000) > 0) {
             recieve_waveform_from_redis(data_redis);
         }
 
