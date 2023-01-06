@@ -338,7 +338,7 @@ typedef struct EventInProgress {
 
 // Open socket to FPGA returns 0 if successful
 int connect_to_fpga(const char* fpga_ip) {
-    const int port = 1; // FPGA doesn't use ports, so this doesn't matter
+    const int port = 5009; // FPGA doesn't use ports, so this doesn't matter
     int args;
     int res;
     struct sockaddr_in fpga_addr;
