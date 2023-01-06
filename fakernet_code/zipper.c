@@ -224,34 +224,37 @@ void recieve_waveform_from_redis(redisContext* redis) {
         // Error
         daq_log(LOG_ERROR, "REDIS BUF READ ERROR1: %s", redis->errstr);
         exit(1);
-
-    }
-    if(redisGetReplyFromReader(redis, (void**)&reply) != REDIS_OK) {
-        // Error
-        daq_log(LOG_ERROR, "REDIS BUF READ ERROR2: %s", redis->errstr);
-        exit(1);
     }
 
-    if(!reply) {
-        // No data available...probably. Just move on
-        return;
+    // Process as much data in the receive buffer as is available
+    while(1) {
+        if(redisGetReplyFromReader(redis, (void**)&reply) != REDIS_OK) {
+            // Error
+            daq_log(LOG_ERROR, "REDIS BUF READ ERROR2: %s", redis->errstr);
+            exit(1);
+        }
+
+        if(!reply) {
+            // No data available. We're done here
+            return;
+        }
+
+        // I'm almost certain that a redis pub-sub message is always an array
+        // The first element of the array is a string that just says "message"
+        // The second element is a string that gives the channel name (don't care about that)
+        // The third element is that actual data
+        assert(reply->type == REDIS_REPLY_ARRAY);
+        assert(reply->elements == 3);
+
+        redisReply* rr_dat = reply->element[2];
+        assert(rr_dat->type == REDIS_REPLY_STRING);
+        assert(rr_dat->len >= DATA_HEADER_NBYTES); // Header should always be 20 bytes
+
+        uint32_t event_number = ntohl(*((uint32_t*) (rr_dat->str+4)));
+        uint32_t device_id = *((uint8_t*) (rr_dat->str+18));
+
+        register_waveform(device_id, event_number, reply);
     }
-
-    // I'm almost certain that a redis pub-sub message is always an array
-    // The first element of the array is a string that just says "message"
-    // The second element is a string that gives the channel name (don't care about that)
-    // The third element is that actual data
-    assert(reply->type == REDIS_REPLY_ARRAY);
-    assert(reply->elements == 3);
-
-    redisReply* rr_dat = reply->element[2];
-    assert(rr_dat->type == REDIS_REPLY_STRING);
-    assert(rr_dat->len >= DATA_HEADER_NBYTES); // Header should always be 20 bytes
-
-    uint32_t event_number = ntohl(*((uint32_t*) (rr_dat->str+4)));
-    uint32_t device_id = *((uint8_t*) (rr_dat->str+18));
-
-    register_waveform(device_id, event_number, reply);
 }
 
 void grab_data_from_pubsub_message(redisReply* message, char** data, int* length) {
@@ -788,16 +791,16 @@ int main(int argc, char** argv) {
         if(wait_for_redis_readable(publish_redis, 0) > 0) {
             // When publishing data the redis-db will respond
             // I don't care about those responses, but I need to handle them anyways
-            redisBufferRead(publish_redis);
-            redisGetReply(publish_redis, (void**)&reply);
+            do {
+                redisBufferRead(publish_redis);
+                redisGetReply(publish_redis, (void**)&reply);
 
-            if(reply->type == REDIS_REPLY_STRING || reply->type == REDIS_REPLY_ERROR) {
-                daq_log(LOG_ERROR, "ERROR sending data to redis: %s", reply->str);
-            }
-            freeReplyObject(reply);
-            reply=NULL;
+                if(reply && (reply->type == REDIS_REPLY_STRING || reply->type == REDIS_REPLY_ERROR)) {
+                    daq_log(LOG_ERROR, "ERROR sending data to redis: %s", reply->str);
+                }
+                freeReplyObject(reply);
+            } while(reply);
         }
-
 
         if(event_ready_queue.events_available) {
             event_id = pop_complete_event_id();
