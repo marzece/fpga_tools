@@ -573,16 +573,13 @@ int main(int argc, char** argv) {
     int bytes_sent = 0;
     unsigned long long bytes_in_file = 0;
     int nbytes_written;
-    int run_number = 0;
     RunInfo run_info;
     int resume_last_run = 0;
     struct timeval redis_update_time, event_rate_time, current_time;
-    struct timeval timeout;
     const char* file_name_template = "%s_r%06i_f%06i.dat";
     const char* log_filename = DEFAULT_LOG_FILENAME;
     char buffer[128];
 
-    timeout.tv_sec = 0; timeout.tv_usec=0;
     run_info.run_number = 0;
     run_info.sub_run = 0;
     int arg_run_mode = 0;
@@ -664,7 +661,7 @@ int main(int argc, char** argv) {
     // Print the configuration
     daq_log(LOG_WARN, "Data zipper running.\n"
                       "Data file='%s'\n"
-                      "Complete event mask = 0x%llX.\n"
+                      "Complete event mask = 0x%"PRIx64".\n"
                       "Log file='%s'\n"
                       "Run Mode: %s",
             output_filename, COMPLETE_EVENT_MASK, log_filename, run_mode ? "ON" : "OFF");
@@ -696,7 +693,6 @@ int main(int argc, char** argv) {
         run_info_redis = create_redis_unix_conn(REDIS_UNIX_SOCK_PATH, 1);
         if(!run_info_redis) {
             daq_log(LOG_ERROR, "Could not connect to redis for run info. Will be using default run 0.");
-            run_number = 0;
         }
         else if(resume_last_run) {
             // Get the last run
