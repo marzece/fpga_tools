@@ -862,6 +862,8 @@ int main(int argc, char** argv) {
     // Clean up
     fclose(fout);
     redisFree(data_redis);
+    redisFree(publish_redis);
+    redisFree(run_info_redis);
     daq_log(LOG_WARN, "Bye\n");
     return 0;
 }
