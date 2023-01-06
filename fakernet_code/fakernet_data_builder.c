@@ -109,7 +109,7 @@ typedef struct RingBuffer {
 //  Just a big long contiguous chunk of data for holding waveforms
 typedef struct EventBuffer {
     unsigned char* data;
-    long num_bytes;
+    size_t num_bytes;
 } EventBuffer;
 
 typedef struct ProcessingStats {
@@ -1053,7 +1053,6 @@ int main(int argc, char **argv) {
     struct timeval prev_time, current_time;
     uint32_t calculated_crcs[NUM_CHANNELS];
     uint32_t given_crcs[NUM_CHANNELS];
-    const double REDIS_DATA_STREAM_COOLDOWN = 200e3; // In micro-seconds
     const double REDIS_STATS_COOLDOWN = 1e6; // 1-second in micro-seconds
     double last_status_update_time;
     ProcessingStats the_stats;
@@ -1250,10 +1249,6 @@ int main(int argc, char **argv) {
             }
             redis_publish_event(redis, fpga_if.event_buffer);
             prev_time = current_time;
-//            if(((current_time.tv_sec - prev_time.tv_sec)*1e6 + (current_time.tv_usec - prev_time.tv_usec)) > REDIS_DATA_STREAM_COOLDOWN) {
-//                redis_publish_event(redis, event);
-//                prev_time = current_time;
-//            }
             built_counter += 1;
             display_event(&event_header);
             if(!do_not_save) {
