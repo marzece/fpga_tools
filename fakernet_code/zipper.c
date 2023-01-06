@@ -26,11 +26,9 @@
 #define REDIS_UNIX_SOCK_PATH "/var/run/redis/redis-server.sock"
 #define REDIS_OUT_DATA_BUF_SIZE (32*1024*1024)
 #define DEFAULT_FILE_SIZE_THRESHOLD (1024*1024*1024ULL) // 1GB
-#define DEFAULT_PUBLISH_MAX_RATE (10*1024*1024)
 
-// Minimum time between sending events to redis, in micro-seconds
-// 30k us = 30ms = ~30hz
-#define REDIS_COOLDOWN 30000
+#define DEFAULT_PUBLISH_RATE 10 // Hz
+#define DEFAULT_PUBLISH_MAX_SIZE (10*1024*1024) // 10 MB
 #define LOG_REDIS_HOST_NAME "localhost"
 #define PRINT_UPDATE_COOLDOWN 1000000
 #define LOG_MESSAGE_MAX 1024
@@ -566,7 +564,7 @@ int main(int argc, char** argv) {
     redisReply* reply = NULL;
     unsigned long long file_size_threshold = 0;
     const char * output_filename = DEFAULT_DATA_OUT_FILE;
-    double publish_rate = DEFAULT_PUBLISH_MAX_RATE;
+    double publish_rate = DEFAULT_PUBLISH_RATE;
     int built_count = 0;
     double delta_t;
     int event_id = -1;
@@ -575,7 +573,7 @@ int main(int argc, char** argv) {
     int nbytes_written;
     RunInfo run_info;
     int resume_last_run = 0;
-    struct timeval redis_update_time, event_rate_time, current_time;
+    struct timeval redis_update_time, event_rate_time, byte_sent_time, current_time;
     const char* file_name_template = "%s_r%06i_f%06i.dat";
     const char* log_filename = DEFAULT_LOG_FILENAME;
     char buffer[128];
@@ -617,7 +615,7 @@ int main(int argc, char** argv) {
                 break;
             case 'r':
                 publish_rate = atof(optarg);
-                printf("Publish rate set to %f\n", publish_rate);
+                printf("Publish rate set to %0.2f\n", publish_rate);
                 break;
             case 'v':
                 // Reduce the threshold on all the verbosity levels
@@ -749,6 +747,7 @@ int main(int argc, char** argv) {
     // Initialize some of the timers
     gettimeofday(&redis_update_time, NULL);
     event_rate_time = redis_update_time;
+    byte_sent_time = redis_update_time;
 
     redisAppendCommand(data_redis, "SUBSCRIBE event_stream");
     redisBufferWrite(data_redis, NULL);
@@ -806,7 +805,8 @@ int main(int argc, char** argv) {
 
             if(publish_rate && publish_redis) {
                 delta_t = (current_time.tv_sec - redis_update_time.tv_sec)*1e6 + (current_time.tv_usec - redis_update_time.tv_usec);
-                if(delta_t > REDIS_COOLDOWN && bytes_sent < publish_rate/10.) {
+                delta_t /= 1e6;
+                if(delta_t > 1.0/publish_rate && bytes_sent < DEFAULT_PUBLISH_MAX_SIZE/10.) {
                     bytes_sent += send_event_to_redis(publish_redis, event_id);
                     redis_update_time = current_time;
                 }
@@ -840,15 +840,16 @@ int main(int argc, char** argv) {
             }
         }
 
-        delta_t = (current_time.tv_sec - event_rate_time.tv_sec)*1e6 + (current_time.tv_usec - event_rate_time.tv_usec);
-
         // A 10th of a second
+        delta_t = (current_time.tv_sec - byte_sent_time.tv_sec)*1e6 + (current_time.tv_usec - byte_sent_time.tv_usec);
         if(delta_t > 100000) {
             bytes_sent = 0;
+            byte_sent_time = current_time;
         }
 
+        delta_t = (current_time.tv_sec - event_rate_time.tv_sec)*1e6 + (current_time.tv_usec - event_rate_time.tv_usec);
         if(delta_t > PRINT_UPDATE_COOLDOWN) {
-            daq_log(LOG_INFO, "Event id %i.\t%0.2f events per second.\t%iMB sent to redis", event_id, (float)1e6*built_count/PRINT_UPDATE_COOLDOWN, bytes_sent/(1024*1024));
+            daq_log(LOG_INFO, "Event id %i.\t%0.2f events per second.\t%0.0fkB to redis.", event_id, (float)1e6*built_count/PRINT_UPDATE_COOLDOWN, bytes_sent/1024.);
             built_count = 0;
             event_rate_time = current_time;
         }
