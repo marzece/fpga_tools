@@ -51,6 +51,16 @@ void setup_logger(const char* logID, const char* redis_host, const char* log_fil
         logger->verbosity_redis = LOG_NEVER;
         daq_log(LOG_ERROR, "Could not connect to redis for logging!\n");
     }
+
+    // Tell redis what my name is
+    if(logger->redis) {
+        redisCommand(logger->redis, "CLIENT SETNAME %s-%s", logger->name, "logger");
+        sleep(1);
+        redisBufferRead(the_logger->redis);
+        redisReply* reply;
+        redisGetReply(the_logger->redis, (void**)&reply);
+        freeReplyObject(reply);
+    }
 }
 
 void cleanup_logger() {

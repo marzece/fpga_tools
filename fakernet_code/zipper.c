@@ -114,7 +114,7 @@ redisContext* create_redis_conn(const char* redis_hostname, int port) {
     return c;
 }
 
-redisContext* create_redis_unix_conn(const char* path, int nonblock) {
+redisContext* create_redis_unix_conn(const char* path, int nonblock, const char* name) {
     daq_log(LOG_INFO, "Opening Redis Connection");
     redisContext* c;
     if(!nonblock) {
@@ -127,6 +127,13 @@ redisContext* create_redis_unix_conn(const char* path, int nonblock) {
         redisFree(c);
         return NULL;
     }
+
+    if(name) {
+        redisReply* reply = redisCommand(c, "client setname %s", name);
+        sleep(1);
+        freeReplyObject(reply);
+    }
+
     return c;
 }
 
@@ -673,21 +680,21 @@ int main(int argc, char** argv) {
     signal(SIGKILL, signal_handler);
     signal(SIGINT, signal_handler);
 
-    data_redis = create_redis_unix_conn(REDIS_UNIX_SOCK_PATH, 0);
+    data_redis = create_redis_unix_conn(REDIS_UNIX_SOCK_PATH, 0, "zipper-data");
     if(!data_redis) {
         daq_log(LOG_ERROR, "Could not connect to redis for receiving data");
         return 1;
     }
 
 
-    publish_redis = create_redis_unix_conn(REDIS_UNIX_SOCK_PATH, 1);
+    publish_redis = create_redis_unix_conn(REDIS_UNIX_SOCK_PATH, 1, "zipper-publish");
     if(!publish_redis) {
         daq_log(LOG_ERROR, "Could not connect to redis for publishing data");
     }
 
     // Connect to redis so I can get run info
     if(run_mode) {
-        run_info_redis = create_redis_unix_conn(REDIS_UNIX_SOCK_PATH, 1);
+        run_info_redis = create_redis_unix_conn(REDIS_UNIX_SOCK_PATH, 1, "zipper-run-info");
         if(!run_info_redis) {
             daq_log(LOG_ERROR, "Could not connect to redis for run info. Will be using default run 0.");
         }
