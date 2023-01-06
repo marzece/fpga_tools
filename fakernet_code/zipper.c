@@ -389,6 +389,7 @@ int send_event_to_redis(redisContext* redis, int event_id) {
     int data_len;
     static unsigned char* redis_data_buf = NULL;
     unsigned long offset = 0;
+    int done = 0;
 
     if(!redis_data_buf) {
         redis_data_buf = malloc(REDIS_OUT_DATA_BUF_SIZE);
@@ -447,7 +448,10 @@ int send_event_to_redis(redisContext* redis, int event_id) {
     arglens[2] = offset;
 
     redisAppendCommandArgv(redis, 3,  args,  arglens);
-    redisBufferWrite(redis, NULL);
+    // TODO should I add some loop counter so I don't get stuck here?
+    while(!done) {
+        redisBufferWrite(redis, &done);
+    }
     return  arglens[2];
 }
 
