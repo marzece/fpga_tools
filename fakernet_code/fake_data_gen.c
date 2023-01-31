@@ -12,16 +12,96 @@
 #define PORT "5009"
 #define BACKLOG 10
 
+typedef struct FontusTrigHeader{
+    uint32_t magic_number;
+    uint32_t trig_number;
+    uint64_t clock;
+    uint16_t length;
+    uint8_t device_number;
+    uint8_t trigger_flags;
+    uint32_t self_trigger_word;
+    uint64_t beam_trigger_time;
+    uint64_t led_trigger_time;
+    uint64_t ct_time;
+    uint32_t crc;
+} FontusTrigHeader;
 
 uint32_t crc32(uint32_t crc, uint32_t * buf, unsigned int len);
 void crc8(unsigned char *crc, unsigned char m);
+#define htonll(x) ((((uint64_t)htonl(x)) << 32) + htonl((x) >> 32))
+#define ntohll(x) htonll(x)
 
 // get sockaddr, IPv4
 void *get_in_addr(struct sockaddr *sa) {
         return &(((struct sockaddr_in*)sa)->sin_addr);
 }
 
-size_t produce_data(unsigned char* buffer, int number, int device_id, int len) {
+static size_t produce_fontus_data(unsigned char* buffer, const int number) {
+    static FontusTrigHeader header = {
+     .magic_number = 0xF00FF00F,
+     .trig_number = 0,
+     .clock = 0,
+     .length = 0,
+     .device_number = 0,
+     .trigger_flags = 0,
+     .self_trigger_word = 0,
+     .beam_trigger_time = 0,
+     .led_trigger_time = 0,
+     .ct_time = 0,
+     .crc =0};
+
+    header.trig_number = number;
+
+    // Magic Number
+    *((uint32_t*)buffer) = htonl(header.magic_number);
+    buffer += 4;
+
+    // Mark this as the "start" of the header in the buffer,
+    // we don't need to revisit the magic number b/c it's not used in the
+    // CRC calculation
+    unsigned char* start = buffer;
+
+    // Trigger Number
+    *((uint32_t*)buffer) = htonl(header.trig_number);
+    buffer += 4;
+
+    // Skip the clock
+    *((uint64_t*)buffer) = htonll(header.clock);
+    buffer += 8;
+
+    // Skip the length parameter
+    *((uint16_t*)buffer) = htons(header.length);
+    buffer += 2;
+
+    // Device ID
+    *((uint8_t*)buffer) = header.device_number;
+    buffer += 1;
+
+    // Trigger Flags
+    *((uint8_t*)buffer) = header.trigger_flags;
+    buffer += 1;
+
+    // Self trigger word
+    *((uint32_t*)buffer) = htonl(header.self_trigger_word);
+    buffer += 4;
+
+    // beam trigger time
+    *((uint64_t*)buffer) = htonll(header.beam_trigger_time);
+    buffer += 8;
+
+    // led trigger time
+    *((uint64_t*)buffer) = htonll(header.led_trigger_time);
+    buffer += 8;
+
+    // CT trigger time
+    *((uint64_t*)buffer) = htonll(header.ct_time);
+    buffer += 8;
+
+    *((uint32_t*)buffer) = htonl(crc32(0, (uint32_t*)start, buffer-start));
+    return 52;
+}
+
+size_t produce_data(unsigned char* buffer, const int number, const int device_id, const int len) {
     const int NCHAN = 16;
     uint8_t i;
     unsigned char* start = buffer;
@@ -108,8 +188,17 @@ size_t produce_data(unsigned char* buffer, int number, int device_id, int len) {
 }
 
 int main(int argc, char** argv) {
-    (void)argc;
-    (void)argv;
+    int create_fontus_data = 0;
+    if(argc >=1) {
+        if(strcmp(argv[1], "--fontus") == 0) {
+            printf("Will be producing FONTUS data for first connection\n");
+            create_fontus_data = 1;
+        }
+        else {
+            printf("Unrecognized argument. Only available argument is '--fontus'\n");
+            return 0;
+        }
+    }
 
 
     int sockfd;  // listen on sock_fd, new connection on new_fd
@@ -164,7 +253,7 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
-    printf("server: waiting for connections...\n");
+    printf("server: waiting for connections on port %s...\n", PORT);
 
     int connected_fds[64];
     int num_connected_fds = 0;
@@ -193,7 +282,6 @@ int main(int argc, char** argv) {
         FD_ZERO(&readfds);
         FD_SET(sockfd, &readfds);
         if(select(sockfd+1, &readfds, NULL, NULL, &timeout) > 0) {
-            
             sin_size = sizeof(their_addr);
             int connected_fd = accept(sockfd, (struct sockaddr *)&their_addr, &sin_size);
             if (connected_fd == -1) {
@@ -223,7 +311,16 @@ int main(int argc, char** argv) {
             event_rate_time = current_time;
             // Send event
             for(int i =0; i<num_connected_fds; i++) {
-                ssize_t nbytes = produce_data(buffer, count, i+4, 400);
+                ssize_t nbytes;
+                if(create_fontus_data && i==0) {
+                    nbytes = produce_fontus_data(buffer, count);
+                }
+                else {
+                    int channel_number = i+4;
+                    channel_number -= create_fontus_data ? 1 : 0;
+                    nbytes = produce_data(buffer, count, channel_number, 400);
+                }
+
                 ssize_t nsent = 0;
 
                 do {
