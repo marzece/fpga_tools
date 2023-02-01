@@ -36,6 +36,8 @@ void *get_in_addr(struct sockaddr *sa) {
         return &(((struct sockaddr_in*)sa)->sin_addr);
 }
 
+// This function produce fake FONTUS data with a correct CRC value and then
+// stuffs it in the given buffer ready to be sent out over the network.
 static size_t produce_fontus_data(unsigned char* buffer, const int number) {
     static FontusTrigHeader header = {
      .magic_number = 0xF00FF00F,
@@ -65,11 +67,11 @@ static size_t produce_fontus_data(unsigned char* buffer, const int number) {
     *((uint32_t*)buffer) = htonl(header.trig_number);
     buffer += 4;
 
-    // Skip the clock
+    // Clock
     *((uint64_t*)buffer) = htonll(header.clock);
     buffer += 8;
 
-    // Skip the length parameter
+    // Length Parameter
     *((uint16_t*)buffer) = htons(header.length);
     buffer += 2;
 
