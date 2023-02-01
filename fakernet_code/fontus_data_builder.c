@@ -1026,7 +1026,6 @@ int main(int argc, char **argv) {
         }
     }
 
-    gettimeofday(&prev_time, NULL);
     redis = create_redis_conn(redis_host);
     signal(SIGINT, sig_handler);
     signal(SIGKILL, sig_handler);
