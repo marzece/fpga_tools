@@ -432,7 +432,7 @@ void initialize_buffer(RingBuffer* ring_buffer) {
     }
 }
 
-EventInProgress start_event() {
+EventInProgress start_event(void) {
     EventInProgress ev;
     ev.header_bytes_read = 0;
     return ev;
@@ -453,7 +453,7 @@ uint32_t calc_trig_header_crc(FontusTrigHeader* header) {
     *(uint64_t*)(buffer+20) = ntohll(header->beam_trigger_time);
     *(uint64_t*)(buffer+28) = ntohll(header->led_trigger_time);
     *(uint64_t*)(buffer+36) = ntohll(header->ct_time);
-    return crc32(0, buffer, 44);
+    return crc32(0, (uint32_t*)buffer, 44);
 }
 
 void display_event(FontusTrigHeader* ev) {
@@ -473,7 +473,7 @@ void display_event(FontusTrigHeader* ev) {
                           ev->led_trigger_time, ev->ct_time, ev->crc);
 }
 
-void clean_up() {
+void clean_up(void) {
     builder_log(LOG_INFO, "Closing and cleaning up");
     if(fdisk) {
         builder_log(LOG_INFO, "Closing data file");
@@ -484,7 +484,7 @@ void clean_up() {
     redis = NULL;
 }
 
-void end_loop() {
+void end_loop(void) {
     loop = 0;
 }
 
@@ -754,11 +754,6 @@ redisContext* create_redis_conn(const char* hostname) {
     return c;
 }
 
-// Copies an event to one contiguous chunk of data
-char* copy_event(const FontusTrigHeader* event) {
-    return NULL;
-}
-
 // Send event to redis database
 void redis_publish_event(redisContext*c, const FontusTrigHeader event) {
     if(!c) {
@@ -880,9 +875,9 @@ enum ArgIDs {
     ARG_IP,
 };
 
-void print_help_message() {
-    printf("fakernet_data_builder\n"
-            "   usage:  fakernet_data_builder [--ip ip] [--out filename] [--no-save]\n");
+void print_help_message(void) {
+    printf("fontus_data_builder\n"
+            "   usage:  fontus_data_builder [--ip ip] [--out filename] [--no-save]\n");
 }
 
 
