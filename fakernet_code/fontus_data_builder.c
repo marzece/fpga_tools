@@ -724,8 +724,10 @@ int read_proc(FPGA_IF* fpga, FontusTrigHeader* ret) {
     } // Done reading header
     uint32_t calcd_crc = calc_trig_header_crc(&event.header);
     if(event.header.crc !=  calcd_crc || event.header.magic_number != MAGIC_VALUE) {
-	    printf("Expected = 0x%x\tRead = 0x%x\n", calcd_crc, event.header.crc);
+        printf("Expected = 0x%x\tRead = 0x%x\n", calcd_crc, event.header.crc);
         handle_bad_header(&event.header);
+        event = start_event(); // This event is being trashed, just start a new one.
+        ring_buffer_update_event_read_pntr(&fpga->ring_buffer);
         return 0;
     }
     *ret = event.header;
@@ -1042,7 +1044,7 @@ int main(int argc, char **argv) {
 
         pull_from_fpga(&fpga_if);
         if(reeling) {
-            if(did_warn_about_reeling) {
+            if(!did_warn_about_reeling) {
                 builder_log(LOG_ERROR, "Reeeling");
             }
             reeling = !find_event_start(&fpga_if);
