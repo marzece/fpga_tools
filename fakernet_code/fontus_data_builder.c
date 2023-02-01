@@ -906,12 +906,9 @@ int main(int argc, char **argv) {
     const char* ERROR_FILENAME = DEFAULT_ERROR_LOG_FILENAME;
     const char* redis_host = DEFAULT_REDIS_HOST;
     int event_ready;
-    struct timeval prev_time, current_time;
-    double last_status_update_time;
     ProcessingStats the_stats;
     fdump  = fopen("DUMP.dat", "wb");
     initialize_stats(&the_stats);
-    last_status_update_time = 0;
 
     if(argc > 1 ) {
         expecting_value = 0;
