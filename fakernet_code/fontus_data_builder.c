@@ -902,7 +902,7 @@ int main(int argc, char **argv) {
     enum ArgIDs expecting_value;
     int do_not_save = 0;
     int dry_run = 0;
-    const char* FOUT_FILENAME = "fontus_data.dat";
+    const char* FOUT_FILENAME = "/dev/null";
     const char* ERROR_FILENAME = DEFAULT_ERROR_LOG_FILENAME;
     const char* redis_host = DEFAULT_REDIS_HOST;
     int event_ready;
