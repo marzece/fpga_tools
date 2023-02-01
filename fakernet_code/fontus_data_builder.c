@@ -310,11 +310,7 @@ typedef struct EventInProgress {
 
 // Open socket to FPGA returns 0 if successful
 int connect_to_fpga(const char* fpga_ip) {
-#ifdef DEBUG
-    const int port = 4010; // FPGA doesn't use ports, so this doesn't matter
-#else
-    const int port = 1; // FPGA doesn't use ports, so this doesn't matter
-#endif
+    const int port = 5009; // FPGA doesn't use ports, so this doesn't matter
     int args;
     int res;
     struct sockaddr_in fpga_addr;
@@ -877,9 +873,8 @@ enum ArgIDs {
 
 void print_help_message(void) {
     printf("fontus_data_builder\n"
-            "   usage:  fontus_data_builder [--ip ip] [--out filename] [--no-save]\n");
+            "   usage:  fontus_data_builder [--ip ip] [--out filename] [--no-save] [--dry]\n");
 }
-
 
 void initialize_stats(ProcessingStats* stats) {
     struct timeval tv;
@@ -904,6 +899,7 @@ int main(int argc, char **argv) {
     const char* ip = "192.168.1.192";
     enum ArgIDs expecting_value;
     int do_not_save = 0;
+    int dry_run = 0;
     const char* FOUT_FILENAME = "fontus_data.dat";
     const char* ERROR_FILENAME = DEFAULT_ERROR_LOG_FILENAME;
     const char* redis_host = DEFAULT_REDIS_HOST;
@@ -927,6 +923,10 @@ int main(int argc, char **argv) {
                 }
                 else if(strcmp(argv[i], "--no-save") == 0) {
                     do_not_save = 1;
+                    expecting_value = 0;
+                }
+                else if(strcmp(argv[i], "--dry") == 0) {
+                    dry_run = 1;
                     expecting_value = 0;
                 }
                 else if((strcmp(argv[i], "--help") == 0) || (strcmp(argv[i], "-h") == 0)) {
@@ -984,10 +984,13 @@ int main(int argc, char **argv) {
     // initialize memory locations
     initialize_buffer(&(fpga_if.ring_buffer));
 
-    struct fnet_ctrl_client* udp_client = connect_fakernet_udp_client(ip);
-    if(!udp_client) {
-        builder_log(LOG_ERROR, "couldn't make UDP client");
-        return 1;
+    struct fnet_ctrl_client* udp_client = NULL;
+    if(!dry_run) {
+        udp_client = connect_fakernet_udp_client(ip);
+        if(!udp_client) {
+            builder_log(LOG_ERROR, "couldn't make UDP client");
+            return 1;
+        }
     }
 
     setup_logger("fakernet_data_builder", redis_host, ERROR_FILENAME,
@@ -998,7 +1001,7 @@ int main(int argc, char **argv) {
     // connect to FPGA
     do {
         // Send a TCP reset_command
-        if(send_tcp_reset(udp_client)) {
+        if(udp_client && send_tcp_reset(udp_client)) {
             builder_log(LOG_ERROR, "Error sending TCP reset. Will retry.");
             sleep(5);
             continue;
