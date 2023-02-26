@@ -10,6 +10,8 @@ typedef struct AXI_TRIGGER_PIPELINE {
 
 AXI_TRIGGER_PIPELINE* new_trig_pipeline_if(const char* name, uint32_t axi_addr);
 
+uint32_t write_trig_pipeline_value(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t offset, uint32_t data);
+uint32_t read_trig_pipeline_value(AXI_TRIGGER_PIPELINE *tp_axi, uint32_t offset);
 uint32_t read_multiplicity_width(AXI_TRIGGER_PIPELINE* tp_axi);
 uint32_t write_multiplicity_width(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t width);
 

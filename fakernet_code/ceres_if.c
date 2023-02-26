@@ -844,6 +844,7 @@ static uint32_t write_jesd_drp_channel_command(uint32_t* args) {
 }
 
 static uint32_t read_build_tag_command(uint32_t* args) {
+    UNUSED(args);
     return read_build_info(get_ceres_handle()->pipeline);
 }
 
@@ -913,6 +914,11 @@ static uint32_t read_gpio_input_register_command(uint32_t* args) {
     return read_gpio_value(get_ceres_handle()->axi_gpio, 1, channel);
 }
 
+static uint32_t read_clock_wiz_register_command(uint32_t* args) {
+    uint32_t offset = args[0];
+    return read_clock_wiz_reg(get_ceres_handle()->clk_wiz, offset);
+}
+
 static uint32_t reset_clock_wiz_command(uint32_t* args) {
     UNUSED(args);
     return clock_wiz_reset(get_ceres_handle()->clk_wiz);
@@ -930,6 +936,7 @@ static uint32_t write_clock_wiz_phase_command(uint32_t* args) {
 }
 
 static uint32_t register_clock_wiz_changes_command(uint32_t* args) {
+    UNUSED(args);
     return clock_wiz_register_changes(get_ceres_handle()->clk_wiz);
 }
 
@@ -971,6 +978,12 @@ static uint32_t decrement_clock_wiz_phase_command(uint32_t* args) {
     clock_wiz_write_phase(get_ceres_handle()->clk_wiz, i, phase);
     }
     return clock_wiz_register_changes(get_ceres_handle()->clk_wiz);
+}
+
+static uint32_t read_tdc_value_command(uint32_t* args) {
+    UNUSED(args);
+    uint32_t channel = 2;
+    return read_gpio_value(get_ceres_handle()->axi_gpio, 1, channel);
 }
 
 ServerCommand ceres_commands[] = {
@@ -1039,8 +1052,8 @@ ServerCommand ceres_commands[] = {
 {"set_local_trigger_params",NULL,                  set_local_trigger_params_command,                       3,  1, 0, 0},
 {"set_trigger_params",NULL,                        set_trigger_params_command,                             4,  1, 0, 0},
 {"set_sysref",NULL,                                set_sysref_command,                                     3,  1, 0, 0},
-{"write_jesd_phy",NULL,                            write_jesd_phy_command,                                         4,  1, 0, 0},
-{"read_jesd_phy",NULL,                             read_jesd_phy_command,                                          3,  1, 0, 0},
+{"write_jesd_phy",NULL,                            write_jesd_phy_command,                                 4,  1, 0, 0},
+{"read_jesd_phy",NULL,                             read_jesd_phy_command,                                  3,  1, 0, 0},
 {"write_lpmen",NULL,                               set_jesd_lpmen_command,                                 3,  1, 0, 0},
 {"read_lpmen",NULL,                                read_jesd_lpmen_command,                                2,  1, 0, 0},
 {"reset_lpmen",NULL,                               reset_lpmen_command,                                    2,  1, 0, 0},
@@ -1062,11 +1075,13 @@ ServerCommand ceres_commands[] = {
 {"write_gpio_register",NULL,                       write_gpio_register_command,                            3,  1, 0, 0},
 {"read_gpio_output_register",NULL,                 read_gpio_output_register_command,                      2,  1, 0, 0},
 {"read_gpio_input_register",NULL,                  read_gpio_input_register_command,                       2,  1, 0, 0},
+{"read_clock_wiz_reg",NULL,                        read_clock_wiz_register_command,                        2,  1, 0, 0},
 {"reset_clock_wiz",NULL,                           reset_clock_wiz_command,                                1,  1, 0, 0},
 {"read_clock_wiz_phase",NULL,                      read_clock_wiz_phase_command,                           2,  1, 0, 0},
 {"write_clock_wiz_phase",NULL,                     write_clock_wiz_phase_command,                          3,  1, 0, 0},
 {"register_clock_wiz_changes",NULL,                register_clock_wiz_changes_command,                     1,  1, 0, 0},
 {"increment_clock_wiz_phase",NULL,                 increment_clock_wiz_phase_command,                      2,  1, 0, 0},
 {"decrement_clock_wiz_phase",NULL,                 decrement_clock_wiz_phase_command,                      2,  1, 0, 0},
+{"read_tdc_value",NULL,                            read_tdc_value_command,                                 1,  1, 0, 0},
 {"",NULL,                                          NULL,                                                   0,  0, 0, 0}    //  Must  be  last
 };

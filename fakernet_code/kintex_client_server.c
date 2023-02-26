@@ -21,7 +21,7 @@
 
 // For doing "double" reads the 2nd read should be from this register
 #define BUFFER_SIZE 2048
-#define DEFAULT_IP  "192.168.1.192"
+#define DEFAULT_IP  "192.168.84.192"
 
 #define LOGGER_NAME "kintex_server"
 #define DEFAULT_REDIS_HOST "127.0.0.1"

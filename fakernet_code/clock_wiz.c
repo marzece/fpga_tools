@@ -44,3 +44,11 @@ uint32_t clock_wiz_register_changes(AXI_CLOCK_WIZ* wiz) {
 uint32_t clock_wiz_reset(AXI_CLOCK_WIZ* wiz) {
     return write_addr(wiz->axi_addr, RESET_OFFSET, RESET_VALUE);
 }
+
+uint32_t read_clock_wiz_reg(AXI_CLOCK_WIZ* wiz, uint32_t offset) {
+    uint32_t ret=0;
+    if(double_read_addr(wiz->axi_addr, offset, &ret)) {
+        return -1;
+    }
+    return ret;
+}

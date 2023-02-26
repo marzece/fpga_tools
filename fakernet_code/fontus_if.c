@@ -25,6 +25,7 @@
 #define RESET_GEN_FIFO_BIT 3
 
 #define COAX_GPIO_OFFSET 0
+#define SYNC_MOD_GPIO_OFFSET 1
 
 #define N_EXT 3
 #define TRIGGERS_PER_EXTERNAL 3
@@ -612,6 +613,26 @@ static void remove_from_veto_mask_hr_command(client* c, int argc, sds* argv) {
     }
 }
 
+static uint32_t write_trigger_pipeline_reg_command(uint32_t* args) {
+    uint32_t addr = args[0];
+    uint32_t data = args[1];
+    return write_trig_pipeline_value(get_fontus_handle()->pipeline, addr, data);
+}
+static uint32_t read_trigger_pipeline_reg_command(uint32_t* args) {
+    uint32_t addr = args[0];
+    return read_trig_pipeline_value(get_fontus_handle()->pipeline, addr);
+}
+
+static uint32_t write_sync_mod_command(uint32_t* args) {
+    uint32_t value = args[0];
+    return write_gpio_value(get_fontus_handle()->gpio, SYNC_MOD_GPIO_OFFSET, value);
+}
+
+static uint32_t read_sync_mod_command(uint32_t* args) {
+    UNUSED(args);
+    return read_gpio_value(get_fontus_handle()->gpio, 0, SYNC_MOD_GPIO_OFFSET);
+}
+
 ServerCommand fontus_commands[] = {
 {"write_lmk_if",NULL,                              write_lmk_if_command,                                   3,  1, 0, 0},
 {"read_lmk_if",NULL,                               read_lmk_if_command,                                    2,  1, 0, 0},
@@ -688,5 +709,10 @@ ServerCommand fontus_commands[] = {
 
 {"write_coax_dir_select",NULL,                     write_coax_dir_select_command,                          2,  0, 0, 0},
 {"read_coax_dir_select",NULL,                      read_coax_dir_select_command,                           1,  1, 0, 0},
+
+{"write_trigger_pipeline_reg",NULL,                write_trigger_pipeline_reg_command,                     3,  0, 0, 0},
+{"read_trigger_pipline_reg",NULL,                  read_trigger_pipeline_reg_command,                      2,  1, 0, 0},
+{"write_sync_mod",NULL,                            write_sync_mod_command,                                 2,  0, 0, 0},
+{"read_sync_mod",NULL,                             read_sync_mod_command,                                  1,  1, 0, 0},
 {"",NULL,                                          NULL,                                                   0,  0, 0, 0}    //  Must  be  last
 };
