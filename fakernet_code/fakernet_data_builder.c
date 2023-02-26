@@ -1113,7 +1113,6 @@ int main(int argc, char **argv) {
                         break;
                     case ARG_IP:
                         ip = argv[i];
-                        printf("FPGA IP set to %s\n", ip);
                         break;
                     case ARG_NUM_CHANNELS_:
                         NUM_CHANNELS = strtoul(argv[i], NULL, 0);
@@ -1140,6 +1139,12 @@ int main(int argc, char **argv) {
             return 1;
         }
     }
+    printf("FPGA IP set to %s\n", ip);
+    setup_logger("fakernet_data_builder", redis_host, ERROR_FILENAME,
+                 verbosity_stdout, verbosity_file, verbosity_redis,
+                 LOG_MESSAGE_MAX);
+    the_logger->add_newlines = 1;
+
 
     FPGA_IF fpga_if;
     // initialize memory locations
@@ -1155,11 +1160,6 @@ int main(int argc, char **argv) {
             return 1;
         }
     }
-
-    setup_logger("fakernet_data_builder", redis_host, ERROR_FILENAME,
-                 verbosity_stdout, verbosity_file, verbosity_redis,
-                 LOG_MESSAGE_MAX);
-    the_logger->add_newlines = 1;
 
     // connect to FPGA
     do {
