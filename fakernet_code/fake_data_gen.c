@@ -191,7 +191,7 @@ size_t produce_data(unsigned char* buffer, const int number, const int device_id
 
 int main(int argc, char** argv) {
     int create_fontus_data = 0;
-    if(argc >=1) {
+    if(argc > 1) {
         if(strcmp(argv[1], "--fontus") == 0) {
             printf("Will be producing FONTUS data for first connection\n");
             create_fontus_data = 1;
