@@ -103,7 +103,7 @@ static size_t produce_fontus_data(unsigned char* buffer, const int number) {
     return 52;
 }
 
-size_t produce_data(unsigned char* buffer, const int number, const int device_id, const int len) {
+static size_t produce_data(unsigned char* buffer, const int number, const int device_id, const int len) {
     const int NCHAN = 16;
     uint8_t i;
     unsigned char* start = buffer;
