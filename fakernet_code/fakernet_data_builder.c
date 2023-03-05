@@ -53,6 +53,7 @@ Author: Eric Marzec <marzece@gmail.com>
 #define ntohll(x) htonll(x)
 #endif
 
+#define DEFAULT_NUM_CHANNELS 16
 
 int verbosity_stdout = LOG_INFO;
 int verbosity_redis = LOG_WARN;
@@ -61,7 +62,14 @@ int verbosity_file = LOG_WARN;
 // Counter for how many events have been built
 int built_counter = 0;
 // Number of channels to be readout
-int NUM_CHANNELS = 16;
+int NUM_CHANNELS = DEFAULT_NUM_CHANNELS;
+
+// The two CERES XEMs both readout 16-channels, but the data ends up in weird
+// locations.  The two arrays below re-map the channels such that the top-most
+// channels (physically located) ends up being the earliest in the serial data
+// stream
+static const int channel_order_xem1[DEFAULT_NUM_CHANNELS]={3,2,1,0,7,6,5,4,11,10,9,8, 15,14,13,12};
+static const int channel_order_xem2[DEFAULT_NUM_CHANNELS]={15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0};
 
 // Largest possible size for single message (in byte)
 #define LOG_MESSAGE_MAX 1024
@@ -672,6 +680,28 @@ void handle_bad_header(TrigHeader* header) {
     reeling = 1;
 }
 
+void stash_with_reorder(EventBuffer* eb, uint32_t word, int current_channel, int isample, int wf_length, int is_xem1_not_xem2) {
+    // Reordering for CRC, Uncompressed Data
+    // In this function, if reorder is needed change buffer_locatioin and write data in buffer,
+    // After that going back to original buffer_location before reordering.
+    //
+    const int* channel_order = is_xem1_not_xem2 ? channel_order_xem1 : channel_order_xem2;
+    int new_channel = channel_order[current_channel];
+
+    // The first sample is always 0xXXFFXXFF where XX is the channel number,
+    // since we're re-ordering this we'll change the XX to the new channel
+    if(isample == 0) {
+        word = 0xFF00FF00 | new_channel | (new_channel<<16);
+    }
+
+    // Calculate where this sample should go, in bytes from the start
+    // The below +2 is b/c the channel header & channel footer are both 32-bit words
+    // Also each "sample" (really pair of samples) is 32-bits
+    int offset = HEADER_SIZE + new_channel*((wf_length+2)*4) + isample*4;
+    *(uint32_t*)(eb->data + offset)= htonl(word);
+    eb->num_bytes += 4;
+}
+
 int find_event_start(FPGA_IF* fpga) {
     /* This just searches through the readable memory buffer and tries to find the
        magic values (0xFFFFFFFF) that indicates the start of a header
@@ -775,11 +805,14 @@ int read_proc(FPGA_IF* fpga, TrigHeader* ret) {
         return 0;
     }
 
+    int is_even = (event.event_header.device_number % 2) == 0;
     int bytes_in_buffer = ring_buffer_contiguous_readable(&fpga->ring_buffer);
     unsigned char* data = fpga->ring_buffer.buffer + fpga->ring_buffer.read_pointer;
     int bytes_read = 0;
     uint32_t word;
     int ret_val = 0;
+    int channel_length=event.event_header.length;
+
     // We'll exit this loop either when we've consumed all available data, or when we've complete a single event
     while(bytes_read <= bytes_in_buffer) {
         // First check if the event is done
@@ -816,10 +849,9 @@ int read_proc(FPGA_IF* fpga, TrigHeader* ret) {
                 event = start_event();
                 return 0;
             }
-            // Stash the location in memory of the start of each waveform
-            *(uint32_t*)(fpga->event_buffer.data + fpga->event_buffer.num_bytes) = htonl(word);
-            fpga->event_buffer.num_bytes += 4;
 
+            // Stash the location in memory of the start of each waveform
+            stash_with_reorder(&fpga->event_buffer, word, event.current_channel, 0, channel_length, is_even);
             event.wf_header_read = 1;
             event.wf_crc_read = 0;
             event.samples_read = 0;
@@ -829,6 +861,7 @@ int read_proc(FPGA_IF* fpga, TrigHeader* ret) {
                 int compression_bit = word & 0x40000000;
 
                 int16_t sample;
+                uint32_t sample_pair=0;
                 // Check the compression bit;
                 if(compression_bit) {
                     // Compressed samples
@@ -841,42 +874,51 @@ int read_proc(FPGA_IF* fpga, TrigHeader* ret) {
                         sample = ((int8_t) (sample<<3))>>3;
                         sample = event.prev_sample + sample;
                         event.prev_sample = sample;
-                        // Only every other sample should get marked with the valid bit
-                        if(i %2 == 1) {
+
+                        if(i%2) {
+                            // Only every other sample should get marked with the valid bit
                             sample |= valid_bit;
                         }
 
-                        *(uint16_t*)(fpga->event_buffer.data+fpga->event_buffer.num_bytes) = htons(sample);
-                        fpga->event_buffer.num_bytes += 2;
+                        // "word" holds two 16-bit samples
+                        sample_pair <<= 16;
+                        sample_pair |= sample;
+
+                        if((i%2) == 0) {
+                            // Words get added to the buffer in pairs
+                            stash_with_reorder(&fpga->event_buffer, sample_pair, event.current_channel, ++event.samples_read, channel_length, is_even);
+
+                        }
                     }
-                    event.samples_read += 3;
                 }
                 else {
-                    // not compressed samples
                     if(event.samples_read == 0) {
                         sample = (word >> 16) & 0x3fff;
                     }
                     else {
                         sample = event.prev_sample + (((int16_t)(word >> 14)) >> 2);
                     }
-                    event.prev_sample = sample;
-                    *(uint16_t*)(fpga->event_buffer.data+fpga->event_buffer.num_bytes) = htons(sample | valid_bit);
-                    fpga->event_buffer.num_bytes += 2;
 
+                    // Store this briefly
+                    event.prev_sample = sample;
+
+                    // Put the sample in its 32-bit pair in the upper half
+                    sample_pair = sample | valid_bit;
+                    sample_pair <<= 16;
+
+                    // Calculate the second sample of the pair
                     sample = event.prev_sample + (((int16_t)((word & 0x3FFF) << 2)) >> 2);
                     event.prev_sample = sample;
-                    *(uint16_t*)(fpga->event_buffer.data + fpga->event_buffer.num_bytes) = htons(sample);
-                    fpga->event_buffer.num_bytes += 2;
 
-                    event.samples_read +=1;
+                    sample_pair |= sample;
 
+                    // Put the ADC word in the event buffer, with channel re-ordering applie
+                    stash_with_reorder(&fpga->event_buffer, sample_pair, event.current_channel, ++event.samples_read, channel_length, is_even);
                 }
         }
         else if(!event.wf_crc_read) {
             // Read the CRC
-            *(uint32_t*)(fpga->event_buffer.data + fpga->event_buffer.num_bytes) = htonl(word);
-            fpga->event_buffer.num_bytes += 4;
-
+            stash_with_reorder(&fpga->event_buffer, word, event.current_channel, event.samples_read+1, channel_length, is_even);
             event.current_channel += 1;
             event.samples_read = 0;
             event.wf_crc_read = 1;
