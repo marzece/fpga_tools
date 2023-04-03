@@ -371,7 +371,7 @@ int processCommand(client *c) {
         return C_OK;
     } else if ((c->cmd->nargs > 0 && c->cmd->nargs != c->argc) || (c->argc < -c->cmd->nargs)) {
         addReplyErrorFormat(c,"wrong number of arguments for '%s' command. Expects: %i, Got: %i",
-            c->cmd->name, c->cmd->nargs, c->argc);
+            c->cmd->name, c->cmd->nargs-1, c->argc-1);
         return C_OK;
     }
 
