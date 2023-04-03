@@ -313,10 +313,10 @@ int main(int argc, char** argv) {
                     printf("DUMMY MODE ENGAGED\n");
                     dummy_mode = 1;
                 }
-                else if(strcmp(argv[i], "--ceres") == 0 || strcmp(argv[1], "--CERES") ==0) {
+                else if(strcmp(argv[i], "--ceres") == 0 || strcmp(argv[i], "--CERES") ==0) {
                     which_board = CERES;
                 }
-                else if(strcmp(argv[i], "--fontus") == 0 || strcmp(argv[1], "--FONTUS") ==0) {
+                else if(strcmp(argv[i], "--fontus") == 0 || strcmp(argv[i], "--FONTUS") ==0) {
                     which_board = FONTUS;
                 }
 
