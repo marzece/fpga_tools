@@ -91,7 +91,6 @@ void sig_handler(int dummy) {
     exit(0);
 }
 
-
 void set_active_xem_mask_command(client* c, int argc, sds* argv) {
     int i;
 
@@ -134,7 +133,7 @@ void set_active_xem_mask_command(client* c, int argc, sds* argv) {
     }
 
     if(requested_count > NUM_XEMS) {
-        addReplyErrorFormat(c, "Too XEMs requested in active mask");
+        addReplyErrorFormat(c, "Too many XEMs requested in active mask");
         return;
     }
 

@@ -1028,7 +1028,7 @@ ServerCommand ceres_commands[] = {
 {"read_data_pipeline_threshold",NULL,              read_data_pipeline_threshold_command,                   1,  1, 0, 0},
 {"write_data_pipeline_threshold",NULL,             write_data_pipeline_threshold_command,                  2,  1, 0, 0},
 {"read_data_pipeline_channel_mask",NULL,           read_data_pipeline_channel_mask_command,                1,  1, 0, 0},
-{"write_data_pipeline_channeL_mask",NULL,          write_data_pipeline_channeL_mask_command,               2,  1, 0, 0},
+{"write_data_pipeline_channel_mask",NULL,          write_data_pipeline_channeL_mask_command,               2,  1, 0, 0},
 {"read_data_pipeline_depth",NULL,                  read_data_pipeline_depth_command,                       2,  1, 0, 0},
 {"write_data_pipeline_depth",NULL,                 write_data_pipeline_depth_command,                      3,  1, 0, 0},
 {"read_data_pipeline_global_depth",NULL,           read_data_pipeline_global_depth_command,                1,  1, 0, 0},
