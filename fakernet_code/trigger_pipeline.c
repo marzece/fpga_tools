@@ -15,6 +15,8 @@ int write_addr(uint32_t, uint32_t, uint32_t);
 #define  REGISTER_WIDTH                            0x4
 #define  RESET_REG_OFFSET                          0x0
 #define  PULSE_GENERATOR_ENABLE_MASK               0x8
+#define  KICKER_TRIGGER_LENGTH_OFFSET              0xC
+#define  LED_TRIGGER_LENGTH_OFFSET                 0x10
 #define  SYNC_REG_OFFSET                           0x14
 #define  TRIG_VAR_COMBINER_MULTIPLICITY_WIDTH      0x20
 #define  INNER_MULTIPLICITY_THRESHOLD_BASE_OFFSET  0x30
@@ -356,6 +358,19 @@ uint32_t read_trigger_length(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel) {
     }
     uint32_t offset = TRIGGER_LENGTH_BASE_OFFSET + REGISTER_WIDTH*channel;
     return read_trig_pipeline_value(tp_axi, offset);
+}
+
+uint32_t read_led_trigger_length(AXI_TRIGGER_PIPELINE *tp_axi) {
+    return read_trig_pipeline_value(tp_axi, LED_TRIGGER_LENGTH_OFFSET);
+}
+uint32_t write_led_trigger_length(AXI_TRIGGER_PIPELINE *tp_axi, uint32_t val) {
+    return write_trig_pipeline_value(tp_axi, LED_TRIGGER_LENGTH_OFFSET, val);
+}
+uint32_t read_kicker_trigger_length(AXI_TRIGGER_PIPELINE *tp_axi) {
+    return read_trig_pipeline_value(tp_axi, KICKER_TRIGGER_LENGTH_OFFSET);
+}
+uint32_t write_kicker_trigger_length(AXI_TRIGGER_PIPELINE *tp_axi, uint32_t val) {
+    return write_trig_pipeline_value(tp_axi, KICKER_TRIGGER_LENGTH_OFFSET, val);
 }
 
 uint32_t write_trigger_length(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel, uint32_t mask) {

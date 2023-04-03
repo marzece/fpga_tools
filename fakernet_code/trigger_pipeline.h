@@ -54,6 +54,11 @@ uint32_t read_trigger_veto_mask(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel);
 uint32_t write_trigger_length(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel, uint32_t mask);
 uint32_t read_trigger_length(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel);
 
+uint32_t read_led_trigger_length(AXI_TRIGGER_PIPELINE *tp_axi);
+uint32_t write_led_trigger_length(AXI_TRIGGER_PIPELINE *tp_axi, uint32_t val);
+uint32_t read_kicker_trigger_length(AXI_TRIGGER_PIPELINE *tp_axi);
+uint32_t write_kicker_trigger_length(AXI_TRIGGER_PIPELINE *tp_axi, uint32_t val);
+
 uint32_t write_pulse_generator_enable(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t value);
 uint32_t read_pulse_generator_enable(AXI_TRIGGER_PIPELINE* tp_axi);
 uint32_t read_threshold_enable_mask(AXI_TRIGGER_PIPELINE *tp_axi) ;

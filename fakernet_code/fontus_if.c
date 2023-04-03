@@ -389,6 +389,26 @@ static uint32_t read_frontpanel_trigger_gate_command(uint32_t* args) {
     return read_external_gate(get_fontus_handle()->pipeline, which_input, channel);
 }
 
+static uint32_t read_led_trigger_length_command(uint32_t *args) {
+    UNUSED(args);
+    return read_led_trigger_length(get_fontus_handle()->pipeline);
+}
+
+static uint32_t write_led_trigger_length_command(uint32_t *args) {
+    uint32_t length = args[0];
+    return write_led_trigger_length(get_fontus_handle()->pipeline, length);
+}
+
+static uint32_t read_kicker_trigger_length_command(uint32_t *args) {
+    UNUSED(args);
+    return read_kicker_trigger_length(get_fontus_handle()->pipeline);
+}
+
+static uint32_t write_kicker_trigger_length_command(uint32_t *args) {
+    uint32_t length = args[0];
+    return write_kicker_trigger_length(get_fontus_handle()->pipeline, length);
+}
+
 static uint32_t write_self_trigger_mask_command(uint32_t* args) {
     uint32_t channel = args[0];
     uint32_t mask = args[1];
@@ -686,6 +706,11 @@ ServerCommand fontus_commands[] = {
 {"read_veto_esum_gate",NULL,                       read_veto_esum_gate_command,                            2,  1, 0, 0},
 {"write_frontpanel_trigger_gate",NULL,             write_frontpanel_trigger_gate_command,                  4,  0, 0, 0},
 {"read_frontpanel_trigger_gate",NULL,              read_frontpanel_trigger_gate_command,                   3,  1, 0, 0},
+
+{"read_led_trigger_length",NULL,                   read_led_trigger_length_command,                        1,  1, 0, 0},
+{"write_led_trigger_length",NULL,                  write_led_trigger_length_command,                       2,  0, 0, 0},
+{"read_kicker_trigger_length",NULL,                read_kicker_trigger_length_command,                     1,  1, 0, 0},
+{"write_kicker_trigger_length",NULL,               write_kicker_trigger_length_command,                    2,  0, 0, 0},
 
 {"write_self_trigger_mask",NULL,                   write_self_trigger_mask_command,                        3,  0, 0, 0},
 {"read_self_trigger_mask",NULL,                    read_self_trigger_mask_command,                         2,  1, 0, 0},
