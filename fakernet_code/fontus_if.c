@@ -486,9 +486,15 @@ static int get_bit_for_trigger_specifier(client* c, sds* argv) {
     sds location = argv[0];
     // Inner Multiplicity = T/V Mask [4:0]
     // Inner ESUM = T/V Mask [9:5]
-    // External Multiplicity = T/V Mask [14:10]
-    // External ESUM = T/V Mask [19:15]
+    // Veto Multiplicity = T/V Mask [14:10]
+    // Veto ESUM = T/V Mask [19:15]
     // Front-panel = T/V Mask [28:20]
+    //
+    // A note on terminology, there are two meanings to "veto" here.  The first
+    // in the muon veto PMTs that face outward, those get their own trigger
+    // registers in the DAQ. The second meaning is as a "trigger veto mask",
+    // i.e. a trigger condition mask that will prevent a trigger from being
+    // issued.
 
     if(strcmp(location, "EXTERNAL")==0) {
         uint32_t channel_1 = strtoul(argv[1], NULL, 0);
@@ -638,6 +644,7 @@ static uint32_t write_trigger_pipeline_reg_command(uint32_t* args) {
     uint32_t data = args[1];
     return write_trig_pipeline_value(get_fontus_handle()->pipeline, addr, data);
 }
+
 static uint32_t read_trigger_pipeline_reg_command(uint32_t* args) {
     uint32_t addr = args[0];
     return read_trig_pipeline_value(get_fontus_handle()->pipeline, addr);
