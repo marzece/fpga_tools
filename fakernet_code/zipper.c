@@ -774,8 +774,8 @@ int main(int argc, char** argv) {
             if(new_run_info.run_number != 0 && new_run_info.run_number != run_info.run_number) {
                 run_info = new_run_info;
                 start_new_run = 1;
+                daq_log(LOG_WARN, "GOT NEW RUN %lli-%lli", run_info.run_number, run_info.sub_run);
             }
-            daq_log(LOG_WARN, "GOT NEW RUN %lli-%lli", run_info.run_number, run_info.sub_run);
 
             // Ask for next run, block until it arrives
             redisAppendCommand(run_info_redis, "XREAD BLOCK 0 STREAMS run_info $");
@@ -825,8 +825,15 @@ int main(int argc, char** argv) {
                 fflush(fout);
                 fclose(fout);
 
-                snprintf(buffer, 128, file_name_template, "jsns_data", run_info.run_number, ++run_info.sub_run);
-                fout = fopen(buffer, "ab");
+                snprintf(buffer, 128, file_name_template, "jsns2_mdaq", run_info.run_number, ++run_info.sub_run);
+                if(run_info.run_number == -1) {
+                    // -1 is the "NULL" run number
+                    // The only difference is we over write anything that came before
+                    fout = fopen(buffer, "wb");
+                }
+                else {
+                    fout = fopen(buffer, "ab");
+                }
                 if(!fout) {
                     daq_log(LOG_ERROR, "Could not open file '%s': %s", buffer, strerror(errno));
                     daq_log(LOG_ERROR, "Events will not be saved!");
