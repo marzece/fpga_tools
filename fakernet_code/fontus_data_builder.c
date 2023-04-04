@@ -351,8 +351,8 @@ int connect_to_fpga(const char* fpga_ip) {
             }
             else if (errno == EINPROGRESS) {
                 struct timeval tv;
-                tv.tv_sec = 15;
-                tv.tv_usec = 0;
+                tv.tv_sec = 0;
+                tv.tv_usec = 500000;
                 FD_ZERO(&myset);
                 FD_SET(fd, &myset);
                 res = 0;
@@ -363,7 +363,6 @@ int connect_to_fpga(const char* fpga_ip) {
                 break;
             }
             builder_log(LOG_ERROR, "Error connecting TCP socket: %s", strerror(errno));
-            sleep(5);
             continue;
         }
         break;
@@ -1002,14 +1001,13 @@ int main(int argc, char **argv) {
         // Send a TCP reset_command
         if(udp_client && send_tcp_reset(udp_client)) {
             builder_log(LOG_ERROR, "Error sending TCP reset. Will retry.");
-            sleep(5);
+            sleep(1);
             continue;
         }
         fpga_if.fd = connect_to_fpga(ip);
 
         if(fpga_if.fd < 0) {
             builder_log(LOG_ERROR, "error ocurred connecting to FPGA. Will retry.");
-            sleep(5);
         }
     } while(fpga_if.fd < 0);
     builder_log(LOG_INFO, "FPGA TCP connection made");

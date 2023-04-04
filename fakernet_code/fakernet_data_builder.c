@@ -399,7 +399,6 @@ int connect_to_fpga(const char* fpga_ip) {
                 break;
             }
             builder_log(LOG_ERROR, "Error connecting TCP socket: %s", strerror(errno));
-            sleep(1);
             continue;
         }
         break;
@@ -1216,7 +1215,6 @@ int main(int argc, char **argv) {
 
         if(fpga_if.fd < 0) {
             builder_log(LOG_ERROR, "error ocurred connecting to FPGA. Will retry.");
-            sleep(1);
         }
     } while(fpga_if.fd < 0);
     builder_log(LOG_INFO, "FPGA TCP connection made");
