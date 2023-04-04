@@ -27,6 +27,8 @@
 #define LOG_FILENAME "ceres_server.log"
 #define LOG_MESSAGE_MAX 1024
 
+#define DEFAULT_CERES_PORT 4003
+
 int verbosity_stdout = LOG_INFO;
 int verbosity_file = LOG_INFO;
 int verbosity_redis = LOG_WARN;
@@ -616,6 +618,9 @@ int main(int argc, char** argv) {
     initServerConfig();
     if(port > 0) {
         server.port = port;
+    }
+    else {
+        server.port = DEFAULT_CERES_PORT;
     }
     server_command_table = commandTable;
     initServer();
