@@ -142,7 +142,7 @@ void set_active_xem_mask_command(client* c, int argc, sds* argv) {
     for(i=0; i<NUM_XEMS; i++) {
         if((device_id_mask & (1<<XEMS[i].device_id)) != 0) {
 
-            if(XEMS[i].fnet_client == NULL) {
+            if(XEMS[i].fnet_client == NULL && !dummy_mode) {
                 // The server wasn't able to connect to this XEM when it booted up
                 // Should not allow it to be the active XEM
                 // TODO, could try and reconnect here maybe
@@ -215,6 +215,10 @@ void get_available_xems_command(client* c, int argc, sds* argv) {
         }
     }
 
+    if(dummy_mode) {
+        count = NUM_XEMS;
+    }
+
     if(count == 0) {
         addReplyLongLongWithPrefix(c, -1, '$');
         return;
@@ -222,7 +226,7 @@ void get_available_xems_command(client* c, int argc, sds* argv) {
 
     addReplyLongLongWithPrefix(c, count, '*');
     for(i=0; i<NUM_XEMS; i++) {
-        if(XEMS[i].fnet_client) {
+        if(XEMS[i].fnet_client || dummy_mode) {
             addReplyLongLong(c, XEMS[i].device_id);
         }
     }
