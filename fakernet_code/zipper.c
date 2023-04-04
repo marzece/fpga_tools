@@ -13,6 +13,8 @@
 #include "hiredis/hiredis.h"
 #include "daq_logger.h"
 
+#define DATA_FORMAT_VERSION 1
+
 // The number of seperate data streams, each of which must
 // be present for an event to be complete.
 #define MAX_DEVICE_NUMBER 34 // Maximum device ID
@@ -62,7 +64,8 @@ typedef struct FONTUS_HEADER {
 
 typedef struct EVENT_HEADER {
     uint32_t trig_number;
-    uint32_t status;
+    uint16_t status;
+    uint16_t version;
     uint64_t device_mask;
 } EVENT_HEADER;
 
@@ -279,6 +282,7 @@ unsigned long long save_event(FILE* fout, int event_id) {
     event_header.trig_number = htonl(event_id);
     event_header.device_mask = htonll(event->bit_word);
     event_header.status = htonl((event->bit_word == COMPLETE_EVENT_MASK) ? 0 : 1);
+    event_header.version = DATA_FORMAT_VERSION;
     char* data = NULL;
     int data_len;
     unsigned long long total_bytes_written = 0;
@@ -296,6 +300,12 @@ unsigned long long save_event(FILE* fout, int event_id) {
         goto ERROR;
     }
     total_bytes_written += nwritten*sizeof(event_header.status);
+
+    if(!(nwritten = fwrite(&event_header.version, sizeof(event_header.version), 1, fout))) {
+        daq_log(LOG_ERROR, "Error writing event header to disk");
+        goto ERROR;
+    }
+    total_bytes_written += nwritten*sizeof(event_header.version);
 
     if(!(nwritten = fwrite(&event_header.device_mask, sizeof(event_header.device_mask), 1, fout))) {
         daq_log(LOG_ERROR, "Error writing event header to disk");
@@ -482,8 +492,7 @@ int wait_for_redis_readable(const redisContext* r, int timeout) {
 RunInfo parse_run_info_redis_reply(redisReply* reply, int skip_steps) {
     // TODO replace all the asserts here with goto ERROR type things
     RunInfo ret;
-    ret.run_number = 0;
-    ret.sub_run = 0;
+    memset(&ret, 0, sizeof(RunInfo));
 
     // Got run info, have to parse the array
     // First thing should just be a list of all the responses
