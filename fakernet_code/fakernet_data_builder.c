@@ -121,15 +121,19 @@ typedef struct EventBuffer {
 } EventBuffer;
 
 typedef struct ProcessingStats {
-    unsigned int event_count;
-    unsigned int trigger_id;
+    unsigned int event_count; // Number of events built (since program startup)
+    unsigned int trigger_id; // Most recent event's trigger_id
+    int device_id; // Most recent event's device ID (shouldn't change event-by-event)
+    unsigned long long latest_timestamp; // Most recent event's clock timestamp
+    int reeling_happened; // Tracks if the data builder was in  the reeling state any time since the previous update.
     double start_time; // In microseconds (since Epoch start)
     double uptime; // In microseconds
-    unsigned int pid;
+    unsigned int pid; // PID for this program
     int connected_to_fpga;
     int fifo_rpointer;
     int fifo_event_rpointer;
     int fifo_wpointer;
+    // Would like to keep track of running compression factor?
 
     // Would like to add these but its a bit of a pain
     //unsigned int bytes_read;
@@ -969,7 +973,7 @@ void redis_publish_event(redisContext*c, EventBuffer eb) {
 }
 
 void redis_publish_stats(redisContext* c, const ProcessingStats* stats) {
-    if(!c) {
+    if(!c || !stats) {
         return;
     }
 
@@ -977,16 +981,21 @@ void redis_publish_stats(redisContext* c, const ProcessingStats* stats) {
     size_t arglens[3];
     const char* args[3];
 
-    char buf[1024];
+    char buf[2048];
 
+    // Use a a Stream instead of a pub-sub for this?
+    // Or maybe just a key-value store?
     args[0] = "PUBLISH";
     arglens[0] = strlen(args[0]);
 
     args[1] = "builder_stats";
     arglens[1] = strlen(args[1]);
 
-    arglens[2] = snprintf(buf, 1024, "%i %u %i %i %i %i", stats->event_count,
+    arglens[2] = snprintf(buf, 2048, "%i %u %llu %i %i %i %i %i %i", stats->event_count,
                                                           stats->trigger_id,
+                                                          stats->latest_timestamp,
+                                                          stats->device_id,
+                                                          stats->reeling_happened,
                                                           stats->fifo_event_rpointer,
                                                           stats->fifo_rpointer,
                                                           stats->fifo_wpointer,
@@ -1068,6 +1077,8 @@ void initialize_stats(ProcessingStats* stats) {
     struct timeval tv;
     stats->event_count = 0;
     stats->trigger_id = 0;
+    stats->device_id = -1;
+    stats->latest_timestamp = 0;
     stats->pid = (unsigned int)getpid();
     stats->uptime = 0;
     stats->connected_to_fpga = 0;
@@ -1267,6 +1278,7 @@ int main(int argc, char **argv) {
 
         pull_from_fpga(&fpga_if);
         if(reeling) {
+            the_stats.reeling_happened = 1;
             if(!did_warn_about_reeling) {
             builder_log(LOG_ERROR, "Reeeling");
             }
@@ -1285,6 +1297,7 @@ int main(int argc, char **argv) {
             the_stats.fifo_event_rpointer = fpga_if.ring_buffer.event_read_pointer;
             the_stats.fifo_rpointer = fpga_if.ring_buffer.read_pointer;
             redis_publish_stats(redis, &the_stats);
+            the_stats.reeling_happened = 0;
             last_status_update_time = the_stats.uptime;
         }
 
@@ -1305,6 +1318,8 @@ int main(int argc, char **argv) {
             }
             the_stats.event_count++;
             the_stats.trigger_id = event_header.trig_number;
+            the_stats.latest_timestamp = event_header.clock;
+            the_stats.device_id = event_header.device_number;
 
             if(num_events != 0 && the_stats.event_count >= num_events) {
                 builder_log(LOG_INFO, "Collected %i events...exiting", the_stats.event_count);

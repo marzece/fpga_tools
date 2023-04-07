@@ -97,11 +97,14 @@ typedef struct RingBuffer {
 } RingBuffer;
 
 typedef struct ProcessingStats {
-    unsigned int event_count;
-    unsigned int trigger_id;
+    unsigned int event_count; // Number of events built (since program startup)
+    unsigned int trigger_id; // Most recent event's trigger_id
+    int device_id; // Most recent event's device ID (shouldn't change event-by-event)
+    unsigned long long latest_timestamp; // Most recent event's clock timestamp
+    int reeling_happened; // Tracks if the data builder was in  the reeling state any time since the previous update.
     double start_time; // In microseconds (since Epoch start)
     double uptime; // In microseconds
-    unsigned int pid;
+    unsigned int pid; // PID for this program
     int connected_to_fpga;
     int fifo_rpointer;
     int fifo_event_rpointer;
