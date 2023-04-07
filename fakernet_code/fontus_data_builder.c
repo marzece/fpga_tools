@@ -768,7 +768,6 @@ void redis_publish_event(redisContext*c, const FontusTrigHeader event) {
 
     args[0] = "PUBLISH";
     arglens[0] = strlen(args[0]);
-    //args[1] = "trig_header_stream";
     args[1] = "event_stream";
     arglens[1] = strlen(args[1]);
 
@@ -797,6 +796,14 @@ void redis_publish_event(redisContext*c, const FontusTrigHeader event) {
 
     arglens[2] = HEADER_SIZE;
     args[2] = publish_buffer;
+    r = redisCommandArgv(c, 3,  args,  arglens);
+    if(!r) {
+        builder_log(LOG_ERROR, "Redis error!");
+    }
+    freeReplyObject(r);
+
+    args[1] = "header_stream";
+    arglens[1] = strlen(args[1]);
     r = redisCommandArgv(c, 3,  args,  arglens);
     if(!r) {
         builder_log(LOG_ERROR, "Redis error!");
