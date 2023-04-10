@@ -525,7 +525,7 @@ void write_to_disk(FontusTrigHeader* ev) {
         byte_count += 8;
         *((uint64_t*)(header_mem + byte_count)) = ev->ct_time;
         byte_count += 8;
-        *((uint64_t*)(header_mem + byte_count)) = ev->crc;
+        *((uint32_t*)(header_mem + byte_count)) = ev->crc;
         byte_count += 4;
 
         nwritten = fwrite(header_mem, 1, byte_count, fdisk);
