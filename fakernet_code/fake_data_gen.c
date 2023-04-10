@@ -107,13 +107,16 @@ static size_t produce_data(unsigned char* buffer, const int number, const int de
     const int NCHAN = 16;
     uint8_t i;
     unsigned char* start = buffer;
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    uint64_t timeticks = tv.tv_sec*1e6 + tv.tv_usec;
 
     (*(uint32_t*)buffer) = 0xFFFFFFFF;
     buffer += 4;
     (*(uint32_t*)buffer) = htonl(number);
     buffer += 4;
 
-    //(*(uint64_t*)buffer) = htonll(number);
+    (*(uint64_t*)buffer) = htonll(timeticks);
     // Skip the clock
     buffer += 8;
 
