@@ -991,7 +991,7 @@ void redis_publish_stats(redisContext* c, const ProcessingStats* stats) {
     args[1] = "builder_stats";
     arglens[1] = strlen(args[1]);
 
-    arglens[2] = snprintf(buf, 2048, "%i %u %llu %i %i %i %i %i %i", stats->event_count,
+    arglens[2] = snprintf(buf, 2048, "%i %u %llu %i %i %i %i %i %i %i", stats->event_count,
                                                           stats->trigger_id,
                                                           stats->latest_timestamp,
                                                           stats->device_id,
@@ -999,6 +999,7 @@ void redis_publish_stats(redisContext* c, const ProcessingStats* stats) {
                                                           stats->fifo_event_rpointer,
                                                           stats->fifo_rpointer,
                                                           stats->fifo_wpointer,
+                                                          stats->pid,
                                                           (int)(stats->uptime/1e6));
     args[2] = buf;
     r = redisCommandArgv(c, 3,  args,  arglens);
@@ -1107,12 +1108,11 @@ int main(int argc, char **argv) {
     uint32_t calculated_crcs[NUM_CHANNELS];
     uint32_t given_crcs[NUM_CHANNELS];
     const double REDIS_STATS_COOLDOWN = 1e6; // 1-second in micro-seconds
-    double last_status_update_time;
+    double last_status_update_time = 0;
     ProcessingStats the_stats;
     TrigHeader event_header;
 
     initialize_stats(&the_stats);
-    last_status_update_time = 0;
 
     if(argc > 1 ) {
         expecting_value = 0;
