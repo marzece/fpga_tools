@@ -37,6 +37,9 @@
 #define DAQ_LOG_NAME "data-zipper"
 #define DEFAULT_LOG_FILENAME "zipper_error_log.log"
 
+// How often should stats be published to the redis data base in micro-seconds
+#define REDIS_STATS_COOLDOWN 1e6
+
 // For some reason linux doesn't always have htonll...so this can be used instead
 #if __linux__
 #define htonll(x) ((((uint64_t)htonl(x)) << 32) + htonl((x) >> 32))
@@ -47,7 +50,6 @@ uint32_t last_seen_event[MAX_DEVICE_NUMBER];
 uint64_t COMPLETE_EVENT_MASK = DEFAULT_EVENT_MASK;
 int loop = 1;
 
-// TODO
 typedef struct FONTUS_HEADER {
     uint32_t magic_number;
     uint32_t trig_number;
@@ -104,6 +106,41 @@ typedef struct RunInfo {
     long long run_number;
     long long sub_run;
 } RunInfo;
+
+typedef struct ProcessingStats {
+    unsigned int event_count; // Number of events built (since program startup)
+    unsigned int trigger_id; // Most recent event's trigger_id
+    unsigned int device_mask;
+    unsigned int events_waiting; // Events sitting around in the buffer
+    unsigned long long latest_timestamp; // Most recent event's clock timestamp
+    unsigned long long max_delta_t; // Largest difference in times stamps observed
+    long long fontus_delta_t; // Time difference between FONTUS timestamp & latest CERES timetstamp
+    long long run_number; // Current run number
+    long long sub_run_number; // Current sub-run number
+    double start_time; // In microseconds (since Epoch start)
+    double uptime; // In microseconds
+    unsigned int pid; // PID for this program
+} ProcessingStats;
+
+void initialize_processing_stats(ProcessingStats* stats) {
+    if(!stats) {
+        return;
+    }
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+
+    stats->event_count = 0;
+    stats->trigger_id = 0;
+    stats->device_mask = 0;
+    stats->events_waiting = 0;
+    stats->latest_timestamp = 0;
+    stats->max_delta_t = 0;
+    stats->fontus_delta_t = 0;
+    stats->run_number = -1;
+    stats->start_time = tv.tv_sec*1e6 + tv.tv_usec;
+    stats->uptime = 0;
+    stats->pid = getpid();
+}
 
 redisContext* create_redis_conn(const char* redis_hostname, int port) {
     daq_log(LOG_INFO, "Opening Redis Connection");
@@ -165,10 +202,6 @@ uint32_t pop_complete_event_id(void) {
     return event_ready_queue.event_ids[--event_ready_queue.events_available];
 }
 
-void mark_as_skipped(uint32_t device_id, uint32_t event_number) {
-    (void) device_id;
-    (void) event_number;
-}
 static inline unsigned  int event_id_hash(uint32_t event_id) {
     return event_id % HASH_TABLE_SIZE;
 }
@@ -465,18 +498,42 @@ int send_event_to_redis(redisContext* redis, int event_id) {
     return  arglens[2];
 }
 
-void print_help_string(void) {
-    printf("zipper: recieves then combines data from CERES & FONTUS data builders via redis DB.\n"
-            "\tusage:  zipper [-o filename] [-m event_mask] [-l log-filename] [--rate rate] [--run-mode] [-v] [-q]\n"
-            "\targuments:\n"
-            "\t--out -o\tFile to write built data to. Default is '%s'\n"
-            "\t--mask -m\tBit mask corresponding to a complete event. Default 0x%llX.\n"
-            "\t--log-file -l\tFilename that log messages should be recorded to. Default '%s'\n"
-            "\t--rate -r\tMax publish rate in Hz. [NOT IMPLEMENTED!]\n"
-            "\t--verbose -v\tIncrease verbosity. Can be done multiple times.\n"
-            "\t--quiet -q\tDecrease verbosity. Can be done multiple times.\n"
-            "\t--run-mode\tOperate in run-mode. Will recieve run updates from redis. Default off\n",
-          DEFAULT_DATA_OUT_FILE, DEFAULT_EVENT_MASK, DEFAULT_LOG_FILENAME);
+void redis_publish_stats(redisContext* c, const ProcessingStats* stats) {
+    if(!c || !stats) {
+        return;
+    }
+    size_t arglens[3];
+    const char* args[3];
+    int done = 0;
+    char buf[2048];
+
+    // Use a a Stream instead of a pub-sub for this?
+    // Or maybe just a key-value store?
+    args[0] = "PUBLISH";
+    arglens[0] = strlen(args[0]);
+
+    args[1] = "zipper_stats";
+    arglens[1] = strlen(args[1]);
+
+    arglens[2] = snprintf(buf, 2048, "%lli %lli %u %u %llu %llu %lli %u %i %i %i",
+                                                          stats->run_number,
+                                                          stats->sub_run_number,
+                                                          stats->event_count,
+                                                          stats->trigger_id,
+                                                          stats->latest_timestamp,
+                                                          stats->max_delta_t,
+                                                          stats->fontus_delta_t,
+                                                          stats->device_mask,
+                                                          stats->events_waiting,
+                                                          stats->pid,
+                                                          (int)(stats->uptime/1e6));
+
+    args[2] = buf;
+    redisAppendCommandArgv(c, 3,  args,  arglens);
+    // TODO should I add some loop counter so I don't get stuck here?
+    while(!done) {
+        redisBufferWrite(c, &done);
+    }
 }
 
 int wait_for_redis_readable(const redisContext* r, int timeout) {
@@ -562,6 +619,80 @@ RunInfo parse_run_info_redis_reply(redisReply* reply, int skip_steps) {
     return ret;
 }
 
+void evaluate_event_stats(ProcessingStats* stats, const uint32_t event_id) {
+    // I use the "stats" to monitor this program, so I want to get some data
+    // about each event so I can ensure the over all data quality
+    // So here I just take a look at each event as it comes through and make
+    // sure everything is okay
+
+    // Need to get the most recent timestamp
+    // Then get all the timestamps and compare their largest difference
+
+    char* data = NULL;
+    int data_len;
+    int i;
+    uint64_t timestamp = 0;
+    uint64_t largest_timestamp = 0;
+    uint64_t smallest_timestamp = 0;
+    uint64_t delta_t;
+    uint64_t event_mask= COMPLETE_EVENT_MASK;
+    uint64_t fontus_timestamp;
+    EventRecord* event = &(event_registry[event_id % HASH_TABLE_SIZE]);
+
+    for(i=0; event_mask; event_mask>>=1,i++) {
+        if((event_mask & 0x1) == 0) {
+            continue;
+        }
+        grab_data_from_pubsub_message(event->data[i], &data, &data_len);
+        if(!data) {
+            continue;
+        }
+        if(i==FONTUS_DEVICE_ID) {
+            fontus_timestamp = ntohll(*((uint64_t*)(data+8)));
+
+        }
+        else {
+            // A CERES board
+            // timestamp occurs at byte offset 8 in the CERES header
+            timestamp = ntohll(*((uint64_t*)(data + 8)));
+            if(largest_timestamp == 0 || timestamp > largest_timestamp) {
+                largest_timestamp = timestamp;
+            }
+            if(smallest_timestamp == 0 || timestamp < smallest_timestamp) {
+                smallest_timestamp = timestamp;
+            }
+        }
+    }
+
+    stats->trigger_id = event_id;
+    if(largest_timestamp) {
+        delta_t = largest_timestamp - smallest_timestamp;
+        if(delta_t > stats->max_delta_t) {
+            stats->max_delta_t = largest_timestamp - smallest_timestamp;
+        }
+        stats->latest_timestamp = largest_timestamp;
+    }
+    if(largest_timestamp && fontus_timestamp) {
+        long long fontus_delta_t = largest_timestamp - fontus_timestamp;
+        stats->fontus_delta_t = llabs(fontus_delta_t) > llabs(stats->fontus_delta_t) ? fontus_delta_t : stats->fontus_delta_t;
+    }
+}
+
+void print_help_string(void) {
+    printf("zipper: recieves then combines data from CERES & FONTUS data builders via redis DB.\n"
+            "\tusage:  zipper [-o filename] [-m event_mask] [-l log-filename] [--rate rate] [--run-mode] [-v] [-q]\n"
+            "\targuments:\n"
+            "\t--out -o\tFile to write built data to. Default is '%s'\n"
+            "\t--mask -m\tBit mask corresponding to a complete event. Default 0x%llX.\n"
+            "\t--log-file -l\tFilename that log messages should be recorded to. Default '%s'\n"
+            "\t--rate -r\tMax publish rate in Hz. [NOT IMPLEMENTED!]\n"
+            "\t--verbose -v\tIncrease verbosity. Can be done multiple times.\n"
+            "\t--quiet -q\tDecrease verbosity. Can be done multiple times.\n"
+            "\t--run-mode\tOperate in run-mode. Will recieve run updates from redis. Default off\n",
+          DEFAULT_DATA_OUT_FILE, DEFAULT_EVENT_MASK, DEFAULT_LOG_FILENAME);
+}
+
+
 int main(int argc, char** argv) {
 
     int run_mode = 0;
@@ -585,8 +716,10 @@ int main(int argc, char** argv) {
     const char* file_name_template = "%s_r%06i_f%06i.dat";
     const char* log_filename = DEFAULT_LOG_FILENAME;
     char buffer[128];
+    double last_status_update_time = 0;
+    ProcessingStats stats;
 
-    run_info.run_number = 0;
+    run_info.run_number = -1;
     run_info.sub_run = 0;
     int arg_run_mode = 0;
 
@@ -672,7 +805,8 @@ int main(int argc, char** argv) {
                       "Run Mode: %s",
             output_filename, COMPLETE_EVENT_MASK, log_filename, run_mode ? "ON" : "OFF");
 
-
+    initialize_processing_stats(&stats);
+    stats.device_mask = COMPLETE_EVENT_MASK;
 
     FILE* fout = fopen(output_filename, "ab");
     if(!fout) {
@@ -808,8 +942,8 @@ int main(int argc, char** argv) {
         if(event_ready_queue.events_available) {
             event_id = pop_complete_event_id();
             built_count += 1;
-            // TODO save_event and send_to_redis are very similar functions,
-            // should see if I can combine them or something like that.
+            stats.event_count += 1;
+            evaluate_event_stats(&stats, event_id);
 
             if(publish_rate && publish_redis) {
                 delta_t = (current_time.tv_sec - redis_update_time.tv_sec)*1e6 + (current_time.tv_usec - redis_update_time.tv_usec);
@@ -868,6 +1002,19 @@ int main(int argc, char** argv) {
             daq_log(LOG_INFO, "Event id %i.\t%0.2f events per second.\t%0.0fkB to redis.", event_id, (float)1e6*built_count/PRINT_UPDATE_COOLDOWN, bytes_sent/1024.);
             built_count = 0;
             event_rate_time = current_time;
+        }
+
+        stats.uptime = (current_time.tv_sec*1e6 + current_time.tv_usec) - stats.start_time;
+        if((stats.uptime - last_status_update_time) > REDIS_STATS_COOLDOWN) {
+            stats.events_waiting = event_ready_queue.events_available;
+            stats.run_number = run_info.run_number;
+            stats.sub_run_number = run_info.sub_run;
+
+            redis_publish_stats(publish_redis, &stats);
+
+            stats.max_delta_t = 0;
+            stats.fontus_delta_t = 0;
+            last_status_update_time = stats.uptime;
         }
     }
     // Clean up
