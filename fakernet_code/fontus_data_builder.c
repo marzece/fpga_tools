@@ -754,6 +754,18 @@ redisContext* create_redis_conn(const char* hostname) {
     return c;
 }
 
+redisContext* create_redis_unix_conn(const char* path) {
+    printf("Opening Redis Connection\n");
+    redisContext* c;
+    c = redisConnectUnix(path);
+    if(c == NULL || c->err) {
+        printf("Redis connection error %s\n", c->errstr);
+        redisFree(c);
+        return NULL;
+    }
+    return c;
+}
+
 // Send event to redis database
 void redis_publish_event(redisContext*c, const FontusTrigHeader event) {
     if(!c) {
@@ -820,7 +832,7 @@ void redis_publish_stats(redisContext* c, const ProcessingStats* stats) {
     size_t arglens[3];
     const char* args[3];
 
-    char buf[1024];
+    char buf[2048];
 
     args[0] = "PUBLISH";
     arglens[0] = strlen(args[0]);
@@ -828,11 +840,15 @@ void redis_publish_stats(redisContext* c, const ProcessingStats* stats) {
     args[1] = "builder_stats";
     arglens[1] = strlen(args[1]);
 
-    arglens[2] = snprintf(buf, 1024, "%i %u %i %i %i %i", stats->event_count,
+    arglens[2] = snprintf(buf, 2048, "%i %u %llu %i %i %i %i %i %i %i", stats->event_count,
                                                           stats->trigger_id,
+                                                          stats->latest_timestamp,
+                                                          stats->device_id,
+                                                          stats->reeling_happened,
                                                           stats->fifo_event_rpointer,
                                                           stats->fifo_rpointer,
                                                           stats->fifo_wpointer,
+                                                          stats->pid,
                                                           (int)(stats->uptime/1e6));
     args[2] = buf;
     r = redisCommandArgv(c, 3,  args,  arglens);
@@ -891,6 +907,9 @@ void initialize_stats(ProcessingStats* stats) {
     struct timeval tv;
     stats->event_count = 0;
     stats->trigger_id = 0;
+    stats->device_id = 0;
+    stats->latest_timestamp = 0;
+    stats->reeling_happened = 0;
     stats->pid = (unsigned int)getpid();
     stats->uptime = 0;
     stats->connected_to_fpga = 0;
@@ -899,7 +918,6 @@ void initialize_stats(ProcessingStats* stats) {
     stats->fifo_wpointer = 0;
     //stats->bytes_read = 0;
     //stats->bytes_written = 0;
-
     gettimeofday(&tv, NULL);
     stats->start_time = tv.tv_sec*1e6 + tv.tv_usec;
 }
@@ -914,6 +932,9 @@ int main(int argc, char **argv) {
     const char* FOUT_FILENAME = "/dev/null";
     const char* ERROR_FILENAME = DEFAULT_ERROR_LOG_FILENAME;
     const char* redis_host = DEFAULT_REDIS_HOST;
+    struct timeval current_time;
+    double last_status_update_time = 0;
+    const double REDIS_STATS_COOLDOWN = 1e6; // 1-second in micro-seconds
     int event_ready;
     ProcessingStats the_stats;
     fdump  = fopen("DUMP.dat", "wb");
@@ -1048,6 +1069,7 @@ int main(int argc, char **argv) {
 
         pull_from_fpga(&fpga_if);
         if(reeling) {
+            the_stats.reeling_happened = 1;
             if(!did_warn_about_reeling) {
                 builder_log(LOG_ERROR, "Reeeling");
             }
@@ -1064,12 +1086,25 @@ int main(int argc, char **argv) {
             }
             the_stats.event_count++;
             the_stats.trigger_id = event.trig_number;
+            the_stats.device_id = event.device_number;
+            the_stats.latest_timestamp = event.clock;
 
             if(num_events != 0 && the_stats.event_count >= num_events) {
                 builder_log(LOG_INFO, "Collected %i events...exiting", the_stats.event_count);
                 end_loop();
             }
         }
+        gettimeofday(&current_time, NULL);
+        the_stats.uptime = (current_time.tv_sec*1e6 + current_time.tv_usec) - the_stats.start_time;
+        if((the_stats.uptime - last_status_update_time) > REDIS_STATS_COOLDOWN) {
+            the_stats.fifo_wpointer = fpga_if.ring_buffer.write_pointer;
+            the_stats.fifo_event_rpointer = fpga_if.ring_buffer.event_read_pointer;
+            the_stats.fifo_rpointer = fpga_if.ring_buffer.read_pointer;
+
+            redis_publish_stats(redis, &the_stats);
+            the_stats.reeling_happened = 0;
+            last_status_update_time = the_stats.uptime;
+            }
     }
 //    fclose(fdump);
     clean_up();
