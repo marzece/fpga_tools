@@ -314,8 +314,8 @@ unsigned long long save_event(FILE* fout, int event_id) {
     EVENT_HEADER event_header;
     event_header.trig_number = htonl(event_id);
     event_header.device_mask = htonll(event->bit_word);
-    event_header.status = htonl((event->bit_word == COMPLETE_EVENT_MASK) ? 0 : 1);
-    event_header.version = DATA_FORMAT_VERSION;
+    event_header.status = htons((event->bit_word == COMPLETE_EVENT_MASK) ? 0 : 1);
+    event_header.version = htons(DATA_FORMAT_VERSION);
     char* data = NULL;
     int data_len;
     unsigned long long total_bytes_written = 0;
@@ -452,6 +452,10 @@ int send_event_to_redis(redisContext* redis, int event_id) {
     offset += sizeof(event_header.trig_number);
     memcpy(redis_data_buf + offset, &event_header.device_mask, sizeof(event_header.device_mask));
     offset += sizeof(event_header.device_mask);
+    event_header.version = htons(DATA_FORMAT_VERSION);
+    memcpy(redis_data_buf + offset, &event_header.version, sizeof(event_header.version));
+    offset += sizeof(event_header.version);
+
     memcpy(redis_data_buf + offset, &event_header.status, sizeof(event_header.status));
     offset += sizeof(event_header.status);
 
