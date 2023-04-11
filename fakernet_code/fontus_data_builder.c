@@ -517,15 +517,15 @@ void write_to_disk(FontusTrigHeader* ev) {
         byte_count += 1;
         *((uint8_t*)(header_mem + byte_count)) = ev->trigger_flags;
         byte_count += 1;
-        *((uint32_t*)(header_mem + byte_count)) = ev->self_trigger_word;
+        *((uint32_t*)(header_mem + byte_count)) = htonl(ev->self_trigger_word);
         byte_count += 4;
-        *((uint64_t*)(header_mem + byte_count)) = ev->beam_trigger_time;
+        *((uint64_t*)(header_mem + byte_count)) = htonll(ev->beam_trigger_time);
         byte_count += 8;
-        *((uint64_t*)(header_mem + byte_count)) = ev->led_trigger_time;
+        *((uint64_t*)(header_mem + byte_count)) = htonll(ev->led_trigger_time);
         byte_count += 8;
-        *((uint64_t*)(header_mem + byte_count)) = ev->ct_time;
+        *((uint64_t*)(header_mem + byte_count)) = htonll(ev->ct_time);
         byte_count += 8;
-        *((uint32_t*)(header_mem + byte_count)) = ev->crc;
+        *((uint32_t*)(header_mem + byte_count)) = htonl(ev->crc);
         byte_count += 4;
 
         nwritten = fwrite(header_mem, 1, byte_count, fdisk);
