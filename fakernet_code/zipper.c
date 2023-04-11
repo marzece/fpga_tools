@@ -713,7 +713,8 @@ int main(int argc, char** argv) {
     RunInfo run_info;
     int resume_last_run = 0;
     struct timeval redis_update_time, event_rate_time, byte_sent_time, current_time;
-    const char* file_name_template = "%s_r%06i_f%06i.dat";
+    const char* MDAQ_FN_PREFIX = "jsns2_mdaq";
+    const char* file_name_template = "%s.r%06i.f%06i.dat";
     const char* log_filename = DEFAULT_LOG_FILENAME;
     char buffer[128];
     double last_status_update_time = 0;
@@ -968,7 +969,7 @@ int main(int argc, char** argv) {
                 fflush(fout);
                 fclose(fout);
 
-                snprintf(buffer, 128, file_name_template, "jsns2_mdaq", run_info.run_number, ++run_info.sub_run);
+                snprintf(buffer, 128, file_name_template, MDAQ_FN_PREFIX, run_info.run_number, ++run_info.sub_run);
                 if(run_info.run_number == -1) {
                     // -1 is the "NULL" run number
                     // The only difference is we over write anything that came before
