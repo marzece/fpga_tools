@@ -32,7 +32,7 @@
 #define DEFAULT_PUBLISH_RATE 10 // Hz
 #define DEFAULT_PUBLISH_MAX_SIZE (10*1024*1024) // 10 MB
 #define LOG_REDIS_HOST_NAME "localhost"
-#define PRINT_UPDATE_COOLDOWN 1000000
+#define PRINT_UPDATE_COOLDOWN 10000000 // How of the status is printed to the terminal/log
 #define LOG_MESSAGE_MAX 1024
 #define DAQ_LOG_NAME "data-zipper"
 #define DEFAULT_LOG_FILENAME "zipper_error_log.log"
@@ -711,6 +711,7 @@ int main(int argc, char** argv) {
     double delta_t;
     int event_id = -1;
     int bytes_sent = 0;
+    int print_status_bytes_sent;
     unsigned long long bytes_in_file = 0;
     int nbytes_written;
     RunInfo run_info;
@@ -997,14 +998,16 @@ int main(int argc, char** argv) {
         // very stuttery if it's reset every second.
         delta_t = (current_time.tv_sec - byte_sent_time.tv_sec)*1e6 + (current_time.tv_usec - byte_sent_time.tv_usec);
         if(delta_t > 100000) {
+            print_status_bytes_sent += bytes_sent;
             bytes_sent = 0;
             byte_sent_time = current_time;
         }
 
         delta_t = (current_time.tv_sec - event_rate_time.tv_sec)*1e6 + (current_time.tv_usec - event_rate_time.tv_usec);
         if(delta_t > PRINT_UPDATE_COOLDOWN) {
-            daq_log(LOG_INFO, "Event id %i.\t%0.2f events per second.\t%0.0fkB to redis.", event_id, (float)1e6*built_count/PRINT_UPDATE_COOLDOWN, bytes_sent/1024.);
+            daq_log(LOG_INFO, "Event id %i.\t%0.2f events per second.\t%0.0fkB to redis.", event_id, (float)1e6*built_count/PRINT_UPDATE_COOLDOWN, print_status_bytes_sent/1024.);
             built_count = 0;
+            print_status_bytes_sent = 0;
             event_rate_time = current_time;
         }
 
