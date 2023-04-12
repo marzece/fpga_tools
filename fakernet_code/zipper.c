@@ -25,14 +25,15 @@
 
 #define QUEUE_LENGTH 100
 #define FONTUS_DEVICE_ID 0
-#define REDIS_UNIX_SOCK_PATH "/var/run/redis/redis-server.sock"
+//#define REDIS_UNIX_SOCK_PATH "/var/run/redis/redis-server.sock"
+#define REDIS_UNIX_SOCK_PATH "/Users/marzece/redis-server.sock"
 #define REDIS_OUT_DATA_BUF_SIZE (32*1024*1024)
 #define DEFAULT_FILE_SIZE_THRESHOLD (1024*1024*1024ULL) // 1GB
 
 #define DEFAULT_PUBLISH_RATE 10 // Hz
 #define DEFAULT_PUBLISH_MAX_SIZE (10*1024*1024) // 10 MB
 #define LOG_REDIS_HOST_NAME "localhost"
-#define PRINT_UPDATE_COOLDOWN 10000000 // How of the status is printed to the terminal/log
+#define PRINT_UPDATE_COOLDOWN 10000000 // How often the status is printed to the terminal/log
 #define LOG_MESSAGE_MAX 1024
 #define DAQ_LOG_NAME "data-zipper"
 #define DEFAULT_LOG_FILENAME "zipper_error_log.log"
