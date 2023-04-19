@@ -978,7 +978,7 @@ int main(int argc, char** argv) {
                 if(run_info.run_number == -1) {
                     // -1 is the "NULL" run number
                     // The only difference is we over write anything that came before
-                    fout = fopen(buffer, "wb");
+                    fout = fopen(DEFAULT_DATA_OUT_FILE, "wb");
                 }
                 else {
                     fout = fopen(buffer, "ab");
