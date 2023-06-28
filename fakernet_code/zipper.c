@@ -696,6 +696,10 @@ void print_help_string(void) {
           DEFAULT_DATA_OUT_FILE, DEFAULT_EVENT_MASK, DEFAULT_LOG_FILENAME);
 }
 
+// Helper function, calculates the difference between two timevals in micro-seconds
+double calculate_delta_t(struct timeval lhs, struct timeval rhs) {
+        return (lhs.tv_sec - rhs.tv_sec)*1e6 + (lhs.tv_usec - rhs.tv_usec);
+}
 
 int main(int argc, char** argv) {
 
@@ -947,12 +951,13 @@ int main(int argc, char** argv) {
 
         if(event_ready_queue.events_available) {
             event_id = pop_complete_event_id();
+            check_timestamp(event_id);
             built_count += 1;
             stats.event_count += 1;
             evaluate_event_stats(&stats, event_id);
 
             if(publish_rate && publish_redis) {
-                delta_t = (current_time.tv_sec - redis_update_time.tv_sec)*1e6 + (current_time.tv_usec - redis_update_time.tv_usec);
+                delta_t = calculate_delta_t(current_time, redis_update_time);
                 delta_t /= 1e6;
                 if(delta_t > 1.0/publish_rate && bytes_sent < DEFAULT_PUBLISH_MAX_SIZE/10.) {
                     bytes_sent += send_event_to_redis(publish_redis, event_id);
@@ -997,14 +1002,14 @@ int main(int argc, char** argv) {
         // Reset the publish data-rate limit every 10th of a second.
         // Do it every 10th of a second otherwise the publish'd data will look
         // very stuttery if it's reset every second.
-        delta_t = (current_time.tv_sec - byte_sent_time.tv_sec)*1e6 + (current_time.tv_usec - byte_sent_time.tv_usec);
+        delta_t = calculate_delta_t(current_time, byte_sent_time);
         if(delta_t > 100000) {
             print_status_bytes_sent += bytes_sent;
             bytes_sent = 0;
             byte_sent_time = current_time;
         }
 
-        delta_t = (current_time.tv_sec - event_rate_time.tv_sec)*1e6 + (current_time.tv_usec - event_rate_time.tv_usec);
+        delta_t = calculate_delta_t(current_time, event_rate_time);
         if(delta_t > PRINT_UPDATE_COOLDOWN) {
             daq_log(LOG_INFO, "Event id %i.\t%0.2f events per second.\t%0.0fkB to redis.", event_id, (float)1e6*built_count/PRINT_UPDATE_COOLDOWN, print_status_bytes_sent/1024.);
             built_count = 0;
