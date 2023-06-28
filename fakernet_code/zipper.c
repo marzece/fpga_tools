@@ -1011,7 +1011,14 @@ int main(int argc, char** argv) {
 
         delta_t = calculate_delta_t(current_time, event_rate_time);
         if(delta_t > PRINT_UPDATE_COOLDOWN) {
-            daq_log(LOG_INFO, "Event id %i.\t%0.2f events per second.\t%0.0fkB to redis.", event_id, (float)1e6*built_count/PRINT_UPDATE_COOLDOWN, print_status_bytes_sent/1024.);
+            float redis_bytes = 1e6*print_status_bytes_sent/(delta_t*1024.);
+            char prefix = 'k';
+            if(redis_bytes > 1024) {
+                redis_bytes /= 1024.;
+                prefix = 'M';
+            }
+
+            daq_log(LOG_INFO, "Event id %i.\t%0.2f events per second.\t%0.1f%cB/s to redis.", event_id, (float)1e6*built_count/PRINT_UPDATE_COOLDOWN, redis_bytes, prefix);
             built_count = 0;
             print_status_bytes_sent = 0;
             event_rate_time = current_time;
