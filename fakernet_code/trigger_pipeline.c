@@ -19,6 +19,9 @@ int write_addr(uint32_t, uint32_t, uint32_t);
 #define  LED_TRIGGER_LENGTH_OFFSET                 0x10
 #define  SYNC_REG_OFFSET                           0x14
 #define  TRIG_VAR_COMBINER_MULTIPLICITY_WIDTH      0x20
+#define  AUTO_TRIGGER_LEN_REG_OFFSET               0x18
+#define  AUTO_TRIGGER_RATE_REG_OFFSET              0x1C
+#define  AUTO_TRIGGER_ENABLE_REG_OFFSET            0x24
 #define  INNER_MULTIPLICITY_THRESHOLD_BASE_OFFSET  0x30
 #define  INNER_ESUM_THRESHOLD_BASE_OFFSET          0x50
 #define  VETO_MULTIPLICITY_THRESHOLD_BASE_OFFSET   0x70
@@ -434,4 +437,28 @@ uint32_t do_sync(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t length) {
     // Unset bit-0
     word &= 0xFFFFE;
     return write_trig_pipeline_value(tp_axi, SYNC_REG_OFFSET, word);
+}
+
+uint32_t write_auto_trig_length(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t length) {
+    return write_trig_pipeline_value(tp_axi, AUTO_TRIGGER_LEN_REG_OFFSET, length);
+}
+
+uint32_t read_auto_trig_length(AXI_TRIGGER_PIPELINE* tp_axi) {
+    return read_trig_pipeline_value(tp_axi, AUTO_TRIGGER_LEN_REG_OFFSET);
+}
+
+uint32_t write_auto_trig_rate(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t period) {
+    return write_trig_pipeline_value(tp_axi, AUTO_TRIGGER_RATE_REG_OFFSET, period);
+}
+
+uint32_t read_auto_trig_rate(AXI_TRIGGER_PIPELINE* tp_axi) {
+    return read_trig_pipeline_value(tp_axi, AUTO_TRIGGER_RATE_REG_OFFSET);
+}
+
+uint32_t write_auto_trig_enable(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t en) {
+    return write_trig_pipeline_value(tp_axi, AUTO_TRIGGER_ENABLE_REG_OFFSET, en);
+}
+
+uint32_t read_auto_trig_enable(AXI_TRIGGER_PIPELINE* tp_axi) {
+    return read_trig_pipeline_value(tp_axi, AUTO_TRIGGER_ENABLE_REG_OFFSET);
 }

@@ -230,6 +230,35 @@ static uint32_t do_sync_command(uint32_t* args) {
     return do_sync(get_fontus_handle()->pipeline, length);
 }
 
+uint32_t write_auto_trig_params_command(uint32_t* args) {
+    uint32_t rate = args[0];   // Number of counts between each readout
+    uint32_t length = args[1]; // Amount of data in each readout
+
+    rate = 250e6 / rate; // Idk if 100e6 is the right value here, but its close enough probably
+    uint32_t ret = 0;
+    ret = write_auto_trig_length(get_fontus_handle()->pipeline, length);
+    ret |= write_auto_trig_rate(get_fontus_handle()->pipeline, rate);
+    return ret;
+}
+
+uint32_t read_auto_trig_params_command(uint32_t* args) {
+    uint32_t period, length;
+    length = read_auto_trig_length(get_fontus_handle()->pipeline);
+    period = read_auto_trig_rate(get_fontus_handle()->pipeline);
+    args[0] = period;
+    args[1] = length;
+    return 0;
+}
+
+uint32_t write_auto_trig_enable_command(uint32_t* args) {
+    uint32_t enable = args[0];   // Number of counts between each readout
+    return write_auto_trig_enable(get_fontus_handle()->pipeline, enable);
+}
+
+uint32_t read_auto_trig_enable_command(uint32_t* args) {
+    return read_auto_trig_enable(get_fontus_handle()->pipeline);
+}
+
 static uint32_t write_inner_multiplicity_threshold_command(uint32_t* args) {
     uint32_t channel = args[0];
     uint32_t threshold = args[1];
@@ -683,6 +712,10 @@ ServerCommand fontus_commands[] = {
 {"fifo_sys_reset",NULL,                            fifo_sys_reset_command,                                 1,  1, 0, 0},
 {"read_sync_length",NULL,                          read_sync_length_command,                               1,  1, 0, 0},
 {"do_sync",NULL,                                   do_sync_command,                                        2,  0, 0, 0},
+{"write_auto_trig_params",NULL,                    write_auto_trig_params_command,                         3,  0, 0, 0},
+{"read_auto_trig_params",NULL,                     read_auto_trig_params_command,                          1,  2, 0, 0},
+{"write_auto_trig_enable",NULL,                    write_auto_trig_enable_command,                         2,  0, 0, 0},
+{"read_auto_trig_enable",NULL,                     read_auto_trig_enable_command,                          1,  1, 0, 0},
 {"write_inner_multiplicity_threshold",NULL,        write_inner_multiplicity_threshold_command,             3,  0, 0, 0},
 {"read_inner_multiplicity_threshold",NULL,         read_inner_multiplicity_threshold_command,              2,  1, 0, 0},
 {"write_veto_multiplicity_threshold",NULL,         write_veto_multiplicity_threshold_command,              3,  0, 0, 0},
