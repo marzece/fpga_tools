@@ -5,7 +5,7 @@ CFLAGS += -O0 -g -std=gnu99 -Wall -W -Wshadow -Wwrite-strings \
 
 LDLIBS += -lm
 
-all: fnetctrl kintex_client_server kintex_cli fakernet_data_builder tail_daq_log fontus_data_builder zipper ceres_server fake_data_gen
+all: fnetctrl kintex_client_server kintex_cli ceres_data_builder tail_daq_log fontus_data_builder zipper ceres_server fake_data_gen
 
 fnetctrl: fnetctrl.o fnet_client.o
 
@@ -26,11 +26,11 @@ ceres_server: ceres_server.o gpio.o lmk_if.o ads_if.o iic.o fnet_client.o dac_if
 kintex_cli: kintex_cli.o
 	$(CC) -o $@ $(CFLAGS) -Ilinenoise/ linenoise/linenoise.c $^
 
-fakernet_data_builder: fakernet_data_builder.c crc32.o crc8.o daq_logger.o
-	$(CC) -Wall $(CFLAGS) -O0 -o $@ $^ fnet_client.o hiredis/libhiredis.a
+fontus_data_builder: fakernet_data_builder.c crc32.o crc8.o daq_logger.o
+	$(CC) -Wall $(CFLAGS) -O0 -o $@ $^ fnet_client.o hiredis/libhiredis.a -DFONTUS=1
 
-fontus_data_builder: fontus_data_builder.c crc32.o crc8.o daq_logger.o
-	$(CC) -Wall $(CFLAGS) -O0 -o $@ $^ fnet_client.o hiredis/libhiredis.a
+ceres_data_builder: fakernet_data_builder.c crc32.o crc8.o daq_logger.o
+	$(CC) -Wall $(CFLAGS) -O0 -o $@ $^ fnet_client.o hiredis/libhiredis.a -DCERES=1
 
 fake_data_gen: fake_data_gen.c crc32.o crc8.o
 	$(CC) -g -o $@ $(CFLAGS) $^
