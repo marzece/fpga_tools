@@ -106,7 +106,8 @@ redisContext* redis = NULL;
 
 // Variable for deciding to stay in the main loop or not.
 // When loop is zero program should exit soon after.
-int loop = 1;
+// Can be set inside a signal handler, thus the weird type
+volatile sig_atomic_t loop = 1;
 
 // If reeling==1 need to search for next trigger header magic value.
 int reeling = 0;
@@ -589,10 +590,12 @@ void end_loop(void) {
 }
 
 void sig_handler(int signum) {
-    // TODO think of more signals that would be useful
-    builder_log(LOG_WARN, "Sig recieved %i", signum);
     static int num_kills = 0;
-    if(signum == SIGINT || signum == SIGKILL) {
+    // TODO, 'builder_log' should not be called in a signal handler, but I do
+    // like the builder logging that it recieved a singal. So I should have the
+    // logging done outside this handler.
+    builder_log(LOG_WARN, "Sig recieved %i", signum);
+    if(signum == SIGINT || signum == SIGTERM) {
         num_kills +=1;
         end_loop();
     }
@@ -1571,8 +1574,9 @@ int main(int argc, char **argv) {
         freeReplyObject(redisCommand(redis, "AUTH numubarnuebar"));
     }
 
+    // TODO, use sigaction instead of signal
     signal(SIGINT, sig_handler);
-    signal(SIGKILL, sig_handler);
+    signal(SIGTERM, sig_handler);
 
     // Main readout loop
     builder_log(LOG_INFO, "Entering main loop");

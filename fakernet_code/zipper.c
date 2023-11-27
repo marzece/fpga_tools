@@ -49,7 +49,10 @@
 
 uint32_t last_seen_event[MAX_DEVICE_NUMBER];
 uint64_t COMPLETE_EVENT_MASK = DEFAULT_EVENT_MASK;
-int loop = 1;
+
+// Global variable to stop the main program loop.
+// Set inside a signal handler, thus the weird data type.
+volatile sig_atomic_t loop = 1;
 
 typedef struct FONTUS_HEADER {
     uint32_t magic_number;
@@ -823,7 +826,8 @@ int main(int argc, char** argv) {
         daq_log(LOG_ERROR, "Could not open output file '%s'. Data will not be saved!", output_filename);
         return 1;
     }
-    signal(SIGKILL, signal_handler);
+    // TODO, should use sigaction instead of signal
+    signal(SIGTERM, signal_handler);
     signal(SIGINT, signal_handler);
 
     data_redis = create_redis_unix_conn(REDIS_UNIX_SOCK_PATH, 0);

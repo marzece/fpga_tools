@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <unistd.h>
 #include <time.h>
 #include "hiredis/hiredis.h"
 
@@ -30,7 +31,7 @@ typedef struct DAQMessage {
 
 static const char* tag_to_str[] = {"", "🐛", "ℹ️", "🤔", "⚠️"};
 const int NUM_TAGS = sizeof(tag_to_str)/sizeof(tag_to_str[0]);
-int loop = 1;
+volatile sig_atomic_t loop = 1;
 
 #ifdef __GNUC__
 void logit(const char* format, ...)
@@ -38,14 +39,17 @@ void logit(const char* format, ...)
 #endif
 
 void signal_handler(int signum) {
-    printf("Stop signal recieved. Exiting...\n");
+    const char msg[] = "Stop signal recieved. Exiting...\n";
+    // Use 'write' instead of printf b/c printf isn't async safe
+    write(0, msg, sizeof(msg));
+
     static int num_kills = 0;
-    if(signum == SIGINT || signum == SIGKILL) {
+    if(signum == SIGINT || signum == SIGTERM) {
         num_kills +=1;
         loop = 0;
     }
     if(num_kills >= 2) {
-        exit(1);
+        _exit(1);
     }
 }
 
@@ -108,8 +112,9 @@ int main(int argc, char** argv) {
         }
     }
 
+    // TODO, use sigaction insteal of signal
     signal(SIGINT, signal_handler);
-    signal(SIGKILL, signal_handler);
+    signal(SIGTERM, signal_handler);
 
     redisContext* redis = create_redis_conn(redis_host);
      // This sleep is here to make sure the non-blocking connect actually happens
