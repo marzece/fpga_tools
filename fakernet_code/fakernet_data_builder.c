@@ -1114,11 +1114,74 @@ int fontus_read_proc(FPGA_IF* fpga, EventHeader* ret) {
         ring_buffer_update_event_read_pntr(&fpga->ring_buffer);
         return 0;
     }
-    *((FontusTrigHeader*)ret) = *header;
 
+    int bytes_in_buffer = ring_buffer_contiguous_readable(&fpga->ring_buffer);
+    unsigned char* data = fpga->ring_buffer.buffer + fpga->ring_buffer.read_pointer;
+    int bytes_read = 0;
+    uint32_t word;
+    int ret_val = 0;
+    int channel_length=header->length;
+
+
+    // FONTUS waveform reading. FONTUS outputs 4 waveforms.
+    // We'll exit this loop either when we've consumed all available data, or when we've complete a single event
+    while(bytes_read <= bytes_in_buffer) {
+        // First check if the event is done
+        if(event.current_channel == 4) {
+            *((FontusTrigHeader*)ret) = *header;
+            event = start_event();
+            ret_val = 1;
+            break;
+        }
+        if(bytes_read == bytes_in_buffer) {
+            ret_val = 0;
+            break;
+        }
+
+        // Read in a 32-bit chunk;
+        word = ntohl(*(uint32_t*)(data+bytes_read));
+        bytes_read+=4;
+
+        // Waveform processing happens in 2 steps.
+        // First, read in the waveform header, which should always of the form 0xFFxxFFxx where xx is the channel number
+        // Second is to read in the actual samples
+        if(!event.wf_header_read) {
+            uint32_t expectation = (0xFF00FF00 | (event.current_channel<<16) | event.current_channel);
+            if(word != expectation) {
+                if(!reeling) {
+                    printf("Badness found 0x%x 0x%x\n", word, expectation);
+                    // TODO should handle this better;
+                    reeling = 1;
+                }
+                // This event's trash...TODO, it'd be nice to try and do some better recovery
+                fpga->event_buffer.num_bytes = 0;
+                event = start_event();
+                return 0;
+            }
+
+            // Stash the location in memory of the start of each waveform
+            int offset = FONTUS_MAGIC_VALUE + event.current_channel*((channel_length+2)*4);
+            *(uint32_t*)(fpga->event_buffer.data + offset)= htonl(word);
+            fpga->event_buffer.num_bytes += 4;
+            event.wf_header_read = 1;
+            event.wf_crc_read = 0;
+            event.samples_read = 0;
+        }
+        else if(event.samples_read < header->length) {
+            int offset = FONTUS_MAGIC_VALUE + event.current_channel*((channel_length+2)*4) + event.samples_read*4;
+            *(uint32_t*)(fpga->event_buffer.data + offset)= htonl(word);
+            fpga->event_buffer.num_bytes += 4;
+            event.samples_read += 1;
+        }
+        else {
+            event.current_channel += 1;
+            event.samples_read = 0;
+            event.wf_header_read = 0;
+        }
+    }
+    ring_buffer_update_read_pntr(&fpga->ring_buffer, bytes_read);
     ring_buffer_update_event_read_pntr(&fpga->ring_buffer);
-    event = start_event();
-    return 1;
+    return ret_val;
 }
 
 void ceres_display_event(const EventHeader* ev) {
@@ -1225,7 +1288,7 @@ int ceres_read_proc(FPGA_IF* fpga, EventHeader* ret) {
     // happen just after the header is completely read
     uint8_t expected_crc = calc_ceres_header_crc(header);
     if(header->crc != expected_crc ||
-            header->magic_number != 0xFFFFFFFF) {
+            header->magic_number != CERES_MAGIC_VALUE) {
         builder_log(LOG_ERROR, "BAD HEADER HAPPENED");
         ceres_handle_bad_header(header);
         event = start_event(); // This event is being trashed, just start a new one.
