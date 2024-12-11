@@ -1160,7 +1160,7 @@ int fontus_read_proc(FPGA_IF* fpga, EventHeader* ret) {
             }
 
             // Stash the location in memory of the start of each waveform
-            int offset = FONTUS_MAGIC_VALUE + event.current_channel*((channel_length+2)*4);
+            int offset = FONTUS_HEADER_SIZE + event.current_channel*((channel_length+1)*4);
             *(uint32_t*)(fpga->event_buffer.data + offset)= htonl(word);
             fpga->event_buffer.num_bytes += 4;
             event.wf_header_read = 1;
@@ -1168,7 +1168,7 @@ int fontus_read_proc(FPGA_IF* fpga, EventHeader* ret) {
             event.samples_read = 0;
         }
         else if(event.samples_read < header->length) {
-            int offset = FONTUS_MAGIC_VALUE + event.current_channel*((channel_length+2)*4) + event.samples_read*4;
+            int offset = FONTUS_HEADER_SIZE + event.current_channel*((channel_length+1)*4) + event.samples_read*4;
             *(uint32_t*)(fpga->event_buffer.data + offset)= htonl(word);
             fpga->event_buffer.num_bytes += 4;
             event.samples_read += 1;
