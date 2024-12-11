@@ -1164,14 +1164,13 @@ int fontus_read_proc(FPGA_IF* fpga, EventHeader* ret) {
             *(uint32_t*)(fpga->event_buffer.data + offset)= htonl(word);
             fpga->event_buffer.num_bytes += 4;
             event.wf_header_read = 1;
-            event.wf_crc_read = 0;
-            event.samples_read = 0;
+            event.samples_read = 1;
         }
         else if(event.samples_read < header->length) {
+            event.samples_read += 1;
             int offset = FONTUS_HEADER_SIZE + event.current_channel*((channel_length+1)*4) + event.samples_read*4;
             *(uint32_t*)(fpga->event_buffer.data + offset)= htonl(word);
             fpga->event_buffer.num_bytes += 4;
-            event.samples_read += 1;
         }
         else {
             event.current_channel += 1;
