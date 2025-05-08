@@ -63,8 +63,13 @@ Author: Eric Marzec <marzece@gmail.com>
 
 
 // Every event header starts with this magic number
-#define CERES_MAGIC_VALUE  0xFFFFFFFF
-#define FONTUS_MAGIC_VALUE 0xF00FF00F
+#define CERES_MAGIC_VALUE  0xFFFFFFFFUL
+#define FONTUS_MAGIC_VALUE 0xF00FF00FUL
+#if FONTUS
+#define HEADER_MAGIC_VALUE FONTUS_MAGIC_VALUE
+#else
+#define HEADER_MAGIC_VALUE CERES_MAGIC_VALUE
+#endif
 #define CERES_HEADER_SIZE 20
 #define FONTUS_HEADER_SIZE 52
 
@@ -751,7 +756,10 @@ int find_event_start(FPGA_IF* fpga) {
 
     for(i=0; i < contiguous_space-3; i++) {
         unsigned char* current = fpga->ring_buffer.buffer + fpga->ring_buffer.read_pointer;
-        if(*current == 0xFF && *(current+1) == 0xFF && *(current+2) == 0xFF && *(current+3) == 0xFF) {
+        if(*(current+0) == (HEADER_MAGIC_VALUE & 0xFF) &&
+           *(current+1) == ((HEADER_MAGIC_VALUE & 0xFF00)>>8) &&
+           *(current+2) == ((HEADER_MAGIC_VALUE & 0xFF0000)>>16) &&
+           *(current+3) == ((HEADER_MAGIC_VALUE & 0xFF000000)>>24)) {
             found = 1;
             break;
         }
