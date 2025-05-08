@@ -20,6 +20,7 @@
 #define  GPIO_ADC_RESET_OFFSET      1
 #define  GPIO_ADC_PDN_OFFSET        2
 #define  GPIO_LMK_RESET_OFFSET      3
+#define  GPIO_WATCHDOG_OFFSET       4
 #define  GPIO_SMA_SWITCH_OFFSET     5
 #define  GPIO_HERMES_SYNC_SWITCH_OFFSET     6
 
@@ -986,6 +987,24 @@ static uint32_t read_tdc_value_command(uint32_t* args) {
     return read_gpio_value(get_ceres_handle()->axi_gpio, 1, channel);
 }
 
+static uint32_t read_watchdog_mask_command(uint32_t* args) {
+    // See below funtions for definition of watchdog bits
+    UNUSED(args);
+    return read_gpio_value(get_ceres_handle()->axi_gpio, 0, GPIO_WATCHDOG_OFFSET);
+}
+
+static uint32_t write_watchdog_mask_command(uint32_t* args) {
+    // VHDL Code relating the watch-dog enable
+    // jesd_a_watchdog_enable <= gpio_reg_out(4)(0);
+    // jesd_b_watchdog_enable <= gpio_reg_out(4)(1);
+    // jesd_c_watchdog_enable <= gpio_reg_out(4)(2);
+    // jesd_d_watchdog_enable <= gpio_reg_out(4)(3);
+    // aurora_a_watchdog_enable <= gpio_reg_out(4)(4);
+    // aurora_b_watchdog_enable <= gpio_reg_out(4)(5);
+    uint32_t mask = args[0];
+    return write_gpio_value(get_ceres_handle()->axi_gpio, GPIO_WATCHDOG_OFFSET, mask);
+}
+
 ServerCommand ceres_commands[] = {
 {"read_iic_reg",NULL,                              read_iic_block_command,                                 2,  1, 0, 0},
 {"write_iic_reg",NULL,                             write_iic_block_command,                                3,  0, 0, 0},
@@ -1083,5 +1102,7 @@ ServerCommand ceres_commands[] = {
 {"increment_clock_wiz_phase",NULL,                 increment_clock_wiz_phase_command,                      2,  1, 0, 0},
 {"decrement_clock_wiz_phase",NULL,                 decrement_clock_wiz_phase_command,                      2,  1, 0, 0},
 {"read_tdc_value",NULL,                            read_tdc_value_command,                                 1,  1, 0, 0},
+{"read_watchdog_mask",NULL,                        read_watchdog_mask_command,                             1,  1, 0, 0},
+{"write_watchdog_mask",NULL,                       write_watchdog_mask_command,                            2,  1, 0, 0},
 {"",NULL,                                          NULL,                                                   0,  0, 0, 0}    //  Must  be  last
 };
