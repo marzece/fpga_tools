@@ -45,6 +45,7 @@ int write_addr(uint32_t, uint32_t, uint32_t);
 #define  THRESHOLD_ENABLE_MASK_OFFSET              0x300
 #define  TRIGGER_ENABLE_MASK_OFFSET                0x304
 #define  SELF_TRIGGER_ENABLE_OFFSET                0x308
+#define  BUILD_INFO_OFFSET                         0x804
 
 AXI_TRIGGER_PIPELINE* new_trig_pipeline_if(const char* name, uint32_t axi_addr) {
     AXI_TRIGGER_PIPELINE* ret = malloc(sizeof(AXI_TRIGGER_PIPELINE));
@@ -461,4 +462,21 @@ uint32_t write_auto_trig_enable(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t en) {
 
 uint32_t read_auto_trig_enable(AXI_TRIGGER_PIPELINE* tp_axi) {
     return read_trig_pipeline_value(tp_axi, AUTO_TRIGGER_ENABLE_REG_OFFSET);
+}
+
+uint32_t fontus_read_build_info(AXI_TRIGGER_PIPELINE *tp_axi) {
+    /* In case I ever want to translate the build timestamp below is the code to do that.
+     * The documentation for the timestamp comes from Xilinx UG570, the section
+     * describing the USR_ACCESSE2 register.*/
+    // This implementation is exactly the same as the "CERES" one. In principle
+    // the two should use the same code implementation but a little copy & paste
+    // isn't the end of the world
+    uint32_t timestamp = read_trig_pipeline_value(tp_axi, BUILD_INFO_OFFSET);
+    return timestamp;
+    // int day = (timestamp>>27);
+    // int month = (timestamp>>23) & 0xF;
+    // int year = (timestamp>>17) & 0x3F;
+    // int hour = (timestamp>>12) & 0x1F;
+    // int minute = (timestamp>>6) & 0x3F;
+    // int second = timestamp & 0x3F;
 }

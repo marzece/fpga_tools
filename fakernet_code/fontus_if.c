@@ -26,6 +26,7 @@
 
 #define COAX_GPIO_OFFSET 0
 #define SYNC_MOD_GPIO_OFFSET 1
+#define AURORA_STATUS_GPIO_OFFSET 1
 
 #define N_EXT 3
 #define TRIGGERS_PER_EXTERNAL 3
@@ -689,6 +690,21 @@ static uint32_t read_sync_mod_command(uint32_t* args) {
     return read_gpio_value(get_fontus_handle()->gpio, 0, SYNC_MOD_GPIO_OFFSET);
 }
 
+static uint32_t read_aurora_status_command(uint32_t* args) {
+    UNUSED(args);
+    return read_gpio_value(get_fontus_handle()->gpio, 1, AURORA_STATUS_GPIO_OFFSET);
+}
+
+static uint32_t read_gpio_input_register_command(uint32_t* args) {
+    uint32_t channel = args[0];
+    return read_gpio_value(get_fontus_handle()->gpio, 1, channel);
+}
+
+static uint32_t read_build_tag_command(uint32_t* args) {
+    UNUSED(args);
+    return fontus_read_build_info(get_fontus_handle()->pipeline);
+}
+
 ServerCommand fontus_commands[] = {
 {"write_lmk_if",NULL,                              write_lmk_if_command,                                   3,  1, 0, 0},
 {"read_lmk_if",NULL,                               read_lmk_if_command,                                    2,  1, 0, 0},
@@ -779,5 +795,8 @@ ServerCommand fontus_commands[] = {
 {"read_trigger_pipline_reg",NULL,                  read_trigger_pipeline_reg_command,                      2,  1, 0, 0},
 {"write_sync_mod",NULL,                            write_sync_mod_command,                                 2,  0, 0, 0},
 {"read_sync_mod",NULL,                             read_sync_mod_command,                                  1,  1, 0, 0},
+{"read_aurora_status",NULL,                        read_aurora_status_command,                             1,  1, 0, 0},
+{"read_gpio_input_register",NULL,                  read_gpio_input_register_command,                       2,  1, 0, 0},
+{"read_build_tag",NULL,                            read_build_tag_command,                                 1,  1, 0, 0},
 {"",NULL,                                          NULL,                                                   0,  0, 0, 0}    //  Must  be  last
 };

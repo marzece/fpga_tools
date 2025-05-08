@@ -76,6 +76,7 @@ uint32_t write_auto_trig_rate(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t period);
 uint32_t read_auto_trig_rate(AXI_TRIGGER_PIPELINE* tp_axi);
 uint32_t write_auto_trig_enable(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t en);
 uint32_t read_auto_trig_enable(AXI_TRIGGER_PIPELINE* tp_axi);
+uint32_t fontus_read_build_info(AXI_TRIGGER_PIPELINE *tp_axi);
 
 /*
  * FONTUS should have a local trigger, but it doesn't yet.
