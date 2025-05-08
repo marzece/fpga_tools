@@ -54,10 +54,18 @@ void setup_logger(const char* logID, const char* redis_host, const char* log_fil
 }
 
 void cleanup_logger() {
-    redisFree(the_logger->redis);
-    the_logger->redis = NULL;
-    fclose(the_logger->file);
-    the_logger->file = NULL;
+    if(!the_logger) {
+        return;
+    }
+
+    if(the_logger->redis) {
+        redisFree(the_logger->redis);
+        the_logger->redis = NULL;
+    }
+    if(the_logger->file) {
+        fclose(the_logger->file);
+        the_logger->file = NULL;
+    }
     free(the_logger->message_buffer);
     the_logger->message_buffer = NULL;
     free(the_logger);
