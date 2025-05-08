@@ -1702,7 +1702,8 @@ int main(int argc, char **argv) {
             #ifdef CERES
             ceres_publish_event(redis, fpga_if.event_buffer);
             #else // FONTUS
-            fontus_publish_event(redis, event_header.fontus);
+            ceres_publish_event(redis, fpga_if.event_buffer);
+            //fontus_publish_event(redis, event_header.fontus);
             #endif
             prev_time = current_time;
             built_counter += 1;
