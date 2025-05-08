@@ -1113,6 +1113,8 @@ int fontus_read_proc(FPGA_IF* fpga, EventHeader* ret) {
         }
         fontus_interpret_header_word(header, val, word);
         event.header_bytes_read += sizeof(uint32_t);
+        *(uint32_t*)(fpga->event_buffer.data + fpga->event_buffer.num_bytes) = htonl(val);
+        fpga->event_buffer.num_bytes += 4;
     } // Done reading header
     uint32_t calcd_crc = calc_fontus_header_crc(header);
     if(header->crc !=  calcd_crc || header->magic_number != FONTUS_MAGIC_VALUE) {
@@ -1169,21 +1171,24 @@ int fontus_read_proc(FPGA_IF* fpga, EventHeader* ret) {
 
             // Stash the location in memory of the start of each waveform
             int offset = FONTUS_HEADER_SIZE + event.current_channel*((channel_length+1)*4);
-            *(uint32_t*)(fpga->event_buffer.data + offset)= htonl(word);
+            *(uint32_t*)(fpga->event_buffer.data + offset) = htonl(word);
             fpga->event_buffer.num_bytes += 4;
             event.wf_header_read = 1;
             event.samples_read = 1;
         }
-        else if(event.samples_read < header->length) {
-            event.samples_read += 1;
+        else if(event.samples_read <= header->length) {
             int offset = FONTUS_HEADER_SIZE + event.current_channel*((channel_length+1)*4) + event.samples_read*4;
-            *(uint32_t*)(fpga->event_buffer.data + offset)= htonl(word);
+            *(uint32_t*)(fpga->event_buffer.data + offset) = htonl(word);
             fpga->event_buffer.num_bytes += 4;
-        }
-        else {
-            event.current_channel += 1;
-            event.samples_read = 0;
-            event.wf_header_read = 0;
+
+            if(event.samples_read == header->length) {
+                event.current_channel += 1;
+                event.samples_read = 0;
+                event.wf_header_read = 0;
+            }
+            else {
+                event.samples_read += 1;
+            }
         }
     }
     ring_buffer_update_read_pntr(&fpga->ring_buffer, bytes_read);
@@ -1320,7 +1325,7 @@ int ceres_read_proc(FPGA_IF* fpga, EventHeader* ret) {
     int channel_length=header->length;
 
     // We'll exit this loop either when we've consumed all available data, or when we've complete a single event
-    while(bytes_read <= bytes_in_buffer) {
+    while(bytes_read <= (bytes_in_buffer-3)) {
         // First check if the event is done
         if(event.current_channel == NUM_CHANNELS) {
             *((CeresTrigHeader*)ret) = *header;
