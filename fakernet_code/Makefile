@@ -10,7 +10,7 @@ LDLIBS += -lm
 DUMP_DATA=
 
 
-all: fnetctrl kintex_client_server kintex_cli ceres_data_builder tail_daq_log fontus_data_builder zipper ceres_server fake_data_gen
+all: fnetctrl kintex_client_server kintex_cli ceres_data_builder tail_daq_log fontus_data_builder zipper ceres_server fake_data_gen zookeeper
 
 fnetctrl: fnetctrl.o fnet_client.o
 
@@ -26,6 +26,9 @@ kintex_client_server: kintex_client_server.o gpio.o lmk_if.o ads_if.o iic.o fnet
 	$(CC) -o $@ $(CFLAGS) $^
 
 ceres_server: ceres_server.o gpio.o lmk_if.o ads_if.o iic.o fnet_client.o dac_if.o axi_qspi.o jesd.o jesd_phy.o channel_trigger.o data_pipeline.o ceres_if.o reset_gen_if.o server.o ae.o sds.o adlist.o connection.o anet.o networking.o util.o trigger_pipeline.o clock_wiz.o daq_logger.o hiredis/libhiredis.a
+	$(CC) -o $@ $(CFLAGS) $^
+
+zookeeper: zookeeper.c daq_logger.o server.o networking.o util.o connection.o sds.o ae.o adlist.o anet.o hiredis/libhiredis.a
 	$(CC) -o $@ $(CFLAGS) $^
 
 kintex_cli: kintex_cli.o
