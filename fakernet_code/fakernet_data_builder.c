@@ -386,6 +386,9 @@ struct BuilderProtocol {
     void (*display_process)(const EventHeader* header);
     void (*write_event)(EventBuffer* eb, EventHeader* header);
     int (*validate_event)(const EventHeader* header, const EventBuffer* eb);
+    void (*publish_event)(redisContext*c, EventBuffer eb);
+    void (*update_stats)(ProcessingStats* stats, EventHeader* header);
+
 };
 
 // This handles keeping track of reading an event while in the middle of it
@@ -1703,15 +1706,7 @@ int data_builder_main(struct BuilderConfig config, struct BuilderProtocol protoc
                 protocol.write_event(&fpga_if.event_buffer, &event_header);
             }
             the_stats.event_count++;
-            #ifdef CERES
-            the_stats.trigger_id = event_header.ceres.trig_number;
-            the_stats.latest_timestamp = event_header.ceres.clock;
-            the_stats.device_id = event_header.ceres.device_number;
-            #else
-            the_stats.trigger_id = event_header.fontus.trig_number;
-            the_stats.latest_timestamp = event_header.fontus.clock;
-            the_stats.device_id = event_header.fontus.device_number;
-            #endif
+            protocol.update_stats(&the_stats, &event_header);
 
             if(config.num_events != 0 && the_stats.event_count >= config.num_events) {
                 builder_log(LOG_INFO, "Collected %i events...exiting", the_stats.event_count);
