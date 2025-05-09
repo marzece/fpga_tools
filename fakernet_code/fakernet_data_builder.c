@@ -71,11 +71,6 @@ FILE* fdump = NULL;
 #define CERES_HEADER_SIZE 20
 #define FONTUS_HEADER_SIZE 52
 
-#if FONTUS
-#define HEADER_SIZE FONTUS_HEADER_SIZE
-#else
-#define HEADER_SIZE CERES_HEADER_SIZE
-#endif
 
 // Space that should be allocated for data buffers
 #define BUFFER_SIZE (10*1024*1024) // 10 MB
@@ -385,7 +380,7 @@ struct BuilderProtocol {
     void (*display_process)(const EventHeader* header);
     void (*write_event)(EventBuffer* eb, EventHeader* header);
     int (*validate_event)(const EventHeader* header, const EventBuffer* eb);
-    void (*publish_event)(redisContext*c, EventBuffer eb);
+    void (*publish_event)(redisContext*c, EventBuffer eb, const unsigned int header_size);
     void (*update_stats)(ProcessingStats* stats, EventHeader* header);
 
 };
@@ -649,7 +644,7 @@ void fontus_write_to_disk(EventBuffer* eb, EventHeader* header) {
     unsigned int byte_count = 0;
     // Write header
     {
-        unsigned char header_mem[HEADER_SIZE];
+        unsigned char header_mem[FONTUS_HEADER_SIZE];
         *((uint32_t*)header_mem) = htonl(ev->magic_number);
         byte_count += 4;
         *((uint32_t*)(header_mem + byte_count)) = htonl(ev->trig_number);
@@ -805,7 +800,7 @@ void fontus_publish_event(redisContext*c, const FontusTrigHeader event) {
     if(!c) {
         return;
     }
-    char publish_buffer[HEADER_SIZE];
+    char publish_buffer[FONTUS_HEADER_SIZE];
     unsigned int offset = 0;
 
     redisReply* r;
@@ -840,7 +835,7 @@ void fontus_publish_event(redisContext*c, const FontusTrigHeader event) {
     *(uint32_t*)(publish_buffer+offset) = htonl(event.crc);
     offset += 4;
 
-    arglens[2] = HEADER_SIZE;
+    arglens[2] = FONTUS_HEADER_SIZE;
     args[2] = publish_buffer;
     r = redisCommandArgv(c, 3,  args,  arglens);
     if(!r) {
@@ -858,7 +853,7 @@ void fontus_publish_event(redisContext*c, const FontusTrigHeader event) {
 }
 
 // Send event to redis database
-void ceres_publish_event(redisContext*c, EventBuffer eb) {
+void publish_event(redisContext*c, EventBuffer eb, const unsigned int header_size) {
     if(!c) {
         return;
     }
@@ -885,7 +880,7 @@ void ceres_publish_event(redisContext*c, EventBuffer eb) {
 
     // args[2] already contains the whole event, including the header.
     // So just send the first HEADER_SIZE of the event
-    arglens[2] = HEADER_SIZE;
+    arglens[2] = header_size;
     r = redisCommandArgv(c, 3,  args,  arglens);
     if(!r) {
         builder_log(LOG_ERROR, "Redis error! : %s", c->errstr);
@@ -1215,7 +1210,7 @@ void ceres_display_event(const EventHeader* ev) {
 void fontus_display_event(const EventHeader* ev) {
     FontusTrigHeader* h = (FontusTrigHeader*)ev;
     builder_log(LOG_INFO, "Magic = 0x%x\n"
-                          "Event trig number =  %u\n"   
+                          "Event trig number =  %u\n"
                           "Time = %llu\n"
                           "Length =  %u\n"
                           "DeviceID =  %u\n"
@@ -1356,7 +1351,7 @@ int ceres_read_proc(FPGA_IF* fpga, EventHeader* ret) {
             uint32_t expectation = (0xFF00FF00 | (event.current_channel<<16) | event.current_channel);
             if(word != expectation) {
                 if(!reeling) {
-                    printf("Badness found 0x%x 0x%x\n", word, expectation);
+                    printf("Badness found %i 0x%x 0x%x\n", header->length, word, expectation);
                     // TODO should handle this better;
                     reeling = 1;
                 }
@@ -1516,6 +1511,9 @@ int data_builder_main(struct BuilderConfig config) {
     const uint32_t HEADER_MAGIC_VALUE = config.ceres_builder ?
                                         CERES_MAGIC_VALUE    :
                                         FONTUS_MAGIC_VALUE;
+    const unsigned int HEADER_SIZE = config.ceres_builder ?
+                                     CERES_HEADER_SIZE    :
+                                     FONTUS_HEADER_SIZE;
     const char* my_name = config.ceres_builder ?
                           "ceres_data_builder" :
                           "fontus_data_builder";
@@ -1526,7 +1524,7 @@ int data_builder_main(struct BuilderConfig config) {
         protocol.display_process = ceres_display_event;
         protocol.write_event = ceres_write_to_disk;
         protocol.validate_event = ceres_validate_crcs;
-        protocol.publish_event = ceres_publish_event;
+        protocol.publish_event = publish_event;
         protocol.update_stats = ceres_update_stats;
     }
     else {
@@ -1534,9 +1532,7 @@ int data_builder_main(struct BuilderConfig config) {
         protocol.display_process = fontus_display_event;
         protocol.write_event = fontus_write_to_disk;
         protocol.validate_event = fontus_validate_crcs;
-        // publish_event is the same as CERES, should look into getting rid of it
-        // (as part of the 'protocol' struct).
-        protocol.publish_event = ceres_publish_event;
+        protocol.publish_event = publish_event;
         protocol.update_stats = fontus_update_stats;
     }
 
@@ -1657,7 +1653,7 @@ int data_builder_main(struct BuilderConfig config) {
 
         if(event_ready) {
             protocol.validate_event(&event_header, &fpga_if.event_buffer);
-            protocol.publish_event(redis, fpga_if.event_buffer);
+            protocol.publish_event(redis, fpga_if.event_buffer, HEADER_SIZE);
             prev_time = current_time;
             built_counter += 1;
             protocol.display_process(&event_header);
@@ -1729,7 +1725,7 @@ struct BuilderConfig make_config_from_args(int argc, char** argv) {
     int optindex;
     int opt;
     struct BuilderConfig config = default_config();
-    while(!config.exit_now && 
+    while(!config.exit_now &&
             ((opt = getopt_long(argc, argv, "o:i:n:r:l:dsvh", clargs, &optindex)) != -1)) {
         switch(opt) {
             case 0:
