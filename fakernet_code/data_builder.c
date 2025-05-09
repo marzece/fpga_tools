@@ -1482,7 +1482,7 @@ void ceres_update_stats(ProcessingStats* the_stats, EventHeader* header) {
     the_stats->device_id = header->ceres.device_number;
 }
 
-struct BuilderConfig default_config(void) {
+struct BuilderConfig default_builder_config(void) {
     struct BuilderConfig config;
     config.ip = "192.168.84.192";
     config.num_events = 0;

@@ -16,6 +16,6 @@ struct BuilderConfig {
     int exit_now; // Exit the program. Mostly just used as a hack to stop the program from running if config isn't valid.
 };
 
-struct BuilderConfig default_config(void);
+struct BuilderConfig default_builder_config(void);
 int data_builder_main(struct BuilderConfig config);
 #endif

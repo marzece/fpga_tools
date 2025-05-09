@@ -14,7 +14,7 @@ Author: Eric Marzec <marzece@gmail.com>
 
 // Prints help string which describes this programs CL args.
 void print_help_message(void) {
-    struct BuilderConfig cfg_default = default_config();
+    struct BuilderConfig cfg_default = default_builder_config();
 #if CERES
     const char* program_string = "ceres_data_builder";
     const char* board_string = "CERES";
@@ -56,7 +56,7 @@ struct BuilderConfig make_config_from_args(int argc, char** argv) {
         { 0, 0, 0, 0}};
     int optindex;
     int opt;
-    struct BuilderConfig config = default_config();
+    struct BuilderConfig config = default_builder_config();
     while(!config.exit_now &&
             ((opt = getopt_long(argc, argv, "o:i:n:r:l:dsvh", clargs, &optindex)) != -1)) {
         switch(opt) {
