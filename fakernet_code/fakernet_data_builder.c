@@ -53,8 +53,6 @@ Author: Eric Marzec <marzece@gmail.com>
 #define ntohll(x) htonll(x)
 #endif
 
-#define DEFAULT_NUM_CHANNELS 16
-
 // Largest possible size for single message (in bytes)
 #define LOG_MESSAGE_MAX 1024
 
@@ -92,15 +90,18 @@ int verbosity_file = LOG_WARN;
 
 // Counter for how many events have been built
 int built_counter = 0;
+
 // Number of channels to be readout
-int NUM_CHANNELS = DEFAULT_NUM_CHANNELS;
+// Note: at one point the design would have a varying number of channels per CERES
+// board. Nowadays it's pretty much always gonna be 16
+#define NUM_CHANNELS 16
 
 // The two CERES XEMs both readout 16-channels, but the data ends up in weird
 // locations.  The two arrays below re-map the channels such that the top-most
 // channels (physically located) ends up being the earliest in the serial data
 // stream
-static const int channel_order_xem1[DEFAULT_NUM_CHANNELS]={3,2,1,0,7,6,5,4,11,10,9,8, 15,14,13,12};
-static const int channel_order_xem2[DEFAULT_NUM_CHANNELS]={15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0};
+static const int channel_order_xem1[NUM_CHANNELS]={3,2,1,0,7,6,5,4,11,10,9,8, 15,14,13,12};
+static const int channel_order_xem2[NUM_CHANNELS]={15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0};
 
 // FILE handle for writing to disk
 static FILE* fdisk = NULL;
