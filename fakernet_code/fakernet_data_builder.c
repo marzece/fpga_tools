@@ -61,6 +61,9 @@ Author: Eric Marzec <marzece@gmail.com>
 #define DEFAULT_REDIS_HOST  "127.0.0.1"
 #define DEFAULT_ERROR_LOG_FILENAME "data_builder_error_log.log"
 
+#ifdef DUMP_DATA
+FILE* fdump = NULL;
+#endif
 
 // Every event header starts with this magic number
 #define CERES_MAGIC_VALUE  0xFFFFFFFFUL
@@ -507,6 +510,9 @@ size_t pull_from_fpga(FPGA_IF* fpga_if) {
             //printf("Error retrieving data from socket: %s\n", strerror(errno));
             return 0;
         }
+#ifdef DUMP_DATA
+        fwrite(w_buffer + w_buffer_idx, 1, bytes_recvd, fdump);
+#endif
         ring_buffer_update_write_pntr(&fpga_if->ring_buffer, bytes_recvd);
     }
     return bytes_recvd;
@@ -1578,6 +1584,9 @@ int data_builder_main(struct BuilderConfig config, struct BuilderProtocol protoc
     signal(SIGINT, sig_handler);
     signal(SIGTERM, sig_handler);
 
+#ifdef DUMP_DATA
+    fdump = fopen("DUMP.dat", "wb");
+#endif
     // Main readout loop
     builder_log(LOG_INFO, "Entering main loop");
     event_ready = 0;
@@ -1643,7 +1652,9 @@ int data_builder_main(struct BuilderConfig config, struct BuilderProtocol protoc
             fpga_if.event_buffer.num_bytes = 0;
         }
     }
-    //fclose(fdump);
+#ifdef DUMP_DATA
+    fclose(fdump);
+#endif
     clean_up();
     close(fpga_if.fd);
     return 0;

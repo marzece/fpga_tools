@@ -5,6 +5,11 @@ CFLAGS += -O0 -g -std=gnu99 -Wall -W -Wshadow -Wwrite-strings \
 
 LDLIBS += -lm
 
+# Comment/uncomment below if you want the data builder to dump data directly
+#DUMP_DATA=-DDUMP_DATA
+DUMP_DATA=
+
+
 all: fnetctrl kintex_client_server kintex_cli ceres_data_builder tail_daq_log fontus_data_builder zipper ceres_server fake_data_gen
 
 fnetctrl: fnetctrl.o fnet_client.o
@@ -27,10 +32,10 @@ kintex_cli: kintex_cli.o
 	$(CC) -o $@ $(CFLAGS) -Ilinenoise/ linenoise/linenoise.c $^
 
 fontus_data_builder: fakernet_data_builder.c crc32.o crc8.o daq_logger.o
-	$(CC) -Wall $(CFLAGS) -O0 -o $@ $^ fnet_client.o hiredis/libhiredis.a -DFONTUS=1
+	$(CC) -Wall $(CFLAGS) -O0 -o $@ $^ fnet_client.o hiredis/libhiredis.a -DFONTUS=1 $(DUMP_DATA)
 
 ceres_data_builder: fakernet_data_builder.c crc32.o crc8.o daq_logger.o
-	$(CC) -Wall $(CFLAGS) -O0 -o $@ $^ fnet_client.o hiredis/libhiredis.a -DCERES=1
+	$(CC) -Wall $(CFLAGS) -O0 -o $@ $^ fnet_client.o hiredis/libhiredis.a -DCERES=1 $(DUMP_DATA)
 
 fake_data_gen: fake_data_gen.c crc32.o crc8.o
 	$(CC) -g -o $@ $(CFLAGS) $^
