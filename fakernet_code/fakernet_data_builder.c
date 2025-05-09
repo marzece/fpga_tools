@@ -1500,82 +1500,8 @@ struct BuilderConfig default_config(void) {
     return config;
 }
 
-struct BuilderConfig make_config_from_args(int argc, char** argv) {
-
-    struct option clargs[] = {
-        {"out", required_argument, NULL, 'o'},
-        {"ip", required_argument, NULL, 'i'},
-        {"num-events", required_argument, NULL, 'n'},
-        {"dry-run", no_argument, NULL, 'd'},
-        {"no-save", no_argument, NULL, 's'},
-        {"log-file", required_argument, NULL, 'l'},
-        {"redis-host", required_argument, NULL, 'r'},
-        {"verbose", no_argument, NULL, 'v'},
-        {"help", no_argument, NULL, 'h'},
-        { 0, 0, 0, 0}};
-    int optindex;
-    int opt;
-    struct BuilderConfig config = default_config();
-    while(!config.exit_now && 
-            ((opt = getopt_long(argc, argv, "o:i:n:r:l:dsvh", clargs, &optindex)) != -1)) {
-        switch(opt) {
-            case 0:
-                // Should be here if the option (in 'clargs') has the "flag"
-                // field set. Currently all are NULL in that field so should
-                // never get here.
-                break;
-            case 'o':
-                printf("Output data file set to '%s'\n", optarg);
-                config.output_filename = optarg;
-                break;
-            case 'i':
-                // FPGA IP Address
-                config.ip = optarg;
-                break;
-            case 'n':
-                config.num_events = strtoul(optarg, NULL, 0);
-                break;
-            case 'd':
-                config.dry_run = 1;
-                break;
-            case 'l':
-                printf("Log file set to %s\n", optarg);
-                config.error_filename = optarg;
-                break;
-            case 's':
-                config.do_not_save = 1;
-                break;
-            case 'r':
-                config.redis_host = optarg;
-                printf("Redis host set to '%s'\n", optarg);
-                break;
-            case 'v':
-                // Reduce the threshold on all the verbosity levels
-                verbosity_stdout = verbosity_stdout-1 < LOG_NEVER ? verbosity_stdout-1 : LOG_NEVER;
-                verbosity_file = verbosity_file-1 < LOG_NEVER ? verbosity_file-1 : LOG_NEVER;
-                verbosity_redis = verbosity_redis-1 < LOG_NEVER ? verbosity_redis-1 : LOG_NEVER;
-                break;
-            case 'q':
-                // Raise the threshold on all the verbosity levels
-                verbosity_stdout = verbosity_stdout+1 > LOG_ERROR ? verbosity_stdout-1 : LOG_ERROR;
-                verbosity_file = verbosity_file+1 < LOG_ERROR ? verbosity_file+1 : LOG_ERROR;
-                verbosity_redis = verbosity_redis+1 < LOG_ERROR ? verbosity_redis+1 : LOG_ERROR;
-                break;
-            case 'h':
-                print_help_message();
-                config.exit_now = 1;
-                break;
-            case '?':
-            case ':':
-                // This should happen if there's a missing or unknown argument
-                // getopt_long outputs its own error message
-                config.exit_now = 1;
-                break;
-        }
-    }
-    return config;
-}
-
+// Run the data builder, data is interpreted, managed, and published as
+// specified by the BuilderProtocol
 int data_builder_main(struct BuilderConfig config, struct BuilderProtocol protocol) {
     int event_ready;
     struct timeval prev_time, current_time;
@@ -1723,6 +1649,7 @@ int data_builder_main(struct BuilderConfig config, struct BuilderProtocol protoc
     return 0;
 }
 
+// Run the CERES data builder
 int ceres_data_builder_main(struct BuilderConfig config) {
     struct BuilderProtocol protocol;
     protocol.reader_process = ceres_read_proc;
@@ -1734,6 +1661,7 @@ int ceres_data_builder_main(struct BuilderConfig config) {
     return data_builder_main(config, protocol);
 }
 
+// Run the FONTUS data builder
 int fontus_data_builder_main(struct BuilderConfig config) {
     struct BuilderProtocol protocol;
     protocol.reader_process = fontus_read_proc;
@@ -1746,6 +1674,83 @@ int fontus_data_builder_main(struct BuilderConfig config) {
     return data_builder_main(config, protocol);
 }
 
+// Populate configuration from CL args
+struct BuilderConfig make_config_from_args(int argc, char** argv) {
+    struct option clargs[] = {
+        {"out", required_argument, NULL, 'o'},
+        {"ip", required_argument, NULL, 'i'},
+        {"num-events", required_argument, NULL, 'n'},
+        {"dry-run", no_argument, NULL, 'd'},
+        {"no-save", no_argument, NULL, 's'},
+        {"log-file", required_argument, NULL, 'l'},
+        {"redis-host", required_argument, NULL, 'r'},
+        {"verbose", no_argument, NULL, 'v'},
+        {"help", no_argument, NULL, 'h'},
+        { 0, 0, 0, 0}};
+    int optindex;
+    int opt;
+    struct BuilderConfig config = default_config();
+    while(!config.exit_now && 
+            ((opt = getopt_long(argc, argv, "o:i:n:r:l:dsvh", clargs, &optindex)) != -1)) {
+        switch(opt) {
+            case 0:
+                // Should be here if the option (in 'clargs') has the "flag"
+                // field set. Currently all are NULL in that field so should
+                // never get here.
+                break;
+            case 'o':
+                printf("Output data file set to '%s'\n", optarg);
+                config.output_filename = optarg;
+                break;
+            case 'i':
+                // FPGA IP Address
+                config.ip = optarg;
+                break;
+            case 'n':
+                config.num_events = strtoul(optarg, NULL, 0);
+                break;
+            case 'd':
+                config.dry_run = 1;
+                break;
+            case 'l':
+                printf("Log file set to %s\n", optarg);
+                config.error_filename = optarg;
+                break;
+            case 's':
+                config.do_not_save = 1;
+                break;
+            case 'r':
+                config.redis_host = optarg;
+                printf("Redis host set to '%s'\n", optarg);
+                break;
+            case 'v':
+                // Reduce the threshold on all the verbosity levels
+                verbosity_stdout = verbosity_stdout-1 < LOG_NEVER ? verbosity_stdout-1 : LOG_NEVER;
+                verbosity_file = verbosity_file-1 < LOG_NEVER ? verbosity_file-1 : LOG_NEVER;
+                verbosity_redis = verbosity_redis-1 < LOG_NEVER ? verbosity_redis-1 : LOG_NEVER;
+                break;
+            case 'q':
+                // Raise the threshold on all the verbosity levels
+                verbosity_stdout = verbosity_stdout+1 > LOG_ERROR ? verbosity_stdout-1 : LOG_ERROR;
+                verbosity_file = verbosity_file+1 < LOG_ERROR ? verbosity_file+1 : LOG_ERROR;
+                verbosity_redis = verbosity_redis+1 < LOG_ERROR ? verbosity_redis+1 : LOG_ERROR;
+                break;
+            case 'h':
+                print_help_message();
+                config.exit_now = 1;
+                break;
+            case '?':
+            case ':':
+                // This should happen if there's a missing or unknown argument
+                // getopt_long outputs its own error message
+                config.exit_now = 1;
+                break;
+        }
+    }
+    return config;
+}
+
+// Prints help string which describes this programs CL args.
 void print_help_message(void) {
     struct BuilderConfig cfg_default = default_config();
 #if CERES
