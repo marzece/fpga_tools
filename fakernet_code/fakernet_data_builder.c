@@ -68,11 +68,6 @@ FILE* fdump = NULL;
 // Every event header starts with this magic number
 #define CERES_MAGIC_VALUE  0xFFFFFFFFUL
 #define FONTUS_MAGIC_VALUE 0xF00FF00FUL
-#if FONTUS
-#define HEADER_MAGIC_VALUE FONTUS_MAGIC_VALUE
-#else
-#define HEADER_MAGIC_VALUE CERES_MAGIC_VALUE
-#endif
 #define CERES_HEADER_SIZE 20
 #define FONTUS_HEADER_SIZE 52
 
@@ -162,6 +157,7 @@ typedef struct ProcessingStats {
 
 // Configuration parameters for running the data builder
 struct BuilderConfig {
+    int ceres_builder;
     const char* ip; // FPGA IP address
     unsigned int num_events; // Number of events to build before exiting
     int dry_run; // Dry run, dummy mode, don't actually connect or do anything
@@ -748,7 +744,7 @@ void stash_with_reorder(EventBuffer* eb, uint32_t word, int current_channel, int
     eb->num_bytes += 4;
 }
 
-int find_event_start(FPGA_IF* fpga) {
+int find_event_start(FPGA_IF* fpga, const uint32_t event_start_word) {
     /* This just searches through the readable memory buffer and tries to find the
        magic values (0xFFFFFFFF) that indicates the start of a header
        If found this function returns 1 otherwise returns 0.
@@ -780,10 +776,10 @@ int find_event_start(FPGA_IF* fpga) {
 
     for(i=0; i < contiguous_space-3; i++) {
         unsigned char* current = fpga->ring_buffer.buffer + fpga->ring_buffer.read_pointer;
-        if(*(current+0) == (HEADER_MAGIC_VALUE & 0xFF) &&
-           *(current+1) == ((HEADER_MAGIC_VALUE & 0xFF00)>>8) &&
-           *(current+2) == ((HEADER_MAGIC_VALUE & 0xFF0000)>>16) &&
-           *(current+3) == ((HEADER_MAGIC_VALUE & 0xFF000000)>>24)) {
+        if(*(current+0) == (event_start_word & 0xFF) &&
+           *(current+1) == ((event_start_word & 0xFF00)>>8) &&
+           *(current+2) == ((event_start_word & 0xFF0000)>>16) &&
+           *(current+3) == ((event_start_word & 0xFF000000)>>24)) {
             found = 1;
             break;
         }
@@ -1508,18 +1504,46 @@ struct BuilderConfig default_config(void) {
 
 // Run the data builder, data is interpreted, managed, and published as
 // specified by the BuilderProtocol
-int data_builder_main(struct BuilderConfig config, struct BuilderProtocol protocol) {
+int data_builder_main(struct BuilderConfig config) {
     int event_ready;
     struct timeval prev_time, current_time;
     const double REDIS_STATS_COOLDOWN = 1e6; // 1-second in micro-seconds
     double last_status_update_time = 0;
     ProcessingStats the_stats;
     EventHeader event_header;
+    struct BuilderProtocol protocol;
+
+    const uint32_t HEADER_MAGIC_VALUE = config.ceres_builder ?
+                                        CERES_MAGIC_VALUE    :
+                                        FONTUS_MAGIC_VALUE;
+    const char* my_name = config.ceres_builder ?
+                          "ceres_data_builder" :
+                          "fontus_data_builder";
+
+
+    if(config.ceres_builder) {
+        protocol.reader_process = ceres_read_proc;
+        protocol.display_process = ceres_display_event;
+        protocol.write_event = ceres_write_to_disk;
+        protocol.validate_event = ceres_validate_crcs;
+        protocol.publish_event = ceres_publish_event;
+        protocol.update_stats = ceres_update_stats;
+    }
+    else {
+        protocol.reader_process = fontus_read_proc;
+        protocol.display_process = fontus_display_event;
+        protocol.write_event = fontus_write_to_disk;
+        protocol.validate_event = fontus_validate_crcs;
+        // publish_event is the same as CERES, should look into getting rid of it
+        // (as part of the 'protocol' struct).
+        protocol.publish_event = ceres_publish_event;
+        protocol.update_stats = fontus_update_stats;
+    }
 
     initialize_stats(&the_stats);
 
     printf("FPGA IP set to %s\n", config.ip);
-    setup_logger("fakernet_data_builder", config.redis_host, config.error_filename,
+    setup_logger(my_name, config.redis_host, config.error_filename,
                  verbosity_stdout, verbosity_file, verbosity_redis,
                  LOG_MESSAGE_MAX);
     the_logger->add_newlines = 1;
@@ -1610,9 +1634,9 @@ int data_builder_main(struct BuilderConfig config, struct BuilderProtocol protoc
         if(reeling) {
             the_stats.reeling_happened = 1;
             if(!did_warn_about_reeling) {
-            builder_log(LOG_ERROR, "Reeeling");
+                builder_log(LOG_ERROR, "Reeeling");
             }
-            reeling = !find_event_start(&fpga_if);
+            reeling = !find_event_start(&fpga_if, HEADER_MAGIC_VALUE);
             did_warn_about_reeling = reeling;
         }
         else {
@@ -1660,29 +1684,33 @@ int data_builder_main(struct BuilderConfig config, struct BuilderProtocol protoc
     return 0;
 }
 
-// Run the CERES data builder
-int ceres_data_builder_main(struct BuilderConfig config) {
-    struct BuilderProtocol protocol;
-    protocol.reader_process = ceres_read_proc;
-    protocol.display_process = ceres_display_event;
-    protocol.write_event = ceres_write_to_disk;
-    protocol.validate_event = ceres_validate_crcs;
-    protocol.publish_event = ceres_publish_event;
-    protocol.update_stats = ceres_update_stats;
-    return data_builder_main(config, protocol);
-}
+// Prints help string which describes this programs CL args.
+void print_help_message(void) {
+    struct BuilderConfig cfg_default = default_config();
+#if CERES
+    const char* program_string = "ceres_data_builder";
+    const char* board_string = "CERES";
+#else // FONTUS
+    const char* program_string = "fontus_data_builder";
+    const char* board_string = "FONTUS";
+#endif
 
-// Run the FONTUS data builder
-int fontus_data_builder_main(struct BuilderConfig config) {
-    struct BuilderProtocol protocol;
-    protocol.reader_process = fontus_read_proc;
-    protocol.display_process = fontus_display_event;
-    protocol.write_event = fontus_write_to_disk;
-    protocol.validate_event = fontus_validate_crcs;
-    // publish_event is the same as CERES, should look into getting rid of it
-    protocol.publish_event = ceres_publish_event;
-    protocol.update_stats = fontus_update_stats;
-    return data_builder_main(config, protocol);
+    printf("%s: recieves then combines data from a %s board and publishes it to redis and/or saves it to a file.\n"
+            "\tusage:  %s [--ip fpga-ip] [-o output-filename] [--no-save] [-n num-events] [--dry] [-v] [-q]\n"
+            "\targuments:\n"
+            "\t--ip -i\tFPGA IP address to recieve data from. Default is '%s'\n"
+            "\t--out -o\tFile to write built data to. Default is '%s'\n"
+            "\t--num-events -n\tExit after N events are built. Default is 0, which corresponds to no limit.\n"
+            "\t--dry-run -d\tExit after N events are built. Default is 0, which corresponds to no limit.\n"
+            "\t--no-save\tDo not save any data to a file. Events are still published to redis.\n"
+            "\t--log-file -l\tFilename that log messages should be recorded to. Default '%s'\n"
+            "\t--redis-host -r\tHostname for redis DB. Used for publishing data & monitoring stats. Default is '%s'\n"
+            "\t--verbose -v\tIncrease verbosity. Can be done multiple times.\n"
+            "\t--quiet -q\tDecrease verbosity. Can be done multiple times.\n"
+            "\t--help -h\tDisplay this message\n",
+            program_string, board_string, program_string,
+          cfg_default.ip, cfg_default.output_filename, cfg_default.error_filename,
+          cfg_default.redis_host);
 }
 
 // Populate configuration from CL args
@@ -1761,36 +1789,6 @@ struct BuilderConfig make_config_from_args(int argc, char** argv) {
     return config;
 }
 
-// Prints help string which describes this programs CL args.
-void print_help_message(void) {
-    struct BuilderConfig cfg_default = default_config();
-#if CERES
-    const char* program_string = "ceres_data_builder";
-    const char* board_string = "CERES";
-#else // FONTUS
-    const char* program_string = "fontus_data_builder";
-    const char* board_string = "FONTUS";
-#endif
-    
-    printf("%s: recieves then combines data from a %s board and publishes it to redis and/or saves it to a file.\n"
-            "\tusage:  %s [--ip fpga-ip] [-o output-filename] [--no-save] [-n num-events] [--dry] [-v] [-q]\n"
-            "\targuments:\n"
-            "\t--ip -i\tFPGA IP address to recieve data from. Default is '%s'\n"
-            "\t--out -o\tFile to write built data to. Default is '%s'\n"
-            "\t--num-events -n\tExit after N events are built. Default is 0, which corresponds to no limit.\n"
-            "\t--dry-run -d\tExit after N events are built. Default is 0, which corresponds to no limit.\n"
-            "\t--no-save\tDo not save any data to a file. Events are still published to redis.\n"
-            "\t--log-file -l\tFilename that log messages should be recorded to. Default '%s'\n"
-            "\t--redis-host -r\tHostname for redis DB. Used for publishing data & monitoring stats. Default is '%s'\n"
-            "\t--verbose -v\tIncrease verbosity. Can be done multiple times.\n"
-            "\t--quiet -q\tDecrease verbosity. Can be done multiple times.\n"
-            "\t--help -h\tDisplay this message\n",
-            program_string, board_string, program_string,
-          cfg_default.ip, cfg_default.output_filename, cfg_default.error_filename,
-          cfg_default.redis_host);
-}
-
-
 int main(int argc, char **argv) {
 
     struct BuilderConfig config = make_config_from_args(argc, argv);
@@ -1798,12 +1796,14 @@ int main(int argc, char **argv) {
         return 0;
     }
 #if FONTUS
-    fontus_data_builder_main(config);
+    config.ceres_builder = 0;
 #elif CERES
-    ceres_data_builder_main(config);
+    config.ceres_builder = 1;
 #else
     #error "Data builder must be compiled with either the FONTUS or CERES flag"
     return -1;
 #endif
+
+    data_builder_main(config);
     return 0;
 }
