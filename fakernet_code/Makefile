@@ -31,11 +31,14 @@ ceres_server: ceres_server.o gpio.o lmk_if.o ads_if.o iic.o fnet_client.o dac_if
 kintex_cli: kintex_cli.o
 	$(CC) -o $@ $(CFLAGS) -Ilinenoise/ linenoise/linenoise.c $^
 
-fontus_data_builder: fakernet_data_builder.c crc32.o crc8.o daq_logger.o
+fontus_data_builder: fakernet_data_builder.c data_builder.o crc32.o crc8.o daq_logger.o
 	$(CC) -Wall $(CFLAGS) -O0 -o $@ $^ fnet_client.o hiredis/libhiredis.a -DFONTUS=1 $(DUMP_DATA)
 
-ceres_data_builder: fakernet_data_builder.c crc32.o crc8.o daq_logger.o
+ceres_data_builder: fakernet_data_builder.c data_builder.o crc32.o crc8.o daq_logger.o
 	$(CC) -Wall $(CFLAGS) -O0 -o $@ $^ fnet_client.o hiredis/libhiredis.a -DCERES=1 $(DUMP_DATA)
+
+data_builder.o: data_builder.c
+	$(CC) -o $@ -c $(CFLAGS) $^
 
 fake_data_gen: fake_data_gen.c crc32.o crc8.o
 	$(CC) -g -o $@ $(CFLAGS) $^
