@@ -40,10 +40,12 @@ Author: Eric Marzec <marzece@gmail.com>
 #include <sys/time.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <netinet/tcp.h>
 #include <sys/types.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <signal.h>
+#include <getopt.h>
 #include "hiredis/hiredis.h"
 #include "fnet_client.h"
 #include "daq_logger.h"
@@ -154,6 +156,18 @@ typedef struct ProcessingStats {
     //unsigned int bytes_read;
     //unsigned int bytes_written;
 } ProcessingStats;
+
+// Configuration parameters for running the data builder
+struct BuilderConfig {
+    const char* ip; // FPGA IP address
+    unsigned int num_events; // Number of events to build before exiting
+    int dry_run; // Dry run, dummy mode, don't actually connect or do anything
+    int do_not_save; // Don't save data to a file
+    const char* output_filename; // File to write data to
+    const char* error_filename; // File to write log messages to
+    const char* redis_host; // Redis DB hostname, used for publishing data & stats
+    int exit_now; // Exit the program. Mostly just used as a hack to stop the program from running if config isn't valid.
+};
 
 // TODO could consider merging the contiguous & total space available functions
 // by have both values calculated and returned in argument pointers..and just only fill in
@@ -946,21 +960,6 @@ int send_tcp_reset(struct fnet_ctrl_client* client) {
     return 0;
 }
 
-enum ArgIDs {
-    ARG_NONE=0,
-    ARG_NUM_EVENTS,
-    ARG_FILENAME,
-    ARG_ERR_FILENAME,
-    ARG_REDIS_HOST,
-    ARG_IP,
-    ARG_NUM_CHANNELS_
-};
-
-void print_help_message(void) {
-    printf("fakernet_data_builder\n"
-            "   usage:  fakernet_data_builder [--ip ip] [--out filename] [--no-save] [--num num_events] [--dry]\n");
-}
-
 void initialize_stats(ProcessingStats* stats) {
     struct timeval tv;
     stats->event_count = 0;
@@ -1473,16 +1472,108 @@ int ceres_validate_crcs(const EventHeader* header, const EventBuffer* eb) {
     return ret;
 }
 
-int main(int argc, char **argv) {
-    int i;
-    unsigned int num_events = 0;
-    const char* ip = "192.168.1.192";
-    enum ArgIDs expecting_value;
-    int do_not_save = 0;
-    int dry_run = 0;
-    const char* FOUT_FILENAME = "/dev/null";
-    const char* ERROR_FILENAME = DEFAULT_ERROR_LOG_FILENAME;
-    const char* redis_host = DEFAULT_REDIS_HOST;
+void fontus_update_stats(ProcessingStats* the_stats, EventHeader* header) {
+    the_stats->trigger_id = header->fontus.trig_number;
+    the_stats->latest_timestamp = header->fontus.clock;
+    the_stats->device_id = header->fontus.device_number;
+}
+
+void ceres_update_stats(ProcessingStats* the_stats, EventHeader* header) {
+    the_stats->trigger_id = header->ceres.trig_number;
+    the_stats->latest_timestamp = header->ceres.clock;
+    the_stats->device_id = header->ceres.device_number;
+}
+
+struct BuilderConfig default_config(void) {
+    struct BuilderConfig config;
+    config.ip = "192.168.84.192";
+    config.num_events = 0;
+    config.dry_run = 0;
+    config.do_not_save = 0;
+    config.output_filename = "/dev/null";
+    config.error_filename = DEFAULT_ERROR_LOG_FILENAME;
+    config.redis_host = DEFAULT_REDIS_HOST;
+    config.exit_now = 0;
+    return config;
+}
+
+struct BuilderConfig make_config_from_args(int argc, char** argv) {
+
+    struct option clargs[] = {
+        {"out", required_argument, NULL, 'o'},
+        {"ip", required_argument, NULL, 'i'},
+        {"num-events", required_argument, NULL, 'n'},
+        {"dry-run", no_argument, NULL, 'd'},
+        {"no-save", no_argument, NULL, 's'},
+        {"log-file", required_argument, NULL, 'l'},
+        {"redis-host", required_argument, NULL, 'r'},
+        {"verbose", no_argument, NULL, 'v'},
+        {"help", no_argument, NULL, 'h'},
+        { 0, 0, 0, 0}};
+    int optindex;
+    int opt;
+    struct BuilderConfig config = default_config();
+    while(!config.exit_now && 
+            ((opt = getopt_long(argc, argv, "o:i:n:r:l:dsvh", clargs, &optindex)) != -1)) {
+        switch(opt) {
+            case 0:
+                // Should be here if the option (in 'clargs') has the "flag"
+                // field set. Currently all are NULL in that field so should
+                // never get here.
+                break;
+            case 'o':
+                printf("Output data file set to '%s'\n", optarg);
+                config.output_filename = optarg;
+                break;
+            case 'i':
+                // FPGA IP Address
+                config.ip = optarg;
+                break;
+            case 'n':
+                config.num_events = strtoul(optarg, NULL, 0);
+                break;
+            case 'd':
+                config.dry_run = 1;
+                break;
+            case 'l':
+                printf("Log file set to %s\n", optarg);
+                config.error_filename = optarg;
+                break;
+            case 's':
+                config.do_not_save = 1;
+                break;
+            case 'r':
+                config.redis_host = optarg;
+                printf("Redis host set to '%s'\n", optarg);
+                break;
+            case 'v':
+                // Reduce the threshold on all the verbosity levels
+                verbosity_stdout = verbosity_stdout-1 < LOG_NEVER ? verbosity_stdout-1 : LOG_NEVER;
+                verbosity_file = verbosity_file-1 < LOG_NEVER ? verbosity_file-1 : LOG_NEVER;
+                verbosity_redis = verbosity_redis-1 < LOG_NEVER ? verbosity_redis-1 : LOG_NEVER;
+                break;
+            case 'q':
+                // Raise the threshold on all the verbosity levels
+                verbosity_stdout = verbosity_stdout+1 > LOG_ERROR ? verbosity_stdout-1 : LOG_ERROR;
+                verbosity_file = verbosity_file+1 < LOG_ERROR ? verbosity_file+1 : LOG_ERROR;
+                verbosity_redis = verbosity_redis+1 < LOG_ERROR ? verbosity_redis+1 : LOG_ERROR;
+                break;
+            case 'h':
+                print_help_message();
+                config.exit_now = 1;
+                break;
+            case '?':
+            case ':':
+                // This should happen if there's a missing or unknown argument
+                // getopt_long outputs its own error message
+                config.exit_now = 1;
+                break;
+        }
+    }
+    return config;
+}
+
+int data_builder_main(struct BuilderConfig config, struct BuilderProtocol protocol) {
     int event_ready;
     struct timeval prev_time, current_time;
     const double REDIS_STATS_COOLDOWN = 1e6; // 1-second in micro-seconds
@@ -1490,105 +1581,10 @@ int main(int argc, char **argv) {
     ProcessingStats the_stats;
     EventHeader event_header;
 
-    struct BuilderProtocol protocol;
-#if FONTUS
-    protocol.reader_process = fontus_read_proc;
-    protocol.display_process = fontus_display_event;
-    protocol.write_event = fontus_write_to_disk;
-    protocol.validate_event = fontus_validate_crcs;
-
-#elif CERES
-    protocol.reader_process = ceres_read_proc;
-    protocol.display_process = ceres_display_event;
-    protocol.write_event = ceres_write_to_disk;
-    protocol.validate_event = ceres_validate_crcs;
-
-#else
-    #error "Data builder must be compiled with either the FONTUS or CERES flag"
-    return -1;
-#endif
-
     initialize_stats(&the_stats);
 
-    if(argc > 1 ) {
-        expecting_value = 0;
-        for(i=1; i < argc; i++) {
-            if(!expecting_value) {
-                if((strcmp(argv[i], "--num") == 0) || (strcmp(argv[i], "-n") == 0)) {
-                    expecting_value = ARG_NUM_EVENTS;
-                }
-                else if((strcmp(argv[i], "--out") == 0) || (strcmp(argv[i], "-o") == 0)) {
-                    expecting_value = ARG_FILENAME;
-                }
-                else if(strcmp(argv[i], "--ip") == 0) {
-                    expecting_value = ARG_IP;
-                }
-                else if((strcmp(argv[i], "--num_channels") == 0) || (strcmp(argv[i], "--nchan") == 0)) {
-                    expecting_value = ARG_NUM_CHANNELS_;
-                }
-                else if(strcmp(argv[i], "--no-save") == 0) {
-                    do_not_save = 1;
-                    expecting_value = 0;
-                }
-                else if(strcmp(argv[i], "--dry") == 0) {
-                    dry_run = 1;
-                    expecting_value = 0;
-                }
-                else if((strcmp(argv[i], "--help") == 0) || (strcmp(argv[i], "-h") == 0)) {
-                    // TODO should scan the whole argv for help before setting any other values
-                    print_help_message();
-                    return 0;
-                }
-                else if((strcmp(argv[i], "--err") == 0) ) {
-                    expecting_value = ARG_ERR_FILENAME;
-                }
-                else if((strcmp(argv[i], "--redis") == 0) ) {
-                    expecting_value = ARG_REDIS_HOST;
-                }
-                else {
-                    printf("Unrecognized option \"%s\"\n", argv[i]);
-                    return 0;
-                }
-            } else {
-                switch(expecting_value) {
-                    case ARG_NUM_EVENTS:
-                        num_events = strtoul(argv[i], NULL, 0);
-                        printf("Will be exiting after %i events\n", num_events);
-                        break;
-                    case ARG_FILENAME:
-                        FOUT_FILENAME = argv[i];
-                        printf("Will be writing to \"%s\"\n", FOUT_FILENAME);
-                        break;
-                    case ARG_IP:
-                        ip = argv[i];
-                        break;
-                    case ARG_NUM_CHANNELS_:
-                        NUM_CHANNELS = strtoul(argv[i], NULL, 0);
-                        printf("FPGA NUM channels set to %i\n", NUM_CHANNELS);
-                        break;
-                    case ARG_ERR_FILENAME:
-                        printf("Log file set to %s\n", argv[i]);
-                        ERROR_FILENAME = argv[i];
-                        break;
-                    case ARG_REDIS_HOST:
-                        printf("Redis hostname set to %s\n", argv[i]);
-                        redis_host = argv[i];
-                        break;
-                    case ARG_NONE:
-                    default:
-                        break;
-                }
-                expecting_value = 0;
-            }
-        }
-
-        if(expecting_value) {
-            printf("Did find value for last argument...exiting\n");
-            return 1;
-        }
-    }
-    printf("FPGA IP set to %s\n", ip);
-    setup_logger("fakernet_data_builder", redis_host, ERROR_FILENAME,
+    printf("FPGA IP set to %s\n", config.ip);
+    setup_logger("fakernet_data_builder", config.redis_host, config.error_filename,
                  verbosity_stdout, verbosity_file, verbosity_redis,
                  LOG_MESSAGE_MAX);
     the_logger->add_newlines = 1;
@@ -1601,8 +1597,8 @@ int main(int argc, char **argv) {
 
 
     struct fnet_ctrl_client* udp_client = NULL;
-    if(!dry_run) {
-        udp_client = connect_fakernet_udp_client(ip);
+    if(!config.dry_run) {
+        udp_client = connect_fakernet_udp_client(config.ip);
         if(!udp_client) {
             builder_log(LOG_ERROR, "couldn't make UDP client");
             return 1;
@@ -1613,12 +1609,11 @@ int main(int argc, char **argv) {
     do {
         // Send a TCP reset_command
         if(udp_client && send_tcp_reset(udp_client)) {
-            printf("Sending TCP Reset");
             builder_log(LOG_ERROR, "Error sending TCP reset. Will retry.");
             sleep(1);
             continue;
         }
-        fpga_if.fd = connect_to_fpga(ip);
+        fpga_if.fd = connect_to_fpga(config.ip);
 
         if(fpga_if.fd < 0) {
             builder_log(LOG_ERROR, "error ocurred connecting to FPGA. Will retry.");
@@ -1630,9 +1625,9 @@ int main(int argc, char **argv) {
     builder_log(LOG_INFO, "Expecting %i channels of data per event.", NUM_CHANNELS);
 
     // Open file to write events to
-    if(!do_not_save) {
-        builder_log(LOG_INFO, "Opening %s for saving data", FOUT_FILENAME);
-        fdisk = fopen(FOUT_FILENAME, "wb");
+    if(!config.do_not_save) {
+        builder_log(LOG_INFO, "Opening %s for saving data", config.output_filename);
+        fdisk = fopen(config.output_filename, "wb");
 
         if(!fdisk) {
             builder_log(LOG_ERROR, "error opening file: %s", strerror(errno));
@@ -1700,16 +1695,11 @@ int main(int argc, char **argv) {
 
         if(event_ready) {
             protocol.validate_event(&event_header, &fpga_if.event_buffer);
-            #ifdef CERES
-            ceres_publish_event(redis, fpga_if.event_buffer);
-            #else // FONTUS
-            ceres_publish_event(redis, fpga_if.event_buffer);
-            //fontus_publish_event(redis, event_header.fontus);
-            #endif
+            protocol.publish_event(redis, fpga_if.event_buffer);
             prev_time = current_time;
             built_counter += 1;
             protocol.display_process(&event_header);
-            if(!do_not_save) {
+            if(!config.do_not_save) {
                 protocol.write_event(&fpga_if.event_buffer, &event_header);
             }
             the_stats.event_count++;
@@ -1723,7 +1713,7 @@ int main(int argc, char **argv) {
             the_stats.device_id = event_header.fontus.device_number;
             #endif
 
-            if(num_events != 0 && the_stats.event_count >= num_events) {
+            if(config.num_events != 0 && the_stats.event_count >= config.num_events) {
                 builder_log(LOG_INFO, "Collected %i events...exiting", the_stats.event_count);
                 end_loop();
             }
@@ -1732,7 +1722,77 @@ int main(int argc, char **argv) {
             fpga_if.event_buffer.num_bytes = 0;
         }
     }
+    //fclose(fdump);
     clean_up();
     close(fpga_if.fd);
+    return 0;
+}
+
+int ceres_data_builder_main(struct BuilderConfig config) {
+    struct BuilderProtocol protocol;
+    protocol.reader_process = ceres_read_proc;
+    protocol.display_process = ceres_display_event;
+    protocol.write_event = ceres_write_to_disk;
+    protocol.validate_event = ceres_validate_crcs;
+    protocol.publish_event = ceres_publish_event;
+    protocol.update_stats = ceres_update_stats;
+    return data_builder_main(config, protocol);
+}
+
+int fontus_data_builder_main(struct BuilderConfig config) {
+    struct BuilderProtocol protocol;
+    protocol.reader_process = fontus_read_proc;
+    protocol.display_process = fontus_display_event;
+    protocol.write_event = fontus_write_to_disk;
+    protocol.validate_event = fontus_validate_crcs;
+    // publish_event is the same as CERES, should look into getting rid of it
+    protocol.publish_event = ceres_publish_event;
+    protocol.update_stats = fontus_update_stats;
+    return data_builder_main(config, protocol);
+}
+
+void print_help_message(void) {
+    struct BuilderConfig cfg_default = default_config();
+#if CERES
+    const char* program_string = "ceres_data_builder";
+    const char* board_string = "CERES";
+#else // FONTUS
+    const char* program_string = "fontus_data_builder";
+    const char* board_string = "FONTUS";
+#endif
+    
+    printf("%s: recieves then combines data from a %s board and publishes it to redis and/or saves it to a file.\n"
+            "\tusage:  %s [--ip fpga-ip] [-o output-filename] [--no-save] [-n num-events] [--dry] [-v] [-q]\n"
+            "\targuments:\n"
+            "\t--ip -i\tFPGA IP address to recieve data from. Default is '%s'\n"
+            "\t--out -o\tFile to write built data to. Default is '%s'\n"
+            "\t--num-events -n\tExit after N events are built. Default is 0, which corresponds to no limit.\n"
+            "\t--dry-run -d\tExit after N events are built. Default is 0, which corresponds to no limit.\n"
+            "\t--no-save\tDo not save any data to a file. Events are still published to redis.\n"
+            "\t--log-file -l\tFilename that log messages should be recorded to. Default '%s'\n"
+            "\t--redis-host -r\tHostname for redis DB. Used for publishing data & monitoring stats. Default is '%s'\n"
+            "\t--verbose -v\tIncrease verbosity. Can be done multiple times.\n"
+            "\t--quiet -q\tDecrease verbosity. Can be done multiple times.\n"
+            "\t--help -h\tDisplay this message\n",
+            program_string, board_string, program_string,
+          cfg_default.ip, cfg_default.output_filename, cfg_default.error_filename,
+          cfg_default.redis_host);
+}
+
+
+int main(int argc, char **argv) {
+
+    struct BuilderConfig config = make_config_from_args(argc, argv);
+    if(config.exit_now) {
+        return 0;
+    }
+#if FONTUS
+    fontus_data_builder_main(config);
+#elif CERES
+    ceres_data_builder_main(config);
+#else
+    #error "Data builder must be compiled with either the FONTUS or CERES flag"
+    return -1;
+#endif
     return 0;
 }
