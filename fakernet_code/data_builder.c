@@ -81,9 +81,9 @@ Author: Eric Marzec <marzece@gmail.com>
 FILE* fdump = NULL;
 #endif
 
-int verbosity_stdout = LOG_INFO;
-int verbosity_redis = LOG_WARN;
-int verbosity_file = LOG_WARN;
+int builder_verbosity_stdout = LOG_INFO;
+int builder_verbosity_redis = LOG_WARN;
+int builder_verbosity_file = LOG_WARN;
 
 
 // Counter for how many events have been built
@@ -607,7 +607,7 @@ void end_loop(void) {
     loop = 0;
 }
 
-void sig_handler(int signum) {
+static void sig_handler(int signum) {
     static int num_kills = 0;
     // TODO, 'builder_log' should not be called in a signal handler, but I do
     // like the builder logging that it recieved a singal. So I should have the
@@ -1507,16 +1507,16 @@ int data_builder_main(struct BuilderConfig config) {
     EventHeader event_header;
 
     // Adjust the verbosity according to the configuration
-    verbosity_stdout = verbosity_stdout + config.verbosity;
-    verbosity_file = verbosity_file + config.verbosity;
-    verbosity_redis = verbosity_redis + config.verbosity;
+    builder_verbosity_stdout = builder_verbosity_stdout + config.verbosity;
+    builder_verbosity_file = builder_verbosity_file + config.verbosity;
+    builder_verbosity_redis = builder_verbosity_redis + config.verbosity;
 
-    verbosity_stdout = verbosity_stdout > LOG_ERROR ? LOG_ERROR : verbosity_stdout;
-    verbosity_stdout = verbosity_stdout < LOG_NEVER ? LOG_NEVER : verbosity_stdout;
-    verbosity_file = verbosity_file > LOG_ERROR ? LOG_ERROR : verbosity_file;
-    verbosity_file = verbosity_file < LOG_NEVER ? LOG_NEVER : verbosity_file;
-    verbosity_redis = verbosity_redis > LOG_ERROR ? LOG_ERROR : verbosity_redis;
-    verbosity_redis = verbosity_redis < LOG_NEVER ? LOG_NEVER : verbosity_redis;
+    builder_verbosity_stdout = builder_verbosity_stdout > LOG_ERROR ? LOG_ERROR : builder_verbosity_stdout;
+    builder_verbosity_stdout = builder_verbosity_stdout < LOG_NEVER ? LOG_NEVER : builder_verbosity_stdout;
+    builder_verbosity_file = builder_verbosity_file > LOG_ERROR ? LOG_ERROR : builder_verbosity_file;
+    builder_verbosity_file = builder_verbosity_file < LOG_NEVER ? LOG_NEVER : builder_verbosity_file;
+    builder_verbosity_redis = builder_verbosity_redis > LOG_ERROR ? LOG_ERROR : builder_verbosity_redis;
+    builder_verbosity_redis = builder_verbosity_redis < LOG_NEVER ? LOG_NEVER : builder_verbosity_redis;
 
     const uint32_t HEADER_MAGIC_VALUE = config.ceres_builder ?
                                         CERES_MAGIC_VALUE    :
@@ -1551,7 +1551,7 @@ int data_builder_main(struct BuilderConfig config) {
 
     printf("FPGA IP set to %s\n", config.ip);
     setup_logger(my_name, config.redis_host, config.error_filename,
-                 verbosity_stdout, verbosity_file, verbosity_redis,
+                 builder_verbosity_stdout, builder_verbosity_file, builder_verbosity_redis,
                  LOG_MESSAGE_MAX);
     the_logger->add_newlines = 1;
 
