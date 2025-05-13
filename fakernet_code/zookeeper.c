@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <wait.h>
+#include <getopt.h>
 #include "server_common.h"
 #include "server.h"
 #include "util.h"
@@ -245,71 +246,7 @@ ServerCommand* search_for_command(ServerCommand* table, const char* command_name
     return &(table[cmd_index]);
 }
 
-
-// For arguements with a values
-enum ArgIDs {
-    ARG_NONE=0,
-    ARG_IP,
-    ARG_PORT
-};
-
-void print_help_message() {
-    printf("You need help\n");
-}
-
-int server_main(int argc, char** argv) {
-    const char* ip = DEFAULT_IP;
-    int port = -1;
-    int i;
-    printf("%i \n", argc);
-    if(argc > 1 ) {
-        enum ArgIDs expecting_value = 0;
-        for(i=1; i < argc; i++) {
-            if(!expecting_value) {
-                if(strcmp(argv[i], "--ip") == 0) {
-                    expecting_value = ARG_IP;
-                }
-                else if(strcmp(argv[i], "--port") == 0) {
-                    expecting_value = ARG_PORT;
-                }
-                else if(strcmp(argv[i], "--dry") == 0 || strcmp(argv[i], "--dummy") == 0) {
-                    printf("DUMMY MODE ENGAGED\n");
-                    dummy_mode = 1;
-                }
-
-                else if((strcmp(argv[i], "--help") == 0) || (strcmp(argv[i], "-h") == 0)) {
-                    print_help_message();
-                    return 0;
-                }
-                else {
-                    printf("Unrecognized option \"%s\"\n", argv[i]);
-                    return 0;
-                }
-            } else {
-                switch(expecting_value) {
-                    case ARG_IP:
-                        ip = argv[i];
-                        printf("FPGA IP set to %s\n", ip);
-                        break;
-                    case ARG_PORT:
-                        port = atoi(argv[i]);
-                        if(port <= 0) {
-                            printf("Invalid port given, will be using the default port");
-                        }
-                        break;
-                    case ARG_NONE:
-                    default:
-                        break;
-                }
-                expecting_value = 0;
-            }
-        }
-
-        if(expecting_value) {
-            printf("Did not find value for last argument...exiting\n");
-            return 1;
-        }
-    }
+int server_main(int port) {
 
     // TODO these parameters should be user settable somehow
     setup_logger(LOGGER_NAME, DEFAULT_REDIS_HOST, LOG_FILENAME,
@@ -340,20 +277,64 @@ int server_main(int argc, char** argv) {
     return 0;
 }
 
+void print_help_message(void) {
+    printf("zookeeper: runs a server that allows clients to request data builders to be started/stopped and provides monitoring.\n"
+            "\tusage: zookeeper [--port port] [--help]\n"
+            "\targuments:\n"
+            "\t--port -p\tPort for server to listen to connections on.\n");
+}
+
 int main(int argc, char** argv) {
 
     int i;
+    int port = -1; // -1 will go with the default option
 
-    server_main(argc-1, argv+1);
+    struct option clargs[] = {
+        {"port", required_argument, NULL, 'p'},
+        //{"verbose", no_argument, NULL, 'v'},
+        {"help", no_argument, NULL, 'h'},
+        { 0, 0, 0, 0}};
+
+    int optindex;
+    int opt;
+    while( (opt = getopt_long(argc, argv, "p:h", clargs, &optindex)) != -1)  {
+        switch(opt) {
+            case 'p':
+                port = strtoul(optarg, NULL, 0);
+                break;
+            case 'h':
+            default:
+                print_help_message();
+                return 0; // exit the program
+        }
+    }
+    printf("Starting server\n");
+    server_main(port);
 
     if(start_data_builder >= 0) {
-        printf("CHILD %i\n", start_data_builder);
-        data_builder_main(start_data_builder);
-        while(1) {
-            printf("YOINK");
-            write(pipes[start_data_builder].c2p_pipe[WRITE_PIPE_IDX], "TEST", 5);
-            sleep(10);
-        }
+        struct BuilderConfig the_config = default_builder_config();
+
+        int builder_id = start_data_builder;
+        char* ip_addr_buffer = malloc(32);
+        char* log_filename_buffer = malloc(64);
+        snprintf(ip_addr_buffer, 32, "192.168.84.%i", 192+builder_id);
+        the_config.ip = ip_addr_buffer;
+        // If the device ID is zero this should be a FONTUS data builder,
+        // otherwise it should be a CERES data builder.
+        the_config.ceres_builder = builder_id == 0 ? 0 : 1;
+
+        snprintf(log_filename_buffer, 64, "zookeeper_data_builder_%i.log", builder_id);
+        the_config.error_filename = log_filename_buffer;
+        //config.redis_host = DEFAULT_REDIS_HOST;
+        the_config.in_pipe = pipes[builder_id].p2c_pipe[READ_PIPE_IDX];
+        the_config.out_pipe = pipes[builder_id].c2p_pipe[WRITE_PIPE_IDX];
+
+        printf("CHILD %i\n", builder_id);
+
+        data_builder_main(the_config);
+
+        free(ip_addr_buffer);
+        free(log_filename_buffer);
         printf("CHILD DONE\n");
     }
     else {
