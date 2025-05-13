@@ -113,6 +113,8 @@ void clean_up_child_process_pipes(IPC_Pipe* pipe) {
 }
 
 void child_read_proc(aeEventLoop* el, int fd, void* client_data, int mask) {
+    (void) el; // Unused
+    (void) mask; // Unused (I'm also not sure how to use it lol)
     IPC_Pipe* this_pipe = (IPC_Pipe*) client_data;
 
     int nbyte = read(fd,  this_pipe->buffer, PIPE_BUFFER_SIZE);
@@ -130,15 +132,12 @@ void child_read_proc(aeEventLoop* el, int fd, void* client_data, int mask) {
     else if(nbyte < 0) {
         printf("Read error: %s\n", strerror(errno));
     }
-    printf("Nbyte %i\n", nbyte);
-}
-
-void start_data_builder_process(int device_index) {
-    // TODO, should populate this function with the current contents of
-    // 'start_builder_command' eventually.
+    printf("Nbyte %i %c\n", nbyte, ((char*)this_pipe->buffer)[0]);
 }
 
 void start_builder_command(client* c, int argc, sds* argv) {
+    (void) argv; // Unused
+    (void) argc; // Unused
 
     unsigned long device_id = strtoul(c->argv[1], NULL, 0);
     if(device_id >= 32) {
@@ -158,8 +157,9 @@ void start_builder_command(client* c, int argc, sds* argv) {
     pid_t child_pid = fork();
     if(!child_pid) {
         // Child process
-        printf("ZOOOOOING\n");
+        printf("Starting Data Builder %i\n", device_id);
         cleanup_logger();
+        close(STDOUT_FILENO); // Get rid of printf output
         server.el->stop = 1;
         close(pipes[device_id].c2p_pipe[READ_PIPE_IDX]);
         close(pipes[device_id].p2c_pipe[WRITE_PIPE_IDX]);
@@ -182,8 +182,54 @@ void start_builder_command(client* c, int argc, sds* argv) {
     addReplyStatus(c, "OK");
 }
 
+void stop_builder_command(client* c, int argc, sds* argv) {
+    (void) argv; // Unused
+    (void) argc; // Unused
+
+    int status;
+    unsigned long device_id = strtoul(c->argv[1], NULL, 0);
+    if(device_id >= 32) {
+        addReplyErrorFormat(c, "Device ID %lu is not valid.", device_id);
+        return;
+    }
+
+    // First check if the child process actually exists
+    if(!pipes[device_id].child_pid) {
+        addReplyLongLong(c, (long long) -1);
+        return;
+    }
+
+    // TODO, I want to send "SIGTERM" so the child process exits on its own,
+    // but I also need to send SIGKILL if it hasn't exited after a short amount
+    // of time. Should perhaps create a time event to check & kill the process
+    //kill(pipes[device_id].child_pid, SIGKILL);
+    kill(pipes[device_id].child_pid, SIGTERM);
+    // TODO, should somehow make sure waitpid never hangs
+    waitpid(pipes[device_id].child_pid, &status, 0);
+    addReplyStatus(c, "OK");
+}
+
+void is_builder_reeling_command(client* c, int argc, sds* argv) {
+    //TODO
+    addReplyLongLong(c, 0);
+}
+
+void read_active_builders_command(client* c, int argc, sds* argv) {
+    //TODO
+    addReplyLongLong(c, 0);
+}
+
+void reset_builder_connection_command(client* c, int argc, sds* argv) {
+    //TODO
+    addReplyLongLong(c, 0);
+}
+
 static ServerCommand default_commands[] = {
     {"start_builder", start_builder_command, NULL, 2, 1, 0, 0},
+    {"stop_builder", stop_builder_command, NULL, 2, 1, 0, 0},
+    {"is_builder_reeling", is_builder_reeling_command, NULL, 2, 1, 0, 0},
+    {"reset_builder_connection" reset_builder_connection_command, NULL, 2, 1, 0, 0},
+    {"read_active_builders", read_active_builders_command, NULL, 1, 1, 0, 0},
     {"", NULL, NULL, 0, 0, 0, 0} // Must be last
 };
 

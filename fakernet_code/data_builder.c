@@ -1482,6 +1482,45 @@ void ceres_update_stats(ProcessingStats* the_stats, EventHeader* header) {
     the_stats->device_id = header->ceres.device_number;
 }
 
+void receive_manager_io(int in_pipe, int out_pipe) {
+    if(in_pipe < 0 || out_pipe < 0) {
+        return;
+    }
+    char cmd = 'a';
+    ssize_t nbytes = read(in_pipe, &cmd, sizeof(char));
+
+    if(nbytes == 0) {
+        // Indicates that the other side of the pipe hung up, end of file
+        // Close the pipe and avoid reading from it again in the future
+        // TODO I need to find some way to remove it from the "select" FD_SET
+        close(in_pipe);
+        in_pipe = -1;
+        return;
+    }
+    // EAGAIN indicates that the socket would block except that it's set to
+    // NON-BLOCK. Should mean there's no data available to read.
+    if((nbytes < 0 && errno==EAGAIN)) {
+        return;
+    }
+    if(nbytes < 0) {
+        // unexpected error Error, not sure why this would happen
+        // TODO figure out how to handle this better
+
+        builder_log(LOG_ERROR, "RECEIVED %i bytes", nbytes);
+        return;
+    }
+
+    // If here I've recieved some valid data.
+
+
+
+    // Just echo back the input until I figure out the actual communication
+    // scheme
+    write(out_pipe, &cmd, 1);
+
+    return;
+
+}
 struct BuilderConfig default_builder_config(void) {
     struct BuilderConfig config;
     config.ip = "192.168.84.192";
@@ -1492,6 +1531,8 @@ struct BuilderConfig default_builder_config(void) {
     config.output_filename = "/dev/null";
     config.error_filename = DEFAULT_ERROR_LOG_FILENAME;
     config.redis_host = DEFAULT_REDIS_HOST;
+    config.in_pipe = -1; // Non-valid file descriptor
+    config.out_pipe = -1; // Non-valid file descriptor
     config.exit_now = 0;
     return config;
 }
@@ -1601,6 +1642,18 @@ int data_builder_main(struct BuilderConfig config) {
         }
     }
 
+    // Set the I/O pipes to non-block
+    {
+        int pipe_flags = fcntl(config.in_pipe, F_GETFL);
+        fcntl(config.in_pipe, F_SETFL, O_NONBLOCK | pipe_flags);
+
+        pipe_flags = fcntl(config.out_pipe, F_GETFL);
+        fcntl(config.out_pipe, F_SETFL, O_NONBLOCK | pipe_flags);
+    }
+    // Need to know which file descriptor has the largest numerical value,
+    // because "select" needs to use that value
+    const int max_pipe = fpga_if.fd > config.in_pipe ? fpga_if.fd+1 : config.in_pipe+1;
+
     gettimeofday(&prev_time, NULL);
     // TODO (important!), this should use the config structure, not a hardcoded string
     redis = create_redis_unix_conn("/var/run/redis/redis-server.sock");
@@ -1638,9 +1691,12 @@ int data_builder_main(struct BuilderConfig config) {
             _timeout.tv_usec = 100000; // 0.1 seconds
             FD_ZERO(&readfds);
             FD_SET(fpga_if.fd, &readfds);
+            FD_SET(max_pipe, &readfds);
             // TODO, should also try and detect disconnect here
             select(fpga_if.fd+1, &readfds, NULL, NULL, &_timeout);
         }
+
+        receive_manager_io(config.in_pipe, config.out_pipe);
 
         pull_from_fpga(&fpga_if);
         if(reeling) {
