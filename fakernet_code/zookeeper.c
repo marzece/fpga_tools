@@ -137,11 +137,11 @@ void clean_up_child_process_pipes(IPC_Pipe* pipe) {
 }
 
 // Low level function to write the command to the pipe
-int send_manager_command_now(int fd, ManagerIO cmd) {
-    int nbytes = 0;
+ssize_t send_manager_command_now(int fd, ManagerIO cmd) {
+    ssize_t nbytes = 0;
     do {
         nbytes += write(fd, ((char*)&cmd)+nbytes, sizeof(cmd)-nbytes);
-    } while(nbytes > 0 && nbytes < sizeof(cmd));
+    } while(nbytes > 0 && nbytes < (ssize_t)sizeof(ManagerIO));
     // TODO handle errors!
     return nbytes;
 }
@@ -162,10 +162,10 @@ void child_read_proc(aeEventLoop* el, int fd, void* client_data, int mask) {
     }
 
     ManagerIO recv_cmd;
-    int nbyte = 0;
+    ssize_t nbyte = 0;
     do {
         nbyte += read(fd,  ((void*)&recv_cmd)+nbyte, sizeof(ManagerIO)-nbyte);
-    } while(nbyte > 0 && nbyte < sizeof(ManagerIO));
+    } while(nbyte > 0 && nbyte < (ssize_t)sizeof(ManagerIO));
 
     if(nbyte == 0) {
         // Indicates the end of the file
@@ -221,7 +221,7 @@ void send_manager_command_async(client* c, IPC_Pipe* pipe, ManagerIO cmd) {
     // command to the child process
     if(!pipe->cmd_list) {
         pipe->cmd_list = this_cmd;
-        int nbytes = send_manager_command_now(pipe->p2c_pipe[WRITE_PIPE_IDX], cmd);
+        send_manager_command_now(pipe->p2c_pipe[WRITE_PIPE_IDX], cmd);
     }
     else {
         // If the command list is not empty, add it to the list.
@@ -348,7 +348,8 @@ void clean_up_disconnected_client(client* c, void* data) {
 }
 
 void is_builder_reeling_command(client* c, int argc, sds* argv) {
-    unsigned long device_id = strtoul(c->argv[1], NULL, 0);
+    UNUSED(argc);
+    unsigned long device_id = strtoul(argv[1], NULL, 0);
     if(device_id >= 32) {
         addReplyErrorFormat(c, "Device ID %lu is not valid.", device_id);
         return;
@@ -366,7 +367,8 @@ void is_builder_reeling_command(client* c, int argc, sds* argv) {
 }
 
 void read_active_builders_command(client* c, int argc, sds* argv) {
-    //TODO
+    UNUSED(argc);
+    UNUSED(argv);
     unsigned int builder_mask = 0x0;
     int i;
     for(i=0; i<MAX_NUM_BUILDERS; i++) {
