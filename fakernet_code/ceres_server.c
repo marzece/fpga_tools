@@ -446,7 +446,7 @@ enum ArgIDs {
 };
 
 void print_help_message() {
-    printf("You need help\n");
+    printf("usage: ceres_server [--dummy] [--port] [--help]\n");
 }
 
 void ceres_call(client *c) {

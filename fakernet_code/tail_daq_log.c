@@ -79,6 +79,14 @@ enum ArgValues {
     ARG_NONE
 };
 
+void print_help_message(void) {
+    printf("tail_daq_log: Prints log messages recieved from the various DAQ servers & processes.\n"
+            "\tusage: tail_daq_log [--host host] [--help]\n"
+            "\targuments:\n"
+            "\t--host -h\tRedis database IP address. Log messages are transmitted from this database.\n"
+            "\t--help   \tPrint this message & exit.\n");
+}
+
 int main(int argc, char** argv) {
     const char* redis_host = "127.0.0.1";
     const char* get_messages_command = "XREAD BLOCK 0 COUNT 50 streams daq_log %s";
@@ -108,6 +116,10 @@ int main(int argc, char** argv) {
         else {
             if(strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--host") == 0) {
                 expecting_value = REDIS_HOST_ARG;
+            }
+            if(strcmp(argv[i], "--help") == 0) {
+                print_help_message();
+                return 0;
             }
         }
     }

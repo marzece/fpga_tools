@@ -290,7 +290,7 @@ enum ArgIDs {
 };
 
 void print_help_message() {
-    printf("You need help\n");
+    printf("usage: kintex_client_server [--dummy] [--ip] [--port] [--ceres] [--fontus] [--help]\n");
 }
 
 int main(int argc, char** argv) {
