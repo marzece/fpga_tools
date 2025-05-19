@@ -1,5 +1,6 @@
 #ifndef  __DATA_BUILDER_H__
 #define __DATA_BUILDER_H__
+#include <stdint.h>
 
 
 // Configuration parameters for running the data builder
@@ -16,6 +17,19 @@ struct BuilderConfig {
     int in_pipe;
     int out_pipe;
     int exit_now; // Exit the program. Mostly just used as a hack to stop the program from running if config isn't valid.
+};
+
+// Process IO interface
+typedef struct MangerIO {
+    int32_t command;
+    int32_t arg;
+} ManagerIO;
+
+enum ManagerIOCommand {
+    CMD_NONE=0,
+    CMD_CONNECTED, // Returns 1 if connected to FPGA, 0 otherwise
+    CMD_ISREELING, // Returns 1 if currently "reeling", 0 otherwise
+    CMD_NUMBUILT,  // Returns the number of events built since the program started
 };
 
 struct BuilderConfig default_builder_config(void);

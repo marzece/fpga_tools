@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <wait.h>
+#include <sys/wait.h>
 #include <getopt.h>
 #include "server_common.h"
 #include "server.h"
@@ -23,15 +23,14 @@
 #define DEFAULT_IP  "192.168.84.192"
 #define PIPE_BUFFER_SIZE 128
 
-#define LOGGER_NAME "kintex_server"
+#define LOGGER_NAME "zoo_keeper"
 #define DEFAULT_REDIS_HOST "127.0.0.1"
-#define LOG_FILENAME "kintex_server.log"
+#define LOG_FILENAME "zoo_keeper_server.log"
 #define LOG_MESSAGE_MAX 1024
 
 int verbosity_stdout = LOG_INFO;
 int verbosity_file = LOG_INFO;
 int verbosity_redis = LOG_WARN;
-
 
 int dummy_mode = 0;
 char command_buffer[BUFFER_SIZE];
@@ -39,15 +38,25 @@ char resp_buffer[BUFFER_SIZE];
 static volatile int end_main_loop = 0;
 int start_data_builder = -1;
 
+// Linked list for keeping of track of IO commands that have been requested and
+// the client that requested them.
+typedef struct ManagerIOList {
+    ManagerIO io_cmd; // The actual request
+    client* client; // The client that should receive a response
+    struct ManagerIOList* next; // The next command to process
+} ManagerIOList;
+
+#define MAX_NUM_BUILDERS 32
 typedef struct IPC_Pipe {
     int device_index;
     int child_pid;
     int parent_pid;
     int p2c_pipe[2]; // Parent to child pipe
     int c2p_pipe[2]; // Child to parent pipe
+    ManagerIOList* cmd_list;
     void* buffer[PIPE_BUFFER_SIZE];
 } IPC_Pipe;
-IPC_Pipe pipes[32];
+IPC_Pipe pipes[MAX_NUM_BUILDERS];
 #define READ_PIPE_IDX 0
 #define WRITE_PIPE_IDX 1
 
@@ -104,6 +113,20 @@ void clean_up_child_process_pipes(IPC_Pipe* pipe) {
     int read_pipe = pipe->c2p_pipe[READ_PIPE_IDX];
     aeDeleteFileEvent(server.el, read_pipe, AE_READABLE);
     aeDeleteFileEvent(server.el, write_pipe, AE_WRITABLE);
+
+    // If there's any remaining commands that haven't been processed,
+    // remove them, and send an error to their client.
+    while(pipe->cmd_list) {
+        ManagerIOList* this_cmd = pipe->cmd_list;
+        client *c = this_cmd->client;
+        if(c) {
+            addReplyError(c, "Builder process was stopped");
+            unblockClient(c);
+        }
+        pipe->cmd_list = this_cmd->next;
+        free(this_cmd);
+    }
+
     close(write_pipe);
     close(read_pipe);
 
@@ -113,12 +136,37 @@ void clean_up_child_process_pipes(IPC_Pipe* pipe) {
     pipe->c2p_pipe[1] = -1;
 }
 
+// Low level function to write the command to the pipe
+int send_manager_command_now(int fd, ManagerIO cmd) {
+    int nbytes = 0;
+    do {
+        nbytes += write(fd, ((char*)&cmd)+nbytes, sizeof(cmd)-nbytes);
+    } while(nbytes > 0 && nbytes < sizeof(cmd));
+    // TODO handle errors!
+    return nbytes;
+}
+
+// This process handles receive data from any of the fork'd child processes.
+// In general data should be received whenver there was a command set to request
+// data. But if the child process dies this process will get run with "read" returning
+// a zero bytes.
 void child_read_proc(aeEventLoop* el, int fd, void* client_data, int mask) {
     (void) el; // Unused
     (void) mask; // Unused (I'm also not sure how to use it lol)
     IPC_Pipe* this_pipe = (IPC_Pipe*) client_data;
 
-    int nbyte = read(fd,  this_pipe->buffer, PIPE_BUFFER_SIZE);
+    ManagerIOList* this_cmd = this_pipe->cmd_list;
+    if(this_cmd == NULL) {
+        // Not sure why this would happen...
+        // Could happen if the child process crashes TODO (figure out how to handles this)
+    }
+
+    ManagerIO recv_cmd;
+    int nbyte = 0;
+    do {
+        nbyte += read(fd,  ((void*)&recv_cmd)+nbyte, sizeof(ManagerIO)-nbyte);
+    } while(nbyte > 0 && nbyte < sizeof(ManagerIO));
+
     if(nbyte == 0) {
         // Indicates the end of the file
         // Indicates the child process closed its end of the pipe
@@ -129,19 +177,70 @@ void child_read_proc(aeEventLoop* el, int fd, void* client_data, int mask) {
         // in waitpid or something, then maybe call "kill"
         waitpid(this_pipe->child_pid, NULL, 0);
         clean_up_child_process_pipes(this_pipe);
+        return;
     }
     else if(nbyte < 0) {
+        // I have no idea why this would happen.
         printf("Read error: %s\n", strerror(errno));
     }
-    printf("Nbyte %i %c\n", nbyte, ((char*)this_pipe->buffer)[0]);
+
+    // TODO should check the received command matches the one speciefied in the queue
+
+    client* c = this_cmd->client;
+    // If 'c' is NULL it indicates the client disconnected.
+    if(c) {
+        // TODO could improve this by having a callback get called instead of just replying this way
+        addReplyLongLong(c, recv_cmd.arg);
+        unblockClient(c);
+    }
+
+    // Finally, remove the top of the command list and free it. 
+    // The send the next command in the list
+    this_pipe->cmd_list = this_cmd->next;
+    free(this_cmd);
+
+    // Send the next request to the child process (if there are any)
+    if(this_pipe->cmd_list) {
+        send_manager_command_now(this_pipe->p2c_pipe[WRITE_PIPE_IDX], this_pipe->cmd_list->io_cmd);
+        // TODO, in principle the child process could have crashed/died between
+        // the above read and now. I need to check for errors here.
+        // From testing it works out okay so maybe I don't need to do anything
+    }
 }
+
+// Either send the command via the child process pipe,
+// or append the command to the list of commands
+void send_manager_command_async(client* c, IPC_Pipe* pipe, ManagerIO cmd) {
+    ManagerIOList * this_cmd = malloc(sizeof(ManagerIOList));
+
+    this_cmd->io_cmd = cmd;
+    this_cmd->client = c;
+    this_cmd->next = NULL;
+
+    // If the command list is empty, add this command to the list, then send the
+    // command to the child process
+    if(!pipe->cmd_list) {
+        pipe->cmd_list = this_cmd;
+        int nbytes = send_manager_command_now(pipe->p2c_pipe[WRITE_PIPE_IDX], cmd);
+    }
+    else {
+        // If the command list is not empty, add it to the list.
+        ManagerIOList* this_node = pipe->cmd_list;
+        // Search for the end of the list
+        while(this_node->next) {
+            this_node = this_node->next;
+        }
+        this_node->next = this_cmd;
+    }
+}
+
 
 void start_builder_command(client* c, int argc, sds* argv) {
     (void) argv; // Unused
     (void) argc; // Unused
 
     unsigned long device_id = strtoul(c->argv[1], NULL, 0);
-    if(device_id >= 32) {
+    if(device_id >= MAX_NUM_BUILDERS) {
         addReplyErrorFormat(c, "Device ID %lu is not valid.", device_id);
         return;
     }
@@ -158,7 +257,7 @@ void start_builder_command(client* c, int argc, sds* argv) {
     pid_t child_pid = fork();
     if(!child_pid) {
         // Child process
-        printf("Starting Data Builder %i\n", device_id);
+        printf("Starting Data Builder %lu %i\n", device_id, getpid());
         cleanup_logger();
         close(STDOUT_FILENO); // Get rid of printf output
         server.el->stop = 1;
@@ -173,13 +272,9 @@ void start_builder_command(client* c, int argc, sds* argv) {
     pipes[device_id].child_pid = child_pid;
     close(pipes[device_id].c2p_pipe[WRITE_PIPE_IDX]);
     close(pipes[device_id].p2c_pipe[READ_PIPE_IDX]);
-    // Block until I receive some signal from the child process
-    // (TODO, I should figure out how to block the client until I get a signal
-    // from the pipe or whatever, instead of just sitting here waiting
+    // Once the child process is running, create a file event that will respond
+    // whenever the child sends data from it's end of the pipe.
     aeCreateFileEvent(server.el, pipes[device_id].c2p_pipe[0], AE_READABLE, child_read_proc, (void*)&(pipes[device_id]));
-    //TODO I probably do need to create a 
-    //aeCreateFileEvent(server.el, pipes[device_id].p2c_pipe[1], AE_WRITABLE, child_read_proc, (void*)&(pipes[device_id]));
-
     addReplyStatus(c, "OK");
 }
 
@@ -207,33 +302,96 @@ void stop_builder_command(client* c, int argc, sds* argv) {
     kill(pipes[device_id].child_pid, SIGTERM);
     // TODO, should somehow make sure waitpid never hangs
     waitpid(pipes[device_id].child_pid, &status, 0);
+    clean_up_child_process_pipes(&pipes[device_id]);
     addReplyStatus(c, "OK");
 }
 
+void clean_up_disconnected_client(client* c, void* data) {
+    if(!data) {
+        // This should never happen!
+    }
+    int i;
+    for(i=0; i< MAX_NUM_BUILDERS; i++) {
+        if(!pipes[i].child_pid) {
+            continue;
+        }
+        // Iterate through each command, for each command if it's client is the
+        // client who disconnected, then bascially get rid of that command.
+        // Currently, a single client can only have a single command requested
+        // at a time, so if I find one, then I should looking. But maybe someday
+        // I'll add a way to have multiple commands requested at once, so I may
+        // as well iterate through everything. I don't expect this will ever be
+        // too computationally expensive.
+        ManagerIOList* this_list = pipes[i].cmd_list;
+        while(this_list) {
+            if(pipes[i].cmd_list->client->id == c->id) {
+                // If here then we've found a command that was requested by our
+                // client that we need to get rid of. But the correct way to
+                // get rid of a request is a little tricky. The correct way
+                // would be to remove any request that isn't the 'top' of the
+                // list, and invalidate a request that is at the top. The
+                // reason is that if it's at the top then the request has been
+                // sent to the child process already. So I need to leave the
+                // command on the list so that when the response comes back I
+                // don't get confused about where the response came from.  So
+                // long story short I just set the client to NULL no matter
+                // what, then when the response comes back from the child proc
+                // it'll get handled like normal, just not responded too.
+                // Potentially a waste of resources cause commands that no one
+                // will ever hear get sent, but that's not a big deal probably.
+                pipes[i].cmd_list->client = NULL;
+            }
+            this_list = this_list->next;
+        }
+    }
+
+}
+
 void is_builder_reeling_command(client* c, int argc, sds* argv) {
-    //TODO
-    addReplyLongLong(c, 0);
+    unsigned long device_id = strtoul(c->argv[1], NULL, 0);
+    if(device_id >= 32) {
+        addReplyErrorFormat(c, "Device ID %lu is not valid.", device_id);
+        return;
+    }
+    if(!pipes[device_id].child_pid) { 
+        // Indicates that the builder for the specified ID is not running
+        addReplyError(c, "Requested builder is not running");
+        return;
+    }
+
+    ManagerIO cmd;
+    cmd.command = CMD_ISREELING;
+    send_manager_command_async(c, &(pipes[device_id]), cmd);
+    blockClient(c, &pipes[device_id], clean_up_disconnected_client);
 }
 
 void read_active_builders_command(client* c, int argc, sds* argv) {
     //TODO
-    addReplyLongLong(c, 0);
+    unsigned int builder_mask = 0x0;
+    int i;
+    for(i=0; i<MAX_NUM_BUILDERS; i++) {
+        builder_mask |= pipes[i].child_pid ? (1<<i) : 0;
+    }
+    addReplyLongLong(c, builder_mask);
 }
 
 void reset_builder_connection_command(client* c, int argc, sds* argv) {
     //TODO
-    addReplyLongLong(c, 0);
+    addReplyError(c, "Not implemented");
+}
+void read_num_built_command(client* c, int argc, sds* argv) {
+    addReplyError(c, "Not implemented");
 }
 
 static ServerCommand default_commands[] = {
     {"start_builder", start_builder_command, NULL, 2, 1, 0, 0},
     {"stop_builder", stop_builder_command, NULL, 2, 1, 0, 0},
     {"is_builder_reeling", is_builder_reeling_command, NULL, 2, 1, 0, 0},
-    {"reset_builder_connection" reset_builder_connection_command, NULL, 2, 1, 0, 0},
+    {"reset_builder_connection", reset_builder_connection_command, NULL, 2, 1, 0, 0},
+    {"read_num_built", read_num_built_command, NULL, 1, 1, 0, 0},
     {"read_active_builders", read_active_builders_command, NULL, 1, 1, 0, 0},
     {"", NULL, NULL, 0, 0, 0, 0} // Must be last
 };
-
 
 ServerCommand* search_for_command(ServerCommand* table, const char* command_name) {
     int cmd_index = 0;
@@ -308,7 +466,7 @@ int main(int argc, char** argv) {
                 return 0; // exit the program
         }
     }
-    printf("Starting server\n");
+    printf("Starting server, listening on port %i\n", port);
     server_main(port);
 
     if(start_data_builder >= 0) {
@@ -340,7 +498,7 @@ int main(int argc, char** argv) {
     else {
         // Kill all the child processes that are around.
         int status;
-        for(i =0; i<32; i++) {
+        for(i =0; i<MAX_NUM_BUILDERS; i++) {
             if(pipes[i].child_pid > 0) {
                 kill(pipes[i].child_pid, SIGKILL);
                 waitpid(pipes[i].child_pid, &status, 0);

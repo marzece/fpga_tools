@@ -1484,19 +1484,20 @@ void ceres_update_stats(ProcessingStats* the_stats, EventHeader* header) {
     the_stats->device_id = header->ceres.device_number;
 }
 
-void receive_manager_io(int in_pipe, int out_pipe) {
-    if(in_pipe < 0 || out_pipe < 0) {
+void receive_manager_io(ManagerIO* manager_command, int* in_pipe) {
+    int fd = *in_pipe;
+    if(fd < 0) {
         return;
     }
-    char cmd = 'a';
-    ssize_t nbytes = read(in_pipe, &cmd, sizeof(char));
+    manager_command->command = CMD_NONE;
+    ssize_t nbytes = read(fd, manager_command, sizeof(ManagerIO));
 
     if(nbytes == 0) {
         // Indicates that the other side of the pipe hung up, end of file
         // Close the pipe and avoid reading from it again in the future
         // TODO I need to find some way to remove it from the "select" FD_SET
-        close(in_pipe);
-        in_pipe = -1;
+        close(fd);
+        *in_pipe = -1;
         return;
     }
     // EAGAIN indicates that the socket would block except that it's set to
@@ -1507,22 +1508,33 @@ void receive_manager_io(int in_pipe, int out_pipe) {
     if(nbytes < 0) {
         // unexpected error Error, not sure why this would happen
         // TODO figure out how to handle this better
-
         builder_log(LOG_ERROR, "RECEIVED %i bytes", nbytes);
+        close(fd);
+        *in_pipe = -1;
+    }
+}
+
+void respond_to_manager_io(ManagerIO* manager_command, int* out_pipe) {
+    builder_log(LOG_ERROR, "SLEEPING");
+    int fd = *out_pipe;
+    if(fd < 0) {
         return;
     }
-
-    // If here I've recieved some valid data.
-
-
-
-    // Just echo back the input until I figure out the actual communication
-    // scheme
-    write(out_pipe, &cmd, 1);
-
-    return;
-
+    int nbytes = 0;
+    do {
+        nbytes += write(fd, ((char*)manager_command)+nbytes, sizeof(ManagerIO)-nbytes);
+    } while(nbytes > 0 && nbytes != sizeof(ManagerIO));
+    if(nbytes == 0) {
+        // Not sure how to handle this
+    }
+    if(nbytes < 0) {
+        builder_log(LOG_ERROR, "Error responding to manager command. %s", strerror(errno));
+        close(fd);
+        *out_pipe = -1;
+    }
+    manager_command->command = CMD_NONE;
 }
+
 struct BuilderConfig default_builder_config(void) {
     struct BuilderConfig config;
     config.ip = "192.168.84.192";
@@ -1548,6 +1560,10 @@ int data_builder_main(struct BuilderConfig config) {
     double last_status_update_time = 0;
     ProcessingStats the_stats;
     EventHeader event_header;
+
+    // Zero out the IO command, default behavior is NONE command
+    ManagerIO manager_command;
+    memset(&manager_command, 0, sizeof(manager_command));
 
     // Adjust the verbosity according to the configuration
     builder_verbosity_stdout = builder_verbosity_stdout + config.verbosity;
@@ -1693,12 +1709,36 @@ int data_builder_main(struct BuilderConfig config) {
             _timeout.tv_usec = 100000; // 0.1 seconds
             FD_ZERO(&readfds);
             FD_SET(fpga_if.fd, &readfds);
-            FD_SET(max_pipe, &readfds);
+            FD_SET(config.in_pipe, &readfds);
             // TODO, should also try and detect disconnect here
-            select(fpga_if.fd+1, &readfds, NULL, NULL, &_timeout);
+            select(max_pipe, &readfds, NULL, NULL, &_timeout);
         }
 
-        receive_manager_io(config.in_pipe, config.out_pipe);
+        receive_manager_io(&manager_command, &config.in_pipe);
+        switch(manager_command.command) {
+            case CMD_NONE:
+                // Do nothing
+                break;
+            case CMD_CONNECTED:
+                // TODO This command seems kinda useless.
+                // I don't respond to manager commands anywhere except here,
+                // and I don't really have a good mechanism for "disconnecting".
+                // In principle this may change as I expand the functionality
+                manager_command.arg = the_stats.connected_to_fpga;
+                break;
+            case CMD_ISREELING:
+                manager_command.arg = reeling ? 1 : 0;
+                break;
+            case CMD_NUMBUILT:
+                manager_command.arg = the_stats.event_count;
+                break;
+            default:
+                builder_log(LOG_WARN, "Unknown command %i recieved");
+                manager_command.command = (int32_t)CMD_NONE;
+        }
+        if(manager_command.command != CMD_NONE) {
+            respond_to_manager_io(&manager_command, &config.out_pipe);
+        }
 
         pull_from_fpga(&fpga_if);
         if(reeling) {
