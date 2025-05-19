@@ -466,9 +466,11 @@ int connect_to_fpga(const char* fpga_ip) {
     // NO_DELAY does nothing I think, it only matters for sending data not
     // receiving (pretty sure)
     int yes = 1;
+#ifdef __unix__
     if( setsockopt(fd, IPPROTO_TCP, TCP_QUICKACK, &yes, sizeof(yes)) ) {
         builder_log(LOG_ERROR, "Error setting TCP_QUICKACK");
     }
+#endif
     if( setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &yes, sizeof(yes)) ) {
         builder_log(LOG_ERROR, "Error setting TCP_NODELAY");
     }
