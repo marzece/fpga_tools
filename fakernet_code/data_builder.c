@@ -1612,22 +1612,22 @@ int data_builder_main(struct BuilderConfig config) {
             builder_log(LOG_ERROR, "couldn't make UDP client");
             return 1;
         }
+
+        // connect to FPGA
+        do {
+            // Send a TCP reset_command
+            if(udp_client && send_tcp_reset(udp_client)) {
+                builder_log(LOG_ERROR, "Error sending TCP reset. Will retry.");
+                sleep(1);
+                continue;
+            }
+            fpga_if.fd = connect_to_fpga(config.ip);
+
+            if(fpga_if.fd < 0) {
+                builder_log(LOG_ERROR, "error ocurred connecting to FPGA. Will retry.");
+            }
+        } while(fpga_if.fd < 0);
     }
-
-    // connect to FPGA
-    do {
-        // Send a TCP reset_command
-        if(udp_client && send_tcp_reset(udp_client)) {
-            builder_log(LOG_ERROR, "Error sending TCP reset. Will retry.");
-            sleep(1);
-            continue;
-        }
-        fpga_if.fd = connect_to_fpga(config.ip);
-
-        if(fpga_if.fd < 0) {
-            builder_log(LOG_ERROR, "error ocurred connecting to FPGA. Will retry.");
-        }
-    } while(fpga_if.fd < 0);
     builder_log(LOG_INFO, "FPGA TCP connection made");
     the_stats.connected_to_fpga = 1;
 
