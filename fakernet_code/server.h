@@ -82,9 +82,6 @@
                                           we return single threaded that the
                                           client has already pending commands
                                           to be executed. */
-#define CLIENT_TRACKING (1<<31) /* Client enabled keys tracking in order to
-                                   perform client side caching. */
-#define CLIENT_TRACKING_BROKEN_REDIR (1ULL<<32) /* Target client is invalid. */
 
 /* Command call flags, see call() function */
 #define CMD_CALL_NONE 0
@@ -99,6 +96,16 @@
 #define serverAssert(_e) ((_e)?(void)0 : (_serverAssert(#_e,__FILE__,__LINE__),exit(1)))
 #define serverPanic(...) _serverPanic(__FILE__, __LINE__, __VA_ARGS__), exit(1)
 
+
+
+// Declarations for blocking clients
+// Function that will be called if a client disconnects while blocked
+typedef void blockingFreeProc(client* c, void *data);
+void blockClient(client *c, void* data, blockingFreeProc* bfree);
+void unblockClient(client *c);
+void processUnblockedClients(void);
+void disconnectAllBlockedClients(void);
+void blockedBeforeSleep(void);
 
 /* This structure is used in order to represent the output buffer of a client,
  * which is actually a linked list of blocks like that, that is: client->reply. */
@@ -138,9 +145,9 @@ typedef struct client {
     time_t lastinteraction; /* Time of the last interaction, used for timeout */
     time_t obuf_soft_limit_reached_time;
     uint64_t flags;         /* Client flags: CLIENT_* macros. */
-    // TODO Re-add block functionality
-    //int btype;              /* Type of blocking op if CLIENT_BLOCKED. */
-    //blockingState bpop;     /* blocking state */
+    void*  blocking_data;     /* blocking state */
+    blockingFreeProc* bfree;
+
     listNode *client_list_node; /* list node in client list */
 
     void* server_data;
@@ -173,7 +180,7 @@ struct  Server {
     list* clients_to_close;
     list *clients_pending_write; /* There is to write or install handler. */
     list *clients_pending_read;  /* Client has pending read socket buffers. */
-    unsigned int blocked_clients;   /* # of clients executing a blocking cmd.*/
+    list* unblocked_clients; /* # of clients to unblock before next loop. */
     client* current_client;
     char neterr[ANET_ERR_LEN];   /* Error buffer for anet.c */
     long long proto_max_bulk_len;   /* Protocol bulk length maximum size. */

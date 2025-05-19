@@ -832,9 +832,13 @@ void freeClient(client *c) {
     sdsfree(c->querybuf);
     c->querybuf = NULL;
 
-    // !TODO readd blocking functionality at some point
     /* Deallocate structures used to block on blocking ops. */
-    //if (c->flags & CLIENT_BLOCKED) { unblockClient(c); }
+    if (c->flags & CLIENT_BLOCKED) {
+        if(c->bfree) {
+            c->bfree(c, c->blocking_data);
+        }
+        unblockClient(c);
+    }
 
     /* Free data structures. */
     listRelease(c->reply);
@@ -1113,8 +1117,6 @@ sds catClientInfoString(sds s, client *client) {
     if (client->flags & CLIENT_PUBSUB) *p++ = 'P';
     if (client->flags & CLIENT_MULTI) *p++ = 'x';
     if (client->flags & CLIENT_BLOCKED) *p++ = 'b';
-    if (client->flags & CLIENT_TRACKING) *p++ = 't';
-    if (client->flags & CLIENT_TRACKING_BROKEN_REDIR) *p++ = 'R';
     if (client->flags & CLIENT_DIRTY_CAS) *p++ = 'd';
     if (client->flags & CLIENT_CLOSE_AFTER_REPLY) *p++ = 'c';
     if (client->flags & CLIENT_UNBLOCKED) *p++ = 'u';

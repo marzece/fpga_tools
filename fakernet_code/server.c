@@ -110,8 +110,6 @@ void initServerConfig(void) {
     server.proto_max_bulk_len = CONFIG_DEFAULT_PROTO_MAX_BULK_LEN;
     server.client_max_querybuf_len = PROTO_MAX_QUERYBUF_LEN;
     //server.daemonize = CONFIG_DEFAULT_DAEMONIZE;
-    //server.blocked_clients = 0;
-    //memset(server.blocked_clients_by_type,0, sizeof(server.blocked_clients_by_type));
     server.shutdown_asap = 0;
 
     /* Client output buffer limits */
@@ -240,8 +238,7 @@ void beforeSleep(struct aeEventLoop *eventLoop) {
     UNUSED(eventLoop);
 
     /* Try to process pending commands for clients that were just unblocked. */
-    //if (listLength(server.unblocked_clients))
-    //    processUnblockedClients();
+    blockedBeforeSleep();
 
     //TODO does this really belong here?
     handleClientsWithPendingWrites();
@@ -518,6 +515,8 @@ void initServer(void) {
                 serverPanic("Unrecoverable error creating server.ipfd file event.");
             }
     }
+
+    server.unblocked_clients = listCreate();
 }
 
 void serverSetCustomCall(ServerCallFunc call_func) {
