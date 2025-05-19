@@ -32,6 +32,10 @@ int grab_response(int fd) {
         printf("Error: Server disconnected! Exiting\n");
         exit(1);
     }
+    if(nbytes_read < 0) {
+        printf("Error occurred while getting response: %s\n", strerror(errno));
+        exit(1);
+    }
     // Can't expect the response to have a NULL terminator
     response_buffer[nbytes_read] = '\0';
     return nbytes_read;
@@ -72,6 +76,9 @@ char *hints(const char *buf, int *color, int *bold) {
     ServerCommand* command = &(commandTable[0]);
     while(command->name != NULL && strlen(command->name) > 0) {
         if (!strcasecmp(buf,command->name)) {
+            if(command->nargs == 0) {
+                return NULL;
+            }
             fpga_cli_hint_str = (char*) malloc(sizeof(char)*BUF_LEN);
             *color = 35;
             *bold = 0;
@@ -91,7 +98,7 @@ void produce_command_table(char* table_string) {
     int i;
     char* tok = strtok(table_string, "\r\n");
     // The first token should be *xx\r\n where xx is the number of items in the command table
-    if(tok[0] != '*') {
+    if(strlen(tok) < 2 || tok[0] != '*') {
         printf("Error reading command table, tab-complete won't work\n");
         return;
     }
