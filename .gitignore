@@ -14,7 +14,6 @@
 *.gif
 *.yml
 *.png
-*.C
 *.rdb
 tags
 fakernet_code/kintex_cli
