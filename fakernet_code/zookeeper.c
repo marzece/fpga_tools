@@ -347,25 +347,6 @@ void clean_up_disconnected_client(client* c, void* data) {
 
 }
 
-void is_builder_reeling_command(client* c, int argc, sds* argv) {
-    UNUSED(argc);
-    unsigned long device_id = strtoul(argv[1], NULL, 0);
-    if(device_id >= 32) {
-        addReplyErrorFormat(c, "Device ID %lu is not valid.", device_id);
-        return;
-    }
-    if(!pipes[device_id].child_pid) { 
-        // Indicates that the builder for the specified ID is not running
-        addReplyError(c, "Requested builder is not running");
-        return;
-    }
-
-    ManagerIO cmd;
-    cmd.command = CMD_ISREELING;
-    send_manager_command_async(c, &(pipes[device_id]), cmd);
-    blockClient(c, &pipes[device_id], clean_up_disconnected_client);
-}
-
 void read_active_builders_command(client* c, int argc, sds* argv) {
     UNUSED(argc);
     UNUSED(argv);
@@ -377,12 +358,56 @@ void read_active_builders_command(client* c, int argc, sds* argv) {
     addReplyLongLong(c, builder_mask);
 }
 
-void reset_builder_connection_command(client* c, int argc, sds* argv) {
-    //TODO
-    addReplyError(c, "Not implemented");
+// Convenience function for sending a command to a child process
+void builder_send_command_generic(client *c, IPC_Pipe* pipe, ManagerIO cmd) {
+    if(!pipe->child_pid) {
+        // Indicates that the builder for the specified ID is not running
+        addReplyError(c, "Requested builder is not running");
+        return;
+    }
+
+    send_manager_command_async(c, pipe, cmd);
+    blockClient(c, pipe, clean_up_disconnected_client);
 }
+
+void reset_builder_connection_command(client* c, int argc, sds* argv) {
+    UNUSED(argc);
+
+    ManagerIO cmd;
+    unsigned long device_id = strtoul(argv[1], NULL, 0);
+    if(device_id >= 32) {
+        addReplyErrorFormat(c, "Device ID %lu is not valid.", device_id);
+        return;
+    }
+
+    cmd.command = CMD_RESET_CONN;
+    builder_send_command_generic(c, &(pipes[device_id]), cmd);
+}
+
 void read_num_built_command(client* c, int argc, sds* argv) {
-    addReplyError(c, "Not implemented");
+    UNUSED(argc);
+    ManagerIO cmd;
+    unsigned long device_id = strtoul(argv[1], NULL, 0);
+    if(device_id >= 32) {
+        addReplyErrorFormat(c, "Device ID %lu is not valid.", device_id);
+        return;
+    }
+
+    cmd.command = CMD_NUMBUILT;
+    builder_send_command_generic(c, &(pipes[device_id]), cmd);
+}
+
+void is_builder_reeling_command(client* c, int argc, sds* argv) {
+    UNUSED(argc);
+    ManagerIO cmd;
+    unsigned long device_id = strtoul(argv[1], NULL, 0);
+    if(device_id >= 32) {
+        addReplyErrorFormat(c, "Device ID %lu is not valid.", device_id);
+        return;
+    }
+
+    cmd.command = CMD_ISREELING;
+    builder_send_command_generic(c, &(pipes[device_id]), cmd);
 }
 
 static ServerCommand default_commands[] = {
