@@ -1621,10 +1621,10 @@ int data_builder_main(struct BuilderConfig config) {
     initialize_event_buffer(&(fpga_if.event_buffer));
 
 
-    struct fnet_ctrl_client* udp_client = NULL;
+    fpga_if.udp_client = NULL;
     if(!config.dry_run) {
-        udp_client = connect_fakernet_udp_client(config.ip);
-        if(!udp_client) {
+        fpga_if.udp_client = connect_fakernet_udp_client(config.ip);
+        if(!fpga_if.udp_client) {
             builder_log(LOG_ERROR, "couldn't make UDP client");
             return 1;
         }
@@ -1633,7 +1633,7 @@ int data_builder_main(struct BuilderConfig config) {
     // connect to FPGA
     do {
         // Send a TCP reset_command
-        if(udp_client && send_tcp_reset(udp_client)) {
+        if(fpga_if.udp_client && send_tcp_reset(fpga_if.udp_client)) {
             builder_log(LOG_ERROR, "Error sending TCP reset. Will retry.");
             sleep(1);
             continue;
