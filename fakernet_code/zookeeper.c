@@ -13,7 +13,6 @@
 #include <getopt.h>
 #include "server_common.h"
 #include "server.h"
-#include "util.h"
 #include "daq_logger.h"
 
 #include "data_builder.h"
@@ -234,7 +233,6 @@ void send_manager_command_async(client* c, IPC_Pipe* pipe, ManagerIO cmd) {
         this_node->next = this_cmd;
     }
 }
-
 
 void start_builder_command(client* c, int argc, sds* argv) {
     (void) argv; // Unused
@@ -474,7 +472,6 @@ int main(int argc, char** argv) {
 
     int i;
     int port = -1; // -1 will go with the default option
-
     struct option clargs[] = {
         {"port", required_argument, NULL, 'p'},
         //{"verbose", no_argument, NULL, 'v'},
@@ -514,8 +511,6 @@ int main(int argc, char** argv) {
         //config.redis_host = DEFAULT_REDIS_HOST;
         the_config.in_pipe = pipes[builder_id].p2c_pipe[READ_PIPE_IDX];
         the_config.out_pipe = pipes[builder_id].c2p_pipe[WRITE_PIPE_IDX];
-
-        printf("CHILD %i\n", builder_id);
 
         data_builder_main(the_config);
 

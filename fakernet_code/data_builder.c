@@ -92,7 +92,6 @@ int built_counter = 0;
 uint32_t crc32(uint32_t crc, uint32_t * buf, unsigned int len);
 void crc8(unsigned char *crc, unsigned char m);
 
-
 // The two CERES XEMs both readout 16-channels, but the data ends up in weird
 // locations.  The two arrays below re-map the channels such that the top-most
 // channels (physically located) ends up being the earliest in the serial data
@@ -412,8 +411,6 @@ int connect_to_fpga(const char* fpga_ip) {
 
     }
     args |= O_NONBLOCK;
-
-    // Idk if this is needed!
 
     if(fcntl(fd, F_SETFL, args) < 0) {
         builder_log(LOG_ERROR, "Error setting socket opts");
