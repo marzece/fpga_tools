@@ -1,3 +1,19 @@
+/*
+ * fake_data_gen.c
+ * Author: Eric Marzec <marzece@umich.edu>
+ * This program is designed to fake the data produced by CERES/FONTUS FPGAs.
+ * The program will listen for TCP connections and once one is received it will
+ * start sending data to it at a fixed rate. More connections can be received
+ * and each will get the same fake data.
+ *
+ * TODO:
+ * Currently if a client disconnects it's not fully removed from consideration.
+ * This is because I track connected file-descriptors using a fixed length array,
+ * so if someone disconnects I ought to "pop" that descriptor from the array.
+ * But that "pop" operation is annoying to do with an array, a linked-list would
+ * be more appropriate. So I should implement that linked-list strategy instead.
+ */
+
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -8,6 +24,7 @@
 #include <errno.h>
 #include <netdb.h>
 #include <string.h>
+#include <signal.h>
 
 #define PORT "5009"
 #define BACKLOG 10
@@ -205,6 +222,7 @@ int main(int argc, char** argv) {
         }
     }
 
+    sigignore(SIGPIPE);
 
     int sockfd;  // listen on sock_fd, new connection on new_fd
     struct addrinfo hints, *servinfo, *p;
@@ -316,6 +334,9 @@ int main(int argc, char** argv) {
             event_rate_time = current_time;
             // Send event
             for(int i =0; i<num_connected_fds; i++) {
+                if(connected_fds[i] < 0) {
+                    continue;
+                }
                 ssize_t nbytes;
                 if(create_fontus_data && i==0) {
                     nbytes = produce_fontus_data(buffer, count);
@@ -330,8 +351,10 @@ int main(int argc, char** argv) {
 
                 do {
                     ssize_t bytes = send(connected_fds[i], buffer+nsent, nbytes-nsent, 0);
-                    if(bytes < 0) {
+                    if(bytes <= 0) {
                         perror("SEND");
+                        close(connected_fds[i]);
+                        connected_fds[i] = -1;
                         break;
                     }
                     nsent +=  bytes;
