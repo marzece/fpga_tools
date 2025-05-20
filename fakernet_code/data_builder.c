@@ -1731,10 +1731,14 @@ int data_builder_main(struct BuilderConfig config) {
     event_ready = 0;
     int did_warn_about_reeling = 0;
     while(loop) {
-        //int yes = 1;
-        //if( setsockopt(fpga_if.fd, IPPROTO_TCP, TCP_QUICKACK, &yes, sizeof(yes)) ) {
-        //    builder_log(LOG_ERROR, "Error setting TCP_QUICKACK");
-        //}
+#if __unix__
+        {
+            int yes = 1;
+            if( setsockopt(fpga_if.fd, IPPROTO_TCP, TCP_QUICKACK, &yes, sizeof(yes)) ) {
+                builder_log(LOG_ERROR, "Error setting TCP_QUICKACK");
+            }
+        }
+#endif
 
         // If there's no data to process, we wait for data to show up.
         // Don't block forever though so stats can continue to be updates
