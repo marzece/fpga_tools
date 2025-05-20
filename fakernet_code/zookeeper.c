@@ -175,6 +175,7 @@ void child_read_proc(aeEventLoop* el, int fd, void* client_data, int mask) {
         // TODO if this ever gets called and the child did not actually exit
         // that will cause this to hang. Perhaps I should set the "no hang" option
         // in waitpid or something, then maybe call "kill"
+        kill(this_pipe->child_pid, SIGKILL);
         waitpid(this_pipe->child_pid, NULL, 0);
         clean_up_child_process_pipes(this_pipe);
         return;
@@ -194,7 +195,7 @@ void child_read_proc(aeEventLoop* el, int fd, void* client_data, int mask) {
         unblockClient(c);
     }
 
-    // Finally, remove the top of the command list and free it. 
+    // Finally, remove the top of the command list and free it.
     // The send the next command in the list
     this_pipe->cmd_list = this_cmd->next;
     free(this_cmd);
