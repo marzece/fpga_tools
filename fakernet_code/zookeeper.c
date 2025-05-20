@@ -409,12 +409,23 @@ void is_builder_reeling_command(client* c, int argc, sds* argv) {
     builder_send_command_generic(c, &(pipes[device_id]), cmd);
 }
 
+void get_builder_pid_command(client* c, int argc, sds* argv) {
+    UNUSED(argc);
+    unsigned long device_id = strtoul(argv[1], NULL, 0);
+    if(device_id >= 32) {
+        addReplyErrorFormat(c, "Device ID %lu is not valid.", device_id);
+        return;
+    }
+    addReplyLongLong(c, pipes[device_id].child_pid);
+}
+
 static ServerCommand default_commands[] = {
     {"start_builder", start_builder_command, NULL, 2, 1, 0, 0},
     {"stop_builder", stop_builder_command, NULL, 2, 1, 0, 0},
     {"is_builder_reeling", is_builder_reeling_command, NULL, 2, 1, 0, 0},
     {"reset_builder_connection", reset_builder_connection_command, NULL, 2, 1, 0, 0},
-    {"read_num_built", read_num_built_command, NULL, 1, 1, 0, 0},
+    {"get_num_built", read_num_built_command, NULL, 2, 1, 0, 0},
+    {"get_builder_pid", get_builder_pid_command, NULL, 2, 1, 0, 0},
     {"read_active_builders", read_active_builders_command, NULL, 1, 1, 0, 0},
     {"", NULL, NULL, 0, 0, 0, 0} // Must be last
 };
