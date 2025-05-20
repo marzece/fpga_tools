@@ -30,6 +30,7 @@ enum ManagerIOCommand {
     CMD_CONNECTED, // Returns 1 if connected to FPGA, 0 otherwise
     CMD_ISREELING, // Returns 1 if currently "reeling", 0 otherwise
     CMD_NUMBUILT,  // Returns the number of events built since the program started
+    CMD_RESET_CONN,  // Returns the number of events built since the program started
 };
 
 struct BuilderConfig default_builder_config(void);

@@ -438,6 +438,19 @@ int connect_to_fpga(const char* fpga_ip) {
                 if(res != 1) {
                     goto error;
                 }
+                int so_error;
+                socklen_t len = sizeof(so_error);
+                res = getsockopt(fd, SOL_SOCKET, SO_ERROR, &so_error, &len);
+                if(res < 0) {
+                    builder_log(LOG_ERROR, "getsockopt failed: %s", strerror(errno));
+                    goto error;
+
+                }
+                if(so_error !=0) {
+                    builder_log(LOG_ERROR, "Connection failed: %s", strerror(so_error));
+                    goto error;
+
+                }
                 break;
             }
             builder_log(LOG_ERROR, "Error connecting TCP socket: %s", strerror(errno));
@@ -1515,7 +1528,6 @@ void receive_manager_io(ManagerIO* manager_command, int* in_pipe) {
 }
 
 void respond_to_manager_io(ManagerIO* manager_command, int* out_pipe) {
-    builder_log(LOG_ERROR, "SLEEPING");
     int fd = *out_pipe;
     if(fd < 0) {
         return;
@@ -1533,6 +1545,29 @@ void respond_to_manager_io(ManagerIO* manager_command, int* out_pipe) {
         *out_pipe = -1;
     }
     manager_command->command = CMD_NONE;
+}
+
+int reset_connection(FPGA_IF* fpga_if, const char* ip_addr) {
+    // Close the TCP connection
+    close(fpga_if->fd);
+    usleep(50000); // Sleep for 0.05s just to make sure the connection actually closes
+
+    do {
+        // Send a TCP reset_command
+        if(fpga_if->udp_client && send_tcp_reset(fpga_if->udp_client)) {
+            builder_log(LOG_ERROR, "Error sending TCP reset. Will retry.");
+            sleep(1);
+            continue;
+        }
+        fpga_if->fd = connect_to_fpga(ip_addr);
+
+        if(fpga_if->fd < 0) {
+            builder_log(LOG_ERROR, "error ocurred connecting to FPGA. Will retry.");
+            sleep(1);
+        }
+    } while(fpga_if->fd < 0 && loop);
+
+    return fpga_if->fd < 0 ? 1 : 0;
 }
 
 struct BuilderConfig default_builder_config(void) {
@@ -1642,10 +1677,11 @@ int data_builder_main(struct BuilderConfig config) {
 
         if(fpga_if.fd < 0) {
             builder_log(LOG_ERROR, "error ocurred connecting to FPGA. Will retry.");
+            sleep(1);
         }
     } while(fpga_if.fd < 0);
     builder_log(LOG_INFO, "FPGA TCP connection made");
-    the_stats.connected_to_fpga = 1;
+    the_stats.connected_to_fpga = fpga_if.fd > 0 ? 1 : 0;
 
     builder_log(LOG_INFO, "Expecting %i channels of data per event.", NUM_CHANNELS);
 
@@ -1731,6 +1767,14 @@ int data_builder_main(struct BuilderConfig config) {
                 break;
             case CMD_NUMBUILT:
                 manager_command.arg = the_stats.event_count;
+                break;
+            case CMD_RESET_CONN:
+                builder_log(LOG_WARN, "Resetting TCP connection");
+                manager_command.arg = reset_connection(&fpga_if, config.ip);
+                // If the ret value is non-zero the connection failed
+                if(!manager_command.arg) {
+                    builder_log(LOG_WARN, "Re-connected");
+                }
                 break;
             default:
                 builder_log(LOG_WARN, "Unknown command %i recieved");
