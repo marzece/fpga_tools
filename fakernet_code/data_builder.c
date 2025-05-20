@@ -1795,6 +1795,10 @@ int data_builder_main(struct BuilderConfig config) {
         }
         else {
             event_ready = protocol.reader_process(&fpga_if, &event_header);
+            if(did_warn_about_reeling) {
+                builder_log(LOG_INFO, "Recovered from reeling");
+            }
+            did_warn_about_reeling = 0;
         }
 
         gettimeofday(&current_time, NULL);
