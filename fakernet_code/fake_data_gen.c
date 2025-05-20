@@ -295,7 +295,7 @@ int main(int argc, char** argv) {
 
     unsigned char* buffer = malloc((1024*1024));
     int count = 0;
-    int sent_count;
+    int sent_count = 0;
     //ssize_t nbytes = produce_data(buffer, count, 4, 400);
 
     while(1) {  // main accept() loop
