@@ -158,6 +158,7 @@ void child_read_proc(aeEventLoop* el, int fd, void* client_data, int mask) {
     if(this_cmd == NULL) {
         // Not sure why this would happen...
         // Could happen if the child process crashes TODO (figure out how to handles this)
+        daq_log(LOG_ERROR,"Unexpected circumstance found. Data received for child proc that isn't expected.");
     }
 
     ManagerIO recv_cmd;
@@ -181,7 +182,7 @@ void child_read_proc(aeEventLoop* el, int fd, void* client_data, int mask) {
     }
     else if(nbyte < 0) {
         // I have no idea why this would happen.
-        printf("Read error: %s\n", strerror(errno));
+        daq_log(LOG_ERROR, "Read error: %s\n", strerror(errno));
     }
 
     // TODO should check the received command matches the one speciefied in the queue
@@ -242,7 +243,6 @@ void start_builder_command(client* c, int argc, sds* argv) {
         addReplyErrorFormat(c, "Device ID %lu is not valid.", device_id);
         return;
     }
-    printf("%i\n", argc);
 
     // The process is already open & running (presumably)
     if(pipes[device_id].child_pid) {
@@ -256,7 +256,7 @@ void start_builder_command(client* c, int argc, sds* argv) {
     pid_t child_pid = fork();
     if(!child_pid) {
         // Child process
-        printf("Starting Data Builder %lu %i\n", device_id, getpid());
+        daq_log(LOG_WARN, "Starting Data Builder %lu %i\n", device_id, getpid());
         cleanup_logger();
         close(STDOUT_FILENO); // Get rid of printf output
         server.el->stop = 1;
@@ -419,7 +419,7 @@ void get_builder_pid_command(client* c, int argc, sds* argv) {
     addReplyLongLong(c, pipes[device_id].child_pid);
 }
 
-static ServerCommand default_commands[] = {
+static ServerCommand commandTable[] = {
     {"start_builder", start_builder_command, NULL, 2, 1, 0, 0},
     {"stop_builder", stop_builder_command, NULL, 2, 1, 0, 0},
     {"is_builder_reeling", is_builder_reeling_command, NULL, 2, 1, 0, 0},
@@ -459,7 +459,7 @@ int server_main(int port) {
     if(port > 0) {
         server.port = port;
     }
-    server_command_table = default_commands;
+    server_command_table = commandTable;
     initServer();
 
     aeSetBeforeSleepProc(server.el, beforeSleep);
@@ -527,7 +527,6 @@ int main(int argc, char** argv) {
 
         free(ip_addr_buffer);
         free(log_filename_buffer);
-        printf("CHILD DONE\n");
     }
     else {
         // Kill all the child processes that are around.
