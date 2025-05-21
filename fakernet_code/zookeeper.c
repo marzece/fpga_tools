@@ -235,24 +235,24 @@ void send_manager_command_async(client* c, IPC_Pipe* pipe, ManagerIO cmd) {
 }
 
 void start_builder_command(client* c, int argc, sds* argv) {
-    (void) argv; // Unused
     (void) argc; // Unused
 
-    unsigned long device_id = strtoul(c->argv[1], NULL, 0);
+    unsigned long device_id = strtoul(argv[1], NULL, 0);
     if(device_id >= MAX_NUM_BUILDERS) {
         addReplyErrorFormat(c, "Device ID %lu is not valid.", device_id);
         return;
     }
+    printf("%i\n", argc);
 
-    pipe(pipes[device_id].p2c_pipe);
-    pipe(pipes[device_id].c2p_pipe);
-    pipes[device_id].parent_pid = getpid();
-    pipes[device_id].device_index = device_id;
     // The process is already open & running (presumably)
     if(pipes[device_id].child_pid) {
         addReplyLongLong(c, (long long) -1);
         return;
     }
+    pipe(pipes[device_id].p2c_pipe);
+    pipe(pipes[device_id].c2p_pipe);
+    pipes[device_id].parent_pid = getpid();
+    pipes[device_id].device_index = device_id;
     pid_t child_pid = fork();
     if(!child_pid) {
         // Child process
