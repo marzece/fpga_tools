@@ -256,7 +256,7 @@ void start_builder_command(client* c, int argc, sds* argv) {
     pid_t child_pid = fork();
     if(!child_pid) {
         // Child process
-        daq_log(LOG_WARN, "Starting Data Builder %lu %i\n", device_id, getpid());
+        daq_log(LOG_WARN, "Starting Data Builder %lu, PID=%i\n", device_id, getpid());
         cleanup_logger();
         close(STDOUT_FILENO); // Get rid of printf output
         server.el->stop = 1;
@@ -346,7 +346,7 @@ void clean_up_disconnected_client(client* c, void* data) {
 
 }
 
-void read_active_builders_command(client* c, int argc, sds* argv) {
+void get_active_builders_command(client* c, int argc, sds* argv) {
     UNUSED(argc);
     UNUSED(argv);
     unsigned int builder_mask = 0x0;
@@ -383,7 +383,7 @@ void reset_builder_connection_command(client* c, int argc, sds* argv) {
     builder_send_command_generic(c, &(pipes[device_id]), cmd);
 }
 
-void read_num_built_command(client* c, int argc, sds* argv) {
+void get_num_built_command(client* c, int argc, sds* argv) {
     UNUSED(argc);
     ManagerIO cmd;
     unsigned long device_id = strtoul(argv[1], NULL, 0);
@@ -414,9 +414,13 @@ void get_builder_pid_command(client* c, int argc, sds* argv) {
     unsigned long device_id = strtoul(argv[1], NULL, 0);
     if(device_id >= 32) {
         addReplyErrorFormat(c, "Device ID %lu is not valid.", device_id);
-        return;
     }
-    addReplyLongLong(c, pipes[device_id].child_pid);
+    else if(pipes[device_id].child_pid <= 0) {
+        addReplyError(c, "Requested builder is not running");
+    }
+    else {
+        addReplyLongLong(c, pipes[device_id].child_pid);
+    }
 }
 
 static ServerCommand commandTable[] = {
@@ -424,9 +428,9 @@ static ServerCommand commandTable[] = {
     {"stop_builder", stop_builder_command, NULL, 2, 1, 0, 0},
     {"is_builder_reeling", is_builder_reeling_command, NULL, 2, 1, 0, 0},
     {"reset_builder_connection", reset_builder_connection_command, NULL, 2, 1, 0, 0},
-    {"get_num_built", read_num_built_command, NULL, 2, 1, 0, 0},
+    {"get_num_built", get_num_built_command, NULL, 2, 1, 0, 0},
     {"get_builder_pid", get_builder_pid_command, NULL, 2, 1, 0, 0},
-    {"read_active_builders", read_active_builders_command, NULL, 1, 1, 0, 0},
+    {"get_active_builders", get_active_builders_command, NULL, 1, 1, 0, 0},
     {"", NULL, NULL, 0, 0, 0, 0} // Must be last
 };
 
