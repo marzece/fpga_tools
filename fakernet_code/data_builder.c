@@ -940,12 +940,10 @@ struct fnet_ctrl_client* connect_fakernet_udp_client(const char* fnet_hname) {
     const char* err_string = NULL;
     struct fnet_ctrl_client* fnet_client = NULL;
 
-    while(!fnet_client) {
-        fnet_client = fnet_ctrl_connect(fnet_hname, reliable, &err_string, NULL);
-        if(!fnet_client) {
-            builder_log(LOG_ERROR, "ERROR Connecting on UDP channel: %s. Will retry", err_string);
-            sleep(1);
-        }
+    fnet_client = fnet_ctrl_connect(fnet_hname, reliable, &err_string, NULL);
+    if(!fnet_client) {
+        builder_log(LOG_ERROR, "ERROR Connecting on UDP channel: %s. Will retry", err_string);
+        return NULL;
     }
     builder_log(LOG_INFO, "UDP channel connected");
     return fnet_client;
@@ -1652,13 +1650,32 @@ int data_builder_main(struct BuilderConfig config) {
     initialize_ring_buffer(&(fpga_if.ring_buffer));
     initialize_event_buffer(&(fpga_if.event_buffer));
 
+    // Set the I/O pipes to non-block
+    {
+        int pipe_flags = fcntl(config.in_pipe, F_GETFL);
+        fcntl(config.in_pipe, F_SETFL, O_NONBLOCK | pipe_flags);
+
+        pipe_flags = fcntl(config.out_pipe, F_GETFL);
+        fcntl(config.out_pipe, F_SETFL, O_NONBLOCK | pipe_flags);
+    }
 
     fpga_if.udp_client = NULL;
     if(!config.dry_run) {
-        fpga_if.udp_client = connect_fakernet_udp_client(config.ip);
-        if(!fpga_if.udp_client) {
-            builder_log(LOG_ERROR, "couldn't make UDP client");
-            return 1;
+        while(1) {
+            fpga_if.udp_client = connect_fakernet_udp_client(config.ip);
+            if(fpga_if.udp_client) {
+                break;
+            }
+
+            // This is a stupid hack to make sure a manager process doesn't hang
+            // if it requests data to a builder that is stuck trying to connect
+            // to an FPGA. TODO I really should come up with a better solution.
+            receive_manager_io(&manager_command, &config.in_pipe);
+            if(manager_command.command != CMD_NONE) {
+                manager_command.arg = 0;
+                respond_to_manager_io(&manager_command, &config.out_pipe);
+            }
+            sleep(1);
         }
     }
 
@@ -1693,14 +1710,6 @@ int data_builder_main(struct BuilderConfig config) {
         }
     }
 
-    // Set the I/O pipes to non-block
-    {
-        int pipe_flags = fcntl(config.in_pipe, F_GETFL);
-        fcntl(config.in_pipe, F_SETFL, O_NONBLOCK | pipe_flags);
-
-        pipe_flags = fcntl(config.out_pipe, F_GETFL);
-        fcntl(config.out_pipe, F_SETFL, O_NONBLOCK | pipe_flags);
-    }
     // Need to know which file descriptor has the largest numerical value,
     // because "select" needs to use that value
     const int max_pipe = fpga_if.fd > config.in_pipe ? fpga_if.fd+1 : config.in_pipe+1;

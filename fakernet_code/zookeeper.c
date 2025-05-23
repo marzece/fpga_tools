@@ -371,15 +371,13 @@ void builder_send_command_generic(client *c, IPC_Pipe* pipe, ManagerIO cmd) {
 
 void reset_builder_connection_command(client* c, int argc, sds* argv) {
     UNUSED(argc);
-
     ManagerIO cmd;
+    cmd.command = CMD_RESET_CONN;
     unsigned long device_id = strtoul(argv[1], NULL, 0);
     if(device_id >= 32) {
         addReplyErrorFormat(c, "Device ID %lu is not valid.", device_id);
         return;
     }
-
-    cmd.command = CMD_RESET_CONN;
     builder_send_command_generic(c, &(pipes[device_id]), cmd);
 }
 
