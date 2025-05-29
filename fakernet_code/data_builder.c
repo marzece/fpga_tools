@@ -45,6 +45,7 @@ Author: Eric Marzec <marzece@gmail.com>
 #include <fcntl.h>
 #include <errno.h>
 #include <signal.h>
+#include <sys/uio.h>
 #include "hiredis/hiredis.h"
 #include "fnet_client.h"
 #include "daq_logger.h"
@@ -116,6 +117,7 @@ volatile sig_atomic_t loop = 1;
 
 // If reeling==1 need to search for next trigger header magic value.
 int reeling = 0;
+int timestamps_enabled = 0;
 
 // Alias the daq_logger log function to builder_log just b/c I like that name more
 void(*builder_log)(int, const char* restrict, ...) = &daq_log;
@@ -487,6 +489,11 @@ int connect_to_fpga(const char* fpga_ip) {
 
     }
 
+    timestamps_enabled = 1;
+    if(setsockopt(fd, SOL_SOCKET, SO_TIMESTAMP, &yes, sizeof(yes)) ) {
+        builder_log(LOG_ERROR, "Error setting SO_TIMESTAMP");
+        timestamps_enabled = 0;
+    }
     return fd;
 
 error:
@@ -496,6 +503,7 @@ error:
 }
 
 // This is the function that reads data from the FPGA ethernet connection
+unsigned char control_buf[1024];
 size_t pull_from_fpga(FPGA_IF* fpga_if) {
     ssize_t bytes_recvd = 0;
     size_t contiguous_space_left;
@@ -507,8 +515,21 @@ size_t pull_from_fpga(FPGA_IF* fpga_if) {
     // recv's, one at the "end" then one at the start of the ring buffer.
     // That might help if this gets a lot of chump reads that are only like 100 bytes.
     contiguous_space_left = ring_buffer_contiguous_space_available(&(fpga_if->ring_buffer));
+
+    struct iovec buf;
+    buf.iov_base = w_buffer+w_buffer_idx;
+    buf.iov_len = contiguous_space_left;
+    struct msghdr message_header;
+    message_header.msg_name = NULL;
+    message_header.msg_namelen = 0;
+    message_header.msg_iov = &buf;
+    message_header.msg_iovlen = 1;
+    message_header.msg_control = control_buf;
+    message_header.msg_controllen = 1024;
+
     if(contiguous_space_left > 0) {
-        bytes_recvd = recv(fpga_if->fd, w_buffer + w_buffer_idx, contiguous_space_left, 0);
+        //bytes_recvd = recv(fpga_if->fd, w_buffer + w_buffer_idx, contiguous_space_left, 0);
+        bytes_recvd = recvmsg(fpga_if->fd, &message_header, 0);
         if(bytes_recvd < 0) {
             //printf("Error retrieving data from socket: %s\n", strerror(errno));
             return 0;
