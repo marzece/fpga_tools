@@ -1005,6 +1005,17 @@ static uint32_t write_watchdog_mask_command(uint32_t* args) {
     return write_gpio_value(get_ceres_handle()->axi_gpio, GPIO_WATCHDOG_OFFSET, mask);
 }
 
+static uint32_t read_fifo_occupancy_command(uint32_t* args) {
+    uint32_t channel = args[0];
+    // The FIFO occupancy is actually 2 16-bit unsigned integers concatenated
+    // together. The values are the "read occupancy" and the "write occupancy".
+    // This function returns the larger of those two.
+    const uint32_t val = read_fifo_occupancy(get_ceres_handle()->pipeline, channel);
+    const uint16_t v1 = val & 0xFFFF;
+    const uint16_t v2 = (val >> 16);
+    return v1 > v2 ? v1 : v2;
+}
+
 ServerCommand ceres_commands[] = {
 {"read_iic_reg",NULL,                              read_iic_block_command,                                 2,  1, 0, 0},
 {"write_iic_reg",NULL,                             write_iic_block_command,                                3,  0, 0, 0},
@@ -1104,5 +1115,6 @@ ServerCommand ceres_commands[] = {
 {"read_tdc_value",NULL,                            read_tdc_value_command,                                 1,  1, 0, 0},
 {"read_watchdog_mask",NULL,                        read_watchdog_mask_command,                             1,  1, 0, 0},
 {"write_watchdog_mask",NULL,                       write_watchdog_mask_command,                            2,  1, 0, 0},
+{"read_fifo_occupancy",NULL,                       read_fifo_occupancy_command,                            2,  1, 0, 0},
 {"",NULL,                                          NULL,                                                   0,  0, 0, 0}    //  Must  be  last
 };

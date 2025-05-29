@@ -23,6 +23,8 @@ int write_addr(uint32_t, uint32_t, uint32_t);
 #define  GLOBAL_DEPTH_ADDR_OFFSET         0x34
 #define  DEPTH_ADDR_OFFSET                0x100
 #define  DEPTH_ADDR_WIDTH                 0x4
+#define  FIFO_OCC_OFFSET                  0x200
+#define  FIFO_OCC_WIDTH                   0x4
 #define  BUILD_INFO_OFFSET                0x804
 //#define REGISTER_FILE_STATUS_OFFSET       0x800
 
@@ -154,4 +156,12 @@ uint32_t read_build_info(AXI_DATA_PIPELINE *dp_axi) {
     // int hour = (timestamp>>12) & 0x1F;
     // int minute = (timestamp>>6) & 0x3F;
     // int second = timestamp & 0x3F;
+}
+
+uint32_t read_fifo_occupancy(AXI_DATA_PIPELINE *dp_axi, uint32_t channel) {
+    if(channel >= 16) {
+        return 0;
+    }
+    uint32_t offset = FIFO_OCC_OFFSET + FIFO_OCC_WIDTH*channel;
+    return read_data_pipeline_value(dp_axi, offset);
 }
