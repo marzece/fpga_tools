@@ -955,11 +955,12 @@ int main(int argc, char** argv) {
 
         if(event_ready_queue.events_available) {
             event_id = pop_complete_event_id();
-            check_timestamp(event_id);
             built_count += 1;
             stats.event_count += 1;
             evaluate_event_stats(&stats, event_id);
 
+            // TODO try implementing resevoir sampling to decide if I ought to
+            // publish an event or not!
             if(publish_rate && publish_redis) {
                 delta_t = calculate_delta_t(current_time, redis_update_time);
                 delta_t /= 1e6;
