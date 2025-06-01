@@ -56,6 +56,9 @@ Author: Eric Marzec <marzece@gmail.com>
 #define ntohll(x) htonll(x)
 #endif
 
+// QUICKACK doesn't seem to improve readout speed. So I've disabled it for now
+#define DO_QUICKACK 0
+
 // Largest possible size for single message (in bytes)
 #define LOG_MESSAGE_MAX 1024
 
@@ -476,13 +479,12 @@ int connect_to_fpga(const char* fpga_ip) {
     // NO_DELAY does nothing I think, it only matters for sending data not
     // receiving (pretty sure)
     int yes = 1;
-#ifdef __unix__
+#if defined(__unix__) && DO_QUICKACK
     if( setsockopt(fd, IPPROTO_TCP, TCP_QUICKACK, &yes, sizeof(yes)) ) {
         builder_log(LOG_ERROR, "Error setting TCP_QUICKACK");
     }
 #endif
-    if( setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &yes, sizeof(yes)) ) {
-        builder_log(LOG_ERROR, "Error setting TCP_NODELAY");
+
     }
 
     return fd;
@@ -1737,7 +1739,7 @@ int data_builder_main(struct BuilderConfig config) {
     event_ready = 0;
     int did_warn_about_reeling = 0;
     while(loop) {
-#if __unix__
+#if __unix__ && DO_QUICKACK
         {
             int yes = 1;
             if( setsockopt(fpga_if.fd, IPPROTO_TCP, TCP_QUICKACK, &yes, sizeof(yes)) ) {
