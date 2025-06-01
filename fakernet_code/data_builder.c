@@ -117,7 +117,11 @@ volatile sig_atomic_t loop = 1;
 
 // If reeling==1 need to search for next trigger header magic value.
 int reeling = 0;
+
+// Timestamp monitoring for estimating event rate & "sustainability"
 int timestamps_enabled = 0;
+#define MSGHDR_CONTROL_BUFSIZE 1024
+unsigned char msghdr_control_buf[MSGHDR_CONTROL_BUFSIZE];
 
 // Alias the daq_logger log function to builder_log just b/c I like that name more
 void(*builder_log)(int, const char* restrict, ...) = &daq_log;
@@ -487,13 +491,12 @@ int connect_to_fpga(const char* fpga_ip) {
     }
 #endif
 
-    }
-
     timestamps_enabled = 1;
-    if(setsockopt(fd, SOL_SOCKET, SO_TIMESTAMP, &yes, sizeof(yes)) ) {
-        builder_log(LOG_ERROR, "Error setting SO_TIMESTAMP");
+    if(setsockopt(fd, SOL_SOCKET, SO_TIMESTAMPNS, &timestamps_enabled, sizeof(yes)) ) {
+        builder_log(LOG_ERROR, "Error setting SO_TIMESTAMPNS");
         timestamps_enabled = 0;
     }
+
     return fd;
 
 error:
@@ -524,21 +527,40 @@ size_t pull_from_fpga(FPGA_IF* fpga_if) {
     message_header.msg_namelen = 0;
     message_header.msg_iov = &buf;
     message_header.msg_iovlen = 1;
-    message_header.msg_control = control_buf;
-    message_header.msg_controllen = 1024;
+    message_header.msg_control = msghdr_control_buf;
+    message_header.msg_controllen = MSGHDR_CONTROL_BUFSIZE;
 
-    if(contiguous_space_left > 0) {
-        //bytes_recvd = recv(fpga_if->fd, w_buffer + w_buffer_idx, contiguous_space_left, 0);
-        bytes_recvd = recvmsg(fpga_if->fd, &message_header, 0);
-        if(bytes_recvd < 0) {
-            //printf("Error retrieving data from socket: %s\n", strerror(errno));
-            return 0;
-        }
-#ifdef DUMP_DATA
-        fwrite(w_buffer + w_buffer_idx, 1, bytes_recvd, fdump);
-#endif
-        ring_buffer_update_write_pntr(&fpga_if->ring_buffer, bytes_recvd);
+    if(contiguous_space_left <= 0) {
+        return 0;
     }
+    //bytes_recvd = recv(fpga_if->fd, w_buffer + w_buffer_idx, contiguous_space_left, 0);
+    bytes_recvd = recvmsg(fpga_if->fd, &message_header, 0);
+    if(bytes_recvd < 0) {
+        //printf("Error retrieving data from socket: %s\n", strerror(errno));
+        return 0;
+    }
+#ifdef DUMP_DATA
+    fwrite(w_buffer + w_buffer_idx, 1, bytes_recvd, fdump);
+#endif
+    ring_buffer_update_write_pntr(&fpga_if->ring_buffer, bytes_recvd);
+
+    struct cmsghdr* cmsg;
+    for (cmsg = CMSG_FIRSTHDR(&message_header); cmsg != NULL;
+                    cmsg = CMSG_NXTHDR(&message_header,cmsg)) {
+    printf("%i %i\n", cmsg->cmsg_level, cmsg->cmsg_type);
+        if(timestamps_enabled && cmsg->cmsg_level == SOL_SOCKET && cmsg->cmsg_type == SO_TIMESTAMPNS) {
+            void* data = CMSG_DATA(cmsg);
+            struct timespec* timestamp = (struct timespec*)data;
+            if(w_buffer_idx == 0) { // Indicates a "new" event"
+            printf("DATA2:\t%li\t%li\t%li\n", bytes_recvd, timestamp->tv_sec, timestamp->tv_nsec);
+            }
+            else { // indicates an intra-event readout
+            printf("DATA:\t%li\t%li\t%li\n", bytes_recvd, timestamp->tv_sec, timestamp->tv_nsec);
+            }
+        }
+    }
+
+
     return bytes_recvd;
 }
 
