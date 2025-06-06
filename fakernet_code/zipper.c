@@ -1013,6 +1013,7 @@ int main(int argc, char** argv) {
             byte_sent_time = current_time;
         }
 
+        // Print heartbeat if enough time has passed
         delta_t = calculate_delta_t(current_time, event_rate_time);
         if(delta_t > PRINT_UPDATE_COOLDOWN) {
             float redis_bytes = 1e6*print_status_bytes_sent/(delta_t*1024.);

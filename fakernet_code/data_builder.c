@@ -59,6 +59,7 @@ Author: Eric Marzec <marzece@gmail.com>
 
 // QUICKACK doesn't seem to improve readout speed. So I've disabled it for now
 #define DO_QUICKACK 0
+#define PRINT_UPDATE_COOLDOWN 1000000 // Heartbeat time (in micro-seconds)
 
 // Largest possible size for single message (in bytes)
 #define LOG_MESSAGE_MAX 1024
@@ -1633,6 +1634,9 @@ int data_builder_main(struct BuilderConfig config) {
     struct timeval prev_time, current_time;
     const double REDIS_STATS_COOLDOWN = 1e6; // 1-second in micro-seconds
     double last_status_update_time = 0;
+    double last_printf_time = 0;
+    unsigned int  last_printf_built_count = 0;
+    unsigned int  last_printf_reeling_count = 0;
     ProcessingStats the_stats;
     EventHeader event_header;
 
@@ -1666,7 +1670,7 @@ int data_builder_main(struct BuilderConfig config) {
     struct BuilderProtocol protocol;
     if(config.ceres_builder) {
         protocol.reader_process = ceres_read_proc;
-        protocol.display_process = ceres_display_event;
+        protocol.display_process = NULL;
         protocol.write_event = ceres_write_to_disk;
         protocol.validate_event = ceres_validate_crcs;
         protocol.publish_event = publish_event;
@@ -1674,7 +1678,7 @@ int data_builder_main(struct BuilderConfig config) {
     }
     else {
         protocol.reader_process = fontus_read_proc;
-        protocol.display_process = fontus_display_event;
+        protocol.display_process = NULL;
         protocol.write_event = fontus_write_to_disk;
         protocol.validate_event = fontus_validate_crcs;
         protocol.publish_event = publish_event;
@@ -1842,8 +1846,9 @@ int data_builder_main(struct BuilderConfig config) {
         pull_from_fpga(&fpga_if);
         if(reeling) {
             the_stats.reeling_happened = 1;
+            last_printf_reeling_count += 1;
             if(!did_warn_about_reeling) {
-                builder_log(LOG_ERROR, "Reeeling");
+                builder_log(LOG_ERROR, "Reeling");
             }
             reeling = !find_event_start(&fpga_if, HEADER_MAGIC_VALUE);
             did_warn_about_reeling = reeling;
@@ -1858,7 +1863,21 @@ int data_builder_main(struct BuilderConfig config) {
 
         gettimeofday(&current_time, NULL);
         the_stats.uptime = (current_time.tv_sec*1e6 + current_time.tv_usec) - the_stats.start_time;
+        // Print hearbeat
+        if(the_stats.uptime - last_printf_time > PRINT_UPDATE_COOLDOWN) {
+            builder_log(LOG_INFO, "Event Rate = %0.1f. "
+                                  "%i error%s occurred. "
+                                  "Last event ID = %i from device #%i",
+                                  1e6*(built_counter - last_printf_built_count)/PRINT_UPDATE_COOLDOWN,
+                                  last_printf_reeling_count,
+                                  last_printf_reeling_count==1 ? "" : "s",
+                                  the_stats.trigger_id, the_stats.device_id);
+            last_printf_built_count = built_counter;
+            last_printf_time = the_stats.uptime;
+            last_printf_reeling_count = 0;
+        }
 
+        // Update redis stats
         if((the_stats.uptime - last_status_update_time) > REDIS_STATS_COOLDOWN) {
             the_stats.fifo_wpointer = fpga_if.ring_buffer.write_pointer;
             the_stats.fifo_event_rpointer = fpga_if.ring_buffer.event_read_pointer;
@@ -1873,7 +1892,9 @@ int data_builder_main(struct BuilderConfig config) {
             protocol.publish_event(redis, fpga_if.event_buffer, HEADER_SIZE);
             prev_time = current_time;
             built_counter += 1;
-            protocol.display_process(&event_header);
+            if(protocol.display_process) {
+                protocol.display_process(&event_header);
+            }
             if(!config.do_not_save) {
                 protocol.write_event(&fpga_if.event_buffer, &event_header);
             }
