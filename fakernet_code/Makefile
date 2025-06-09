@@ -15,7 +15,7 @@ DUMP_DATA=
 all: fnetctrl kintex_client_server kintex_cli ceres_data_builder tail_daq_log fontus_data_builder zipper ceres_server fake_data_gen zookeeper
 
 fnetctrl: fnetctrl.o fnet_client.o
-	$(CC) -o $@ $(CFLAGS) $^
+	$(CC) -o $@ $(CFLAGS) $^ -lm
 
 zipper: zipper.c hiredis/libhiredis.a util.o daq_logger.o
 	$(CC) -O0 -o $@ $(CFLAGS) $^

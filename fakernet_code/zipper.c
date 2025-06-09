@@ -955,7 +955,6 @@ int main(int argc, char** argv) {
 
         if(event_ready_queue.events_available) {
             event_id = pop_complete_event_id();
-            check_timestamp(event_id);
             built_count += 1;
             stats.event_count += 1;
             evaluate_event_stats(&stats, event_id);
