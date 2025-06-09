@@ -242,6 +242,16 @@ uint32_t write_auto_trig_params_command(uint32_t* args) {
     return ret;
 }
 
+uint32_t write_auto_trig_length_command(uint32_t* args) {
+    uint32_t length = args[0];
+    return write_auto_trig_length(get_fontus_handle()->pipeline, length);
+}
+
+uint32_t write_auto_trig_period_command(uint32_t* args) {
+    uint32_t period_counts = args[0];
+    return write_auto_trig_length(get_fontus_handle()->pipeline, period_counts);
+}
+
 uint32_t read_auto_trig_params_command(uint32_t* args) {
     uint32_t period, length;
     length = read_auto_trig_length(get_fontus_handle()->pipeline);
@@ -729,6 +739,8 @@ ServerCommand fontus_commands[] = {
 {"read_sync_length",NULL,                          read_sync_length_command,                               1,  1, 0, 0},
 {"do_sync",NULL,                                   do_sync_command,                                        2,  0, 0, 0},
 {"write_auto_trig_params",NULL,                    write_auto_trig_params_command,                         3,  0, 0, 0},
+{"write_auto_trig_length",NULL,                    write_auto_trig_length_command,                         2,  0, 0, 0},
+{"write_auto_trig_period",NULL,                    write_auto_trig_period_command,                         2,  0, 0, 0},
 {"read_auto_trig_params",NULL,                     read_auto_trig_params_command,                          1,  2, 0, 0},
 {"write_auto_trig_enable",NULL,                    write_auto_trig_enable_command,                         2,  0, 0, 0},
 {"read_auto_trig_enable",NULL,                     read_auto_trig_enable_command,                          1,  1, 0, 0},
