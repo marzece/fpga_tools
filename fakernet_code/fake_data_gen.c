@@ -294,7 +294,8 @@ int main(int argc, char** argv) {
     printf("server: waiting for connections on port %s...\n", PORT);
 
     int connected_fds[64];
-    int num_connected_fds = 0;
+    int num_connected_fds = 0; // Used to keep track of the largest possibly used number of FD slots
+    int next_available_fd = -1; // Used to keep track of if there's an available FD slot
     struct timeval event_rate_time, current_time, print_update_time;
     struct timeval timeout;
     event_rate_time.tv_sec = 0;
@@ -326,7 +327,23 @@ int main(int argc, char** argv) {
                 perror("accept");
                 continue;
             }
-            connected_fds[num_connected_fds++] = connected_fd;
+
+            if(next_available_fd >= 0) {
+                connected_fds[next_available_fd] = connected_fd;
+                next_available_fd = -1;
+                // look for if there's any other available FD slots that can be
+                // used by the next connection;
+                for(int i=0; i<num_connected_fds; i++) {
+                    if(connected_fds[i] == -1) {
+                        next_available_fd = i;
+                        break;
+                    }
+                }
+            }
+            else {
+                connected_fds[num_connected_fds++] = connected_fd;
+            }
+
             if(num_connected_fds >= 64) {
                 printf("TOO many connections\n");
                 exit(1);
@@ -368,6 +385,12 @@ int main(int argc, char** argv) {
                     ssize_t bytes = send(connected_fds[i], buffer+nsent, nbytes-nsent, 0);
                     if(bytes <= 0) {
                         perror("SEND");
+                        if(next_available_fd < 0 || i < next_available_fd) {
+                            // Choose the lowest available FD slot
+                            // that way FONTUS will always be the next up if
+                            // FONTUS builder disconnects
+                            next_available_fd = i;
+                        }
                         close(connected_fds[i]);
                         connected_fds[i] = -1;
                         break;
