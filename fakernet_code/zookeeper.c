@@ -485,18 +485,23 @@ int main(int argc, char** argv) {
 
     int i;
     int port = -1; // -1 will go with the default option
+    int dry_run = 0;
     struct option clargs[] = {
         {"port", required_argument, NULL, 'p'},
+        {"dry-run", no_argument, NULL, 'd'},
         //{"verbose", no_argument, NULL, 'v'},
         {"help", no_argument, NULL, 'h'},
         { 0, 0, 0, 0}};
 
     int optindex;
     int opt;
-    while( (opt = getopt_long(argc, argv, "p:h", clargs, &optindex)) != -1)  {
+    while( (opt = getopt_long(argc, argv, "p:dh", clargs, &optindex)) != -1)  {
         switch(opt) {
             case 'p':
                 port = strtoul(optarg, NULL, 0);
+                break;
+            case 'd':
+                dry_run = 1;
                 break;
             case 'h':
             default:
@@ -517,7 +522,12 @@ int main(int argc, char** argv) {
         the_config.ip = ip_addr_buffer;
         // If the device ID is zero this should be a FONTUS data builder,
         // otherwise it should be a CERES data builder.
-        the_config.ceres_builder = builder_id == 0 ? 0 : 1;
+        the_config.ceres_builder = builder_id != 0;
+
+        if(dry_run) {
+            the_config.dry_run = 1;
+            the_config.ip = "127.0.0.1";
+        }
 
         snprintf(log_filename_buffer, 64, "zookeeper_data_builder_%i.log", builder_id);
         the_config.error_filename = log_filename_buffer;
