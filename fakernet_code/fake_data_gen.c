@@ -45,8 +45,10 @@ typedef struct FontusTrigHeader{
 
 uint32_t crc32(uint32_t crc, uint32_t * buf, unsigned int len);
 void crc8(unsigned char *crc, unsigned char m);
+#ifdef __unix__
 #define htonll(x) ((((uint64_t)htonl(x)) << 32) + htonl((x) >> 32))
 #define ntohll(x) htonll(x)
+#endif
 
 // get sockaddr, IPv4
 void *get_in_addr(struct sockaddr *sa) {
@@ -55,7 +57,7 @@ void *get_in_addr(struct sockaddr *sa) {
 
 // This function produce fake FONTUS data with a correct CRC value and then
 // stuffs it in the given buffer ready to be sent out over the network.
-static size_t produce_fontus_data(unsigned char* buffer, const int number) {
+static size_t produce_fontus_data(unsigned char* buffer, const int number, const int length) {
     static FontusTrigHeader header = {
      .magic_number = 0xF00FF00F,
      .trig_number = 0,
@@ -70,6 +72,7 @@ static size_t produce_fontus_data(unsigned char* buffer, const int number) {
      .crc =0};
 
     header.trig_number = number;
+    header.length = length;
 
     // Magic Number
     *((uint32_t*)buffer) = htonl(header.magic_number);
@@ -117,7 +120,20 @@ static size_t produce_fontus_data(unsigned char* buffer, const int number) {
     buffer += 8;
 
     *((uint32_t*)buffer) = htonl(crc32(0, (uint32_t*)start, buffer-start));
-    return 52;
+    buffer += 4;
+
+    for(int ichan = 0; ichan < 4; ichan++) {
+        *((uint32_t*)buffer) = htonl(0xFF00FF00 | ichan << 16 | ichan);
+        buffer += 4;
+
+        for(int i=0; i<length; i++){
+            uint32_t val =  rand() % 10;
+            *((uint32_t*)buffer) = htonl(val);
+            buffer += 4;
+        }
+    }
+    // The plus 4 is because start isn't the actual start
+    return (buffer - start) + 4;
 }
 
 static size_t produce_data(unsigned char* buffer, const int number, const int device_id, const int len) {
@@ -260,7 +276,6 @@ int main(int argc, char** argv) {
             perror("server: bind");
             continue;
         }
-
         break;
     }
 
@@ -339,7 +354,7 @@ int main(int argc, char** argv) {
                 }
                 ssize_t nbytes;
                 if(create_fontus_data && i==0) {
-                    nbytes = produce_fontus_data(buffer, count);
+                    nbytes = produce_fontus_data(buffer, count, 400);
                 }
                 else {
                     int channel_number = i+4;
