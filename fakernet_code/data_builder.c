@@ -1743,7 +1743,7 @@ int data_builder_main(struct BuilderConfig config) {
             sleep(1);
         }
     } while(fpga_if.fd < 0);
-    builder_log(LOG_INFO, "FPGA TCP connection made");
+    builder_log(LOG_INFO, "FPGA TCP connection made at '%s'", config.ip);
     the_stats.connected_to_fpga = fpga_if.fd > 0 ? 1 : 0;
 
     builder_log(LOG_INFO, "Expecting %i channels of data per event.", NUM_CHANNELS);
