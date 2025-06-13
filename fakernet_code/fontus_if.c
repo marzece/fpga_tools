@@ -249,7 +249,7 @@ uint32_t write_auto_trig_length_command(uint32_t* args) {
 
 uint32_t write_auto_trig_period_command(uint32_t* args) {
     uint32_t period_counts = args[0];
-    return write_auto_trig_length(get_fontus_handle()->pipeline, period_counts);
+    return write_auto_trig_rate(get_fontus_handle()->pipeline, period_counts);
 }
 
 uint32_t read_auto_trig_params_command(uint32_t* args) {
