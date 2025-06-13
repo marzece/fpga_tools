@@ -940,7 +940,7 @@ void publish_event(redisContext*c, EventBuffer eb, const unsigned int header_siz
     // So just send the first HEADER_SIZE of the event
     arglens[2] = header_size;
     r = redisCommandArgv(c, 3,  args,  arglens);
-    if(!r) {
+    if(!r && c->err) {
         builder_log(LOG_ERROR, "Redis error! : %s", c->errstr);
     }
     freeReplyObject(r);
