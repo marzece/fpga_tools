@@ -518,8 +518,16 @@ int main(int argc, char** argv) {
         int builder_id = start_data_builder;
         char* ip_addr_buffer = malloc(32);
         char* log_filename_buffer = malloc(64);
+        char* log_name = malloc(64);
         snprintf(ip_addr_buffer, 32, "192.168.84.%i", 192+builder_id);
+        if(builder_id == 0) {
+            snprintf(log_name, 64, "fontus_data_builder");
+        }
+        else {
+            snprintf(log_name, 64, "ceres_data_builder_%i", builder_id);
+        }
         the_config.ip = ip_addr_buffer;
+        the_config.log_name = log_name;
         // If the device ID is zero this should be a FONTUS data builder,
         // otherwise it should be a CERES data builder.
         the_config.ceres_builder = builder_id != 0;
@@ -539,6 +547,7 @@ int main(int argc, char** argv) {
 
         free(ip_addr_buffer);
         free(log_filename_buffer);
+        free(log_name);
     }
     else {
         // Kill all the child processes that are around.

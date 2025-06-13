@@ -1614,6 +1614,7 @@ int reset_connection(FPGA_IF* fpga_if, const char* ip_addr) {
 struct BuilderConfig default_builder_config(void) {
     struct BuilderConfig config;
     config.ip = "192.168.84.192";
+    config.log_name = "";
     config.num_events = 0;
     config.dry_run = 0;
     config.do_not_save = 0;
@@ -1662,9 +1663,10 @@ int data_builder_main(struct BuilderConfig config) {
     const unsigned int HEADER_SIZE = config.ceres_builder ?
                                      CERES_HEADER_SIZE    :
                                      FONTUS_HEADER_SIZE;
-    const char* my_name = config.ceres_builder ?
-                          "ceres_data_builder" :
-                          "fontus_data_builder";
+
+    if(!strlen(config.log_name)) {
+        config.log_name = config.ceres_builder ?  "ceres_data_builder" : "fontus_data_builder";
+    }
 
 
     struct BuilderProtocol protocol;
@@ -1688,7 +1690,7 @@ int data_builder_main(struct BuilderConfig config) {
     initialize_stats(&the_stats);
 
     printf("FPGA IP set to %s\n", config.ip);
-    setup_logger(my_name, config.redis_host, config.error_filename,
+    setup_logger(config.log_name, config.redis_host, config.error_filename,
                  builder_verbosity_stdout, builder_verbosity_file, builder_verbosity_redis,
                  LOG_MESSAGE_MAX);
     the_logger->add_newlines = 1;

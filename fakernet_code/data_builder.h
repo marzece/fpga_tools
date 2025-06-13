@@ -7,6 +7,7 @@
 struct BuilderConfig {
     int ceres_builder; // non-zero to build CERES events, 0 to build FONTUS events
     const char* ip; // FPGA IP address
+    const char* log_name; // Name that will appear in the log
     unsigned int num_events; // Number of events to build before exiting (0 means infinite)
     int dry_run; // Dry run, dummy mode, don't actually connect or do anything
     int do_not_save; // Don't save data to a file
