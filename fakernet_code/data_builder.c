@@ -601,11 +601,11 @@ redisContext* create_redis_conn(const char* hostname, const int port) {
 }
 
 redisContext* create_redis_unix_conn(const char* path) {
-    printf("Opening Redis Connection\n");
+    builder_log(LOG_INFO, "Opening Redis Connection");
     redisContext* c;
     c = redisConnectUnix(path);
     if(c == NULL || c->err) {
-        printf("Redis connection error %s\n", c->errstr);
+        builder_log(LOG_ERROR, "Redis connection error %s\n", c->errstr);
         redisFree(c);
         return NULL;
     }
@@ -894,16 +894,16 @@ void fontus_publish_event(redisContext*c, const FontusTrigHeader event) {
     arglens[2] = FONTUS_HEADER_SIZE;
     args[2] = publish_buffer;
     r = redisCommandArgv(c, 3,  args,  arglens);
-    if(!r) {
-        builder_log(LOG_ERROR, "Redis error!");
+    if(!r && c->err) {
+        builder_log(LOG_ERROR, "Redis error: %s", c->errstr);
     }
     freeReplyObject(r);
 
     args[1] = "header_stream";
     arglens[1] = strlen(args[1]);
     r = redisCommandArgv(c, 3,  args,  arglens);
-    if(!r) {
-        builder_log(LOG_ERROR, "Redis error!");
+    if(!r && c->err) {
+        builder_log(LOG_ERROR, "Redis error: %s", c->errstr);
     }
     freeReplyObject(r);
 }
@@ -925,7 +925,9 @@ void publish_event(redisContext*c, EventBuffer eb, const unsigned int header_siz
     arglens[2] = eb.num_bytes;
 
     r = redisCommandArgv(c, 3,  args,  arglens);
-    if(!r) {
+    // Only print an error if the redisContext variable has an error because sometimes the
+    // reply can show up late
+    if(!r && c->err) {
         builder_log(LOG_ERROR, "Redis error: %s", c->errstr);
     }
     freeReplyObject(r);
@@ -975,8 +977,10 @@ void redis_publish_stats(redisContext* c, const ProcessingStats* stats) {
                                                           (int)(stats->uptime/1e6));
     args[2] = buf;
     r = redisCommandArgv(c, 3,  args,  arglens);
-    if(!r) {
-        builder_log(LOG_ERROR, "Error sending stats update to redis");
+    // Only print an error if the redisContext variable has an error because sometimes the
+    // reply can show up late
+    if(!r && c->err) {
+        builder_log(LOG_ERROR, "Error sending stats update to redis: %s", c->errstr);
     }
     freeReplyObject(r);
 }
