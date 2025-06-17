@@ -21,6 +21,7 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <getopt.h>
 #include <errno.h>
 #include <netdb.h>
 #include <string.h>
@@ -225,16 +226,37 @@ static size_t produce_data(unsigned char* buffer, const int number, const int de
     return buffer - start;
 }
 
+void print_help_message(void) {
+    printf("fake_data_gen: Produces fake FONTUS/CERES. Will open a network socket on port 5009 and serve data to any connection.\n"
+            "\tusage: fake_data_gen [--rate rate] [--fontus] [--help]\n"
+            "\targuments:\n"
+            "\t--fontus -f\tWill produce fake FONTUS data for the first client to connect.\n"
+            "\t--rate -r\tEvent rate for fake data.\n");
+}
+
 int main(int argc, char** argv) {
     int create_fontus_data = 0;
-    if(argc > 1) {
-        if(strcmp(argv[1], "--fontus") == 0) {
-            printf("Will be producing FONTUS data for first connection\n");
-            create_fontus_data = 1;
-        }
-        else {
-            printf("Unrecognized argument. Only available argument is '--fontus'\n");
-            return 0;
+    float rate = 1;
+    struct option clargs[] = {
+        {"fontus", no_argument, NULL, 'f'},
+        {"rate", required_argument, NULL, 'r'},
+        {"help", no_argument, NULL, 'h'},
+        { 0, 0, 0, 0}};
+
+    int optindex;
+    int opt;
+    while( (opt = getopt_long(argc, argv, "r:fh", clargs, &optindex)) != -1)  {
+        switch(opt) {
+            case 'f':
+                create_fontus_data = 1;
+                break;
+            case 'r':
+                rate = strtof(optarg, NULL);
+                break;
+            case 'h':
+            default:
+                print_help_message();
+                return 0; // exit the program
         }
     }
 
@@ -305,14 +327,11 @@ int main(int argc, char** argv) {
     timeout.tv_sec = 0;
     timeout.tv_usec = 0;
 
-    double RATE = 1;
-
-    double time_interval = 1e6/RATE;
+    double time_interval = 1e6/rate;
 
     unsigned char* buffer = malloc((1024*1024));
     int count = 0;
     int sent_count = 0;
-    //ssize_t nbytes = produce_data(buffer, count, 4, 400);
 
     while(1) {  // main accept() loop
         gettimeofday(&current_time, NULL);
