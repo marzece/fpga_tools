@@ -1193,19 +1193,7 @@ int fontus_read_proc(FPGA_IF* fpga, EventHeader* ret) {
 
     // FONTUS waveform reading. FONTUS outputs 4 waveforms.
     // We'll exit this loop either when we've consumed all available data, or when we've complete a single event
-    while(bytes_read <= bytes_in_buffer) {
-        // First check if the event is done
-        if(event.current_channel == 4) {
-            *((FontusTrigHeader*)ret) = *header;
-            event = start_event();
-            ret_val = 1;
-            break;
-        }
-        if(bytes_read == bytes_in_buffer) {
-            ret_val = 0;
-            break;
-        }
-
+    while(bytes_read <= (bytes_in_buffer-3)) {
         // Read in a 32-bit chunk;
         word = ntohl(*(uint32_t*)(data+bytes_read));
         bytes_read+=4;
@@ -1247,6 +1235,14 @@ int fontus_read_proc(FPGA_IF* fpga, EventHeader* ret) {
             else {
                 event.samples_read += 1;
             }
+        }
+        // Check if we've reached the end of the event. If so set the return
+        // value and start the next event.
+        if(event.current_channel == 4) {
+            *((FontusTrigHeader*)ret) = *header;
+            event = start_event();
+            ret_val = 1;
+            break;
         }
     }
     ring_buffer_update_read_pntr(&fpga->ring_buffer, bytes_read);
@@ -1384,18 +1380,6 @@ int ceres_read_proc(FPGA_IF* fpga, EventHeader* ret) {
 
     // We'll exit this loop either when we've consumed all available data, or when we've complete a single event
     while(bytes_read <= (bytes_in_buffer-3)) {
-        // First check if the event is done
-        if(event.current_channel == NUM_CHANNELS) {
-            *((CeresTrigHeader*)ret) = *header;
-            event = start_event();
-            ret_val = 1;
-            break;
-        }
-        if(bytes_read == bytes_in_buffer) {
-            ret_val = 0;
-            break;
-        }
-
         // Read in a 32-bit chunk;
         word = ntohl(*(uint32_t*)(data+bytes_read));
         bytes_read+=4;
@@ -1493,6 +1477,15 @@ int ceres_read_proc(FPGA_IF* fpga, EventHeader* ret) {
             event.wf_crc_read = 1;
             event.wf_header_read = 0;
             event.prev_sample = 0;
+        }
+
+        // Check if we've reached the end of the event. If so set the return
+        // value and start the next event.
+        if(event.current_channel == NUM_CHANNELS) {
+            *((CeresTrigHeader*)ret) = *header;
+            event = start_event();
+            ret_val = 1;
+            break;
         }
     }
 
