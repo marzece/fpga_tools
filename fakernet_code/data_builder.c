@@ -1258,7 +1258,7 @@ void ceres_display_event(const EventHeader* ev) {
                           "device id = %u\n"
                           "CRC  = 0x%x", h->trig_number, h->length,
                                            h->clock, h->device_number,
-                                           h->crc, built_counter);
+                                           h->crc);
 }
 
 void fontus_display_event(const EventHeader* ev) {
@@ -1273,7 +1273,7 @@ void fontus_display_event(const EventHeader* ev) {
                           "beam_trigger_time =  %llu\n"
                           "LED trigger time  =  %llu\n"
                           "CT time  =  %llu\n"
-                          "CRC = 0x%x\n",
+                          "CRC = 0x%x",
                           h->magic_number, h->trig_number, h->clock, h->length, h->device_number, h->trigger_flags,
                           h->self_trigger_word, h->beam_trigger_time,
                           h->led_trigger_time, h->ct_time, h->crc);
