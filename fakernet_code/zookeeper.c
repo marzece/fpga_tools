@@ -17,7 +17,6 @@
 
 #include "data_builder.h"
 
-// For doing "double" reads the 2nd read should be from this register
 #define BUFFER_SIZE 2048
 #define DEFAULT_IP  "192.168.84.192"
 #define PIPE_BUFFER_SIZE 128
@@ -381,6 +380,19 @@ void reset_builder_connection_command(client* c, int argc, sds* argv) {
     builder_send_command_generic(c, &(pipes[device_id]), cmd);
 }
 
+void display_headers_command(client* c, int argc, sds* argv) {
+    UNUSED(argc);
+    ManagerIO cmd;
+    cmd.command = CMD_DISPLAY_HEADERS;
+    unsigned long device_id = strtoul(argv[1], NULL, 0);
+    if(device_id >= 32) {
+        addReplyErrorFormat(c, "Device ID %lu is not valid.", device_id);
+        return;
+    }
+    cmd.arg = strtoul(argv[2], NULL, 0);
+    builder_send_command_generic(c, &(pipes[device_id]), cmd);
+}
+
 void get_num_built_command(client* c, int argc, sds* argv) {
     UNUSED(argc);
     ManagerIO cmd;
@@ -426,6 +438,7 @@ static ServerCommand commandTable[] = {
     {"stop_builder", stop_builder_command, NULL, 2, 1, 0, 0},
     {"is_builder_reeling", is_builder_reeling_command, NULL, 2, 1, 0, 0},
     {"reset_builder_connection", reset_builder_connection_command, NULL, 2, 1, 0, 0},
+    {"set_display_headers", display_headers_command, NULL, 3, 1, 0, 0},
     {"get_num_built", get_num_built_command, NULL, 2, 1, 0, 0},
     {"get_builder_pid", get_builder_pid_command, NULL, 2, 1, 0, 0},
     {"get_active_builders", get_active_builders_command, NULL, 1, 1, 0, 0},

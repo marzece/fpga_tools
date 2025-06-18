@@ -1826,6 +1826,15 @@ int data_builder_main(struct BuilderConfig config) {
             case CMD_NUMBUILT:
                 manager_command.arg = the_stats.event_count;
                 break;
+            case CMD_DISPLAY_HEADERS:
+                if(manager_command.arg && !protocol.display_process) {
+                    protocol.display_process = config.ceres_builder ? ceres_display_event : fontus_display_event;
+                }
+                else {
+                    protocol.display_process = NULL;
+                }
+                manager_command.arg = 0;
+                break;
             case CMD_RESET_CONN:
                 builder_log(LOG_WARN, "Resetting TCP connection");
                 manager_command.arg = reset_connection(&fpga_if, config.ip);

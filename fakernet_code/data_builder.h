@@ -32,6 +32,7 @@ enum ManagerIOCommand {
     CMD_ISREELING, // Returns 1 if currently "reeling", 0 otherwise
     CMD_NUMBUILT,  // Returns the number of events built since the program started
     CMD_RESET_CONN,  // Returns the number of events built since the program started
+    CMD_DISPLAY_HEADERS,  // Enables/disables printing header info for each event
 };
 
 struct BuilderConfig default_builder_config(void);
