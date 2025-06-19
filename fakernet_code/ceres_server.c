@@ -41,7 +41,6 @@ typedef struct XEMConn {
     struct fnet_ctrl_client* fnet_client;
     int device_id;
     const char* ip;
-//    int is_up;
 } XEMConn;
 XEMConn XEMS[NUM_XEMS];
 XEMConn* active_xem;

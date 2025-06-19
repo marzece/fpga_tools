@@ -19,9 +19,12 @@
 #include "resp.h"
 #include "daq_logger.h"
 
-// For doing "double" reads the 2nd read should be from this register
 #define BUFFER_SIZE 2048
+// The default IP address to try and communicate with FPGA at
 #define DEFAULT_IP  "192.168.84.192"
+
+// The default port to listen for client connections at
+#define DEFAULT_PORT 4002
 
 #define LOGGER_NAME "kintex_server"
 #define DEFAULT_REDIS_HOST "127.0.0.1"
@@ -34,6 +37,7 @@ int verbosity_redis = LOG_WARN;
 
 
 int dummy_mode = 0;
+// For doing "double" reads the 2nd read should be from this register
 uint32_t SAFE_READ_ADDRESS;
 
 struct fnet_ctrl_client* fnet_client;
@@ -289,15 +293,21 @@ enum ArgIDs {
     ARG_PORT
 };
 
-void print_help_message() {
-    printf("usage: kintex_client_server [--dummy] [--ip] [--port] [--ceres] [--fontus] [--help]\n");
+void print_help_message(const char* name) {
+    printf("usage: %s [--dummy] [--ip] [--port] [--ceres] [--fontus] [--help]\n"
+            "--ceres \tWill load commands for CERES cannot be used with --fontus flag.\n"
+            "--fontus\tWill load commands for FONTUS cannot be used with --ceres flag. Enabled by default.\n"
+            "--ip    \tFPGA IP address, 192.168.84.192 by default.\n"
+            "--port  \tPort to listen for connections at, 4002 by default.\n"
+            "--dummy \tEnables dummy mode, will pretend to communicate with FPGA without any real commands being sent.\n",
+            name);
 }
 
 int main(int argc, char** argv) {
 
-    int which_board = CERES;
+    int which_board = FONTUS;
     const char* ip = DEFAULT_IP;
-    int port = -1;
+    int port = DEFAULT_PORT;
     int i;
     if(argc > 1 ) {
         enum ArgIDs expecting_value = 0;
@@ -321,7 +331,7 @@ int main(int argc, char** argv) {
                 }
 
                 else if((strcmp(argv[i], "--help") == 0) || (strcmp(argv[i], "-h") == 0)) {
-                    print_help_message();
+                    print_help_message(argv[0]);
                     return 0;
                 }
                 else {

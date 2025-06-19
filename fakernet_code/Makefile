@@ -12,7 +12,7 @@ LDLIBS += -lm
 DUMP_DATA=
 
 
-all: fnetctrl kintex_client_server kintex_cli ceres_data_builder tail_daq_log fontus_data_builder zipper ceres_server fake_data_gen zookeeper
+all: fnetctrl fontus_server kintex_cli ceres_data_builder tail_daq_log fontus_data_builder zipper ceres_server fake_data_gen zookeeper
 
 fnetctrl: fnetctrl.o fnet_client.o
 	$(CC) -o $@ $(CFLAGS) $^ -lm
@@ -23,7 +23,7 @@ zipper: zipper.c hiredis/libhiredis.a util.o daq_logger.o
 tail_daq_log: tail_daq_log.o hiredis/libhiredis.a
 	$(CC) -o $@ $(CFLAGS) $^
 
-kintex_client_server: kintex_client_server.o gpio.o lmk_if.o ads_if.o iic.o fnet_client.o dac_if.o axi_qspi.o jesd.o jesd_phy.o channel_trigger.o data_pipeline.o ceres_if.o reset_gen_if.o server.o ae.o blocked.o sds.o adlist.o connection.o anet.o networking.o util.o trigger_pipeline.o fontus_if.o clock_wiz.o daq_logger.o hiredis/libhiredis.a
+fontus_server: kintex_client_server.o gpio.o lmk_if.o ads_if.o iic.o fnet_client.o dac_if.o axi_qspi.o jesd.o jesd_phy.o channel_trigger.o data_pipeline.o ceres_if.o reset_gen_if.o server.o ae.o blocked.o sds.o adlist.o connection.o anet.o networking.o util.o trigger_pipeline.o fontus_if.o clock_wiz.o daq_logger.o hiredis/libhiredis.a
 	$(CC) -o $@ $(CFLAGS) $^
 
 ceres_server: ceres_server.o gpio.o lmk_if.o ads_if.o iic.o fnet_client.o dac_if.o axi_qspi.o jesd.o jesd_phy.o channel_trigger.o data_pipeline.o ceres_if.o reset_gen_if.o server.o ae.o blocked.o sds.o adlist.o connection.o anet.o networking.o util.o trigger_pipeline.o clock_wiz.o daq_logger.o hiredis/libhiredis.a
@@ -148,4 +148,4 @@ fnetctrl.o: fnetctrl.c
 	$(CC) -o $@ -c $(CFLAGS) $^
 
 clean:
-	rm -f *.o fnetctrl kintex_client_server kintex_cli fakernet_data_builder tail_daq_log fontus_data_builder zipper ceres_server
+	rm -f *.o fnetctrl fontus_server kintex_cli fakernet_data_builder tail_daq_log fontus_data_builder zipper ceres_server
