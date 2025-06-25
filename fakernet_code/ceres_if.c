@@ -24,6 +24,8 @@
 #define  GPIO_SMA_SWITCH_OFFSET     5
 #define  GPIO_HERMES_SYNC_SWITCH_OFFSET     6
 
+#define  GPIO_AURORA_STATUS_OFFSET   1
+
 #define  LMK_A_AXI_ADDR             0x100000
 #define  LMK_B_AXI_ADDR             0x100300
 #define  CERES_LMK_AXI_ADDR         0x100600
@@ -1016,6 +1018,11 @@ static uint32_t read_fifo_occupancy_command(uint32_t* args) {
     return v1 > v2 ? v1 : v2;
 }
 
+static uint32_t read_aurora_status_command(uint32_t* args) {
+    UNUSED(args);
+    return read_gpio_value(get_ceres_handle()->axi_gpio, 1, GPIO_AURORA_STATUS_OFFSET);
+}
+
 ServerCommand ceres_commands[] = {
 {"read_iic_reg",NULL,                              read_iic_block_command,                                 2,  1, 0, 0},
 {"write_iic_reg",NULL,                             write_iic_block_command,                                3,  0, 0, 0},
@@ -1116,5 +1123,6 @@ ServerCommand ceres_commands[] = {
 {"read_watchdog_mask",NULL,                        read_watchdog_mask_command,                             1,  1, 0, 0},
 {"write_watchdog_mask",NULL,                       write_watchdog_mask_command,                            2,  1, 0, 0},
 {"read_fifo_occupancy",NULL,                       read_fifo_occupancy_command,                            2,  1, 0, 0},
+{"read_aurora_status",NULL,                        read_aurora_status_command,                             1,  1, 0, 0},
 {"",NULL,                                          NULL,                                                   0,  0, 0, 0}    //  Must  be  last
 };

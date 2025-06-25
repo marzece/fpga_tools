@@ -26,7 +26,9 @@
 
 #define COAX_GPIO_OFFSET 0
 #define SYNC_MOD_GPIO_OFFSET 1
+
 #define AURORA_STATUS_GPIO_OFFSET 1
+#define AURORA_LANE_UP_GPIO_OFFSET 2
 
 #define N_EXT 3
 #define TRIGGERS_PER_EXTERNAL 3
@@ -704,6 +706,10 @@ static uint32_t read_aurora_status_command(uint32_t* args) {
     UNUSED(args);
     return read_gpio_value(get_fontus_handle()->gpio, 1, AURORA_STATUS_GPIO_OFFSET);
 }
+static uint32_t read_aurora_lane_up_command(uint32_t* args) {
+    UNUSED(args);
+    return read_gpio_value(get_fontus_handle()->gpio, 1, AURORA_LANE_UP_GPIO_OFFSET);
+}
 
 static uint32_t read_gpio_input_register_command(uint32_t* args) {
     uint32_t channel = args[0];
@@ -808,6 +814,7 @@ ServerCommand fontus_commands[] = {
 {"write_sync_mod",NULL,                            write_sync_mod_command,                                 2,  0, 0, 0},
 {"read_sync_mod",NULL,                             read_sync_mod_command,                                  1,  1, 0, 0},
 {"read_aurora_status",NULL,                        read_aurora_status_command,                             1,  1, 0, 0},
+{"read_aurora_lane_up_status",NULL,                read_aurora_lane_up_command,                            1,  1, 0, 0},
 {"read_gpio_input_register",NULL,                  read_gpio_input_register_command,                       2,  1, 0, 0},
 {"read_build_tag",NULL,                            read_build_tag_command,                                 1,  1, 0, 0},
 {"",NULL,                                          NULL,                                                   0,  0, 0, 0}    //  Must  be  last
