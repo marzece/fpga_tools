@@ -51,9 +51,9 @@ def print_aurora_status(xems, ceres_status, fontus_valids, fontus_status):
 
         fontus_lane_index = xem - 4
 
-        lane_0 = (trig_dwidth_input_0, trig_cc_input_0, aurora_input_0, aurora_lane_up_0,
+        lane_0 = (trig_dwidth_input_0, trig_cc_input_0, aurora_input_0,
                   mult_lane_valid[fontus_lane_index], mult_tp_valid[fontus_lane_index])
-        lane_1 = (trig_dwidth_input_1, trig_cc_input_1, aurora_input_1, aurora_lane_up_1,
+        lane_1 = (trig_dwidth_input_1, trig_cc_input_1, aurora_input_1,
                   esum_lane_valid[fontus_lane_index], esum_tp_valid[fontus_lane_index])
         lane_0 = tuple([GOOD_SYMB if x else BAD_SYMB for x in lane_0])
         lane_1 = tuple([GOOD_SYMB if x else BAD_SYMB for x in lane_1])
