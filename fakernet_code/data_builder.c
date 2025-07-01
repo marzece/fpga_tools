@@ -1827,11 +1827,11 @@ int data_builder_main(struct BuilderConfig config) {
                 manager_command.arg = the_stats.event_count;
                 break;
             case CMD_DISPLAY_HEADERS:
-                if(manager_command.arg && !protocol.display_process) {
-                    protocol.display_process = config.ceres_builder ? ceres_display_event : fontus_display_event;
-                }
-                else {
+                if(!manager_command.arg) {
                     protocol.display_process = NULL;
+                }
+                else if(!protocol.display_process) {
+                    protocol.display_process = config.ceres_builder ? ceres_display_event : fontus_display_event;
                 }
                 manager_command.arg = 0;
                 break;
