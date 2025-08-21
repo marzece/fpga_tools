@@ -719,7 +719,7 @@ int main(int argc, char** argv) {
     double delta_t;
     int event_id = -1;
     int bytes_sent = 0;
-    int print_status_bytes_sent;
+    int print_status_bytes_sent = 0;
     unsigned long long bytes_in_file = 0;
     int nbytes_written;
     RunInfo run_info;
