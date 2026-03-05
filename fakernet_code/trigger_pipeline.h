@@ -23,6 +23,8 @@ uint32_t read_inner_esum_threshold(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channe
 uint32_t write_inner_esum_threshold(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel, uint32_t threshold);
 uint32_t read_veto_esum_threshold(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel);
 uint32_t write_veto_esum_threshold(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel, uint32_t threshold);
+uint32_t read_cngs_trigger_threshold(AXI_TRIGGER_PIPELINE* tp_axi);
+uint32_t write_cngs_trigger_threshold(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t data);
 
 uint32_t read_inner_multiplicity_delay(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel);
 uint32_t write_inner_multiplicity_delay(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel, uint32_t delay);
@@ -34,12 +36,20 @@ uint32_t read_veto_esum_delay(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel);
 uint32_t write_veto_esum_delay(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel, uint32_t delay);
 uint32_t read_external_delay(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t which_external, uint32_t channel);
 uint32_t write_external_delay(AXI_TRIGGER_PIPELINE* tp_axi,  uint32_t which_external, uint32_t channel, uint32_t delay);
+uint32_t read_cngs_beam_delay(AXI_TRIGGER_PIPELINE* tp_axi);
+uint32_t write_cngs_beam_delay(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t delay);
+uint32_t read_cngs_cngs_delay(AXI_TRIGGER_PIPELINE* tp_axi);
+uint32_t write_cngs_cngs_delay(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t delay);
 
 uint32_t read_inner_multiplicity_gate(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel);
 uint32_t write_inner_multiplicity_gate(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel, uint32_t value);
 uint32_t read_inner_esum_gate(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel);
 uint32_t write_inner_esum_gate(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel, uint32_t value);
 uint32_t read_veto_multiplicity_gate(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel);
+uint32_t read_cngs_beam_gate(AXI_TRIGGER_PIPELINE* tp_axi);
+uint32_t write_cngs_beam_gate(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t delay);
+uint32_t read_cngs_cngs_gate(AXI_TRIGGER_PIPELINE* tp_axi);
+uint32_t write_cngs_cngs_gate(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t delay);
 
 uint32_t write_veto_multiplicity_gate(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel, uint32_t value);
 uint32_t read_veto_esum_gate(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel);

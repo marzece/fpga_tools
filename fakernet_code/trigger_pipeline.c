@@ -22,6 +22,8 @@ int write_addr(uint32_t, uint32_t, uint32_t);
 #define  AUTO_TRIGGER_LEN_REG_OFFSET               0x18
 #define  AUTO_TRIGGER_RATE_REG_OFFSET              0x1C
 #define  AUTO_TRIGGER_ENABLE_REG_OFFSET            0x24
+#define  CNGS_BEAM_TRIGGER_THRESHOLD_REG_OFFSET    0x28
+
 #define  INNER_MULTIPLICITY_THRESHOLD_BASE_OFFSET  0x30
 #define  INNER_ESUM_THRESHOLD_BASE_OFFSET          0x50
 #define  VETO_MULTIPLICITY_THRESHOLD_BASE_OFFSET   0x70
@@ -32,12 +34,17 @@ int write_addr(uint32_t, uint32_t, uint32_t);
 #define  VETO_MULTIPLICITY_DELAY_BASE_OFFSET       (INNER_ENERGY_SUM_DELAY_BASE_OFFSET    +  REGISTER_WIDTH*NUM_THRESHOLDS)
 #define  VETO_ENERGY_SUM_DELAY_BASE_OFFSET         (VETO_MULTIPLICITY_DELAY_BASE_OFFSET   +  REGISTER_WIDTH*NUM_THRESHOLDS)
 #define  EXTERNAL_DELAY_OFFSET                     (VETO_ENERGY_SUM_DELAY_BASE_OFFSET     +  REGISTER_WIDTH*NUM_THRESHOLDS)
+#define  CNGS_BEAM_WINDOW_DELAY_OFFSET             (EXTERNAL_DELAY_OFFSET                 +  REGISTER_WIDTH*NUM_EXTERNALS*CHANNELS_PER_EXTERNAL)
+#define  CNGS_CNGS_WINDOW_DELAY_OFFSET             (CNGS_BEAM_WINDOW_DELAY_OFFSET         +  REGISTER_WIDTH*1)
 
 #define  INNER_MULTIPLICITY_GATE_BASE_OFFSET       0x150
 #define  INNER_ENERGY_SUM_GATE_BASE_OFFSET         (INNER_MULTIPLICITY_GATE_BASE_OFFSET   +  REGISTER_WIDTH*NUM_THRESHOLDS)
 #define  VETO_MULTIPLICITY_GATE_BASE_OFFSET        (INNER_ENERGY_SUM_GATE_BASE_OFFSET     +  REGISTER_WIDTH*NUM_THRESHOLDS)
 #define  VETO_ENERGY_SUM_GATE_BASE_OFFSET          (VETO_MULTIPLICITY_GATE_BASE_OFFSET    +  REGISTER_WIDTH*NUM_THRESHOLDS)
 #define  EXTERNAL_GATE_OFFSET                      (VETO_ENERGY_SUM_GATE_BASE_OFFSET      +  REGISTER_WIDTH*NUM_THRESHOLDS)
+#define  CNGS_BEAM_WINDOW_GATE_OFFSET              (EXTERNAL_GATE_OFFSET                  +  REGISTER_WIDTH*NUM_EXTERNALS*CHANNELS_PER_EXTERNAL)
+#define  CNGS_CNGS_WINDOW_GATE_OFFSET              (CNGS_BEAM_WINDOW_GATE_OFFSET          +  REGISTER_WIDTH*1)
+
 #define  TRIGGER_MASK_BASE_OFFSET                  0x1D0
 #define  TRIGGER_VETO_MASK_BASE_OFFSET             0x200
 #define  TRIGGER_LENGTH_BASE_OFFSET                0x230
@@ -148,6 +155,16 @@ uint32_t write_veto_esum_threshold(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channe
     return write_trig_pipeline_value(tp_axi, offset, data);
 }
 
+uint32_t read_cngs_trigger_threshold(AXI_TRIGGER_PIPELINE* tp_axi) {
+    uint32_t offset = CNGS_BEAM_TRIGGER_THRESHOLD_REG_OFFSET;
+    return read_trig_pipeline_value(tp_axi, offset);
+}
+
+uint32_t write_cngs_trigger_threshold(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t data) {
+    uint32_t offset = CNGS_BEAM_TRIGGER_THRESHOLD_REG_OFFSET;
+    return write_trig_pipeline_value(tp_axi, offset, data);
+}
+
 uint32_t read_inner_multiplicity_delay(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel) {
     if(channel >= NUM_THRESHOLDS) {
         // TODO set error string
@@ -235,6 +252,27 @@ uint32_t write_external_delay(AXI_TRIGGER_PIPELINE* tp_axi,  uint32_t which_exte
     uint32_t offset = EXTERNAL_DELAY_OFFSET + (which_external*CHANNELS_PER_EXTERNAL + channel)*REGISTER_WIDTH;
     return write_trig_pipeline_value(tp_axi, offset, delay);
 }
+
+uint32_t read_cngs_beam_delay(AXI_TRIGGER_PIPELINE* tp_axi) {
+    uint32_t offset = CNGS_BEAM_WINDOW_DELAY_OFFSET;
+    return read_trig_pipeline_value(tp_axi, offset);
+}
+
+uint32_t write_cngs_beam_delay(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t delay) {
+    uint32_t offset = CNGS_BEAM_WINDOW_DELAY_OFFSET;
+    return write_trig_pipeline_value(tp_axi, offset, delay);
+}
+
+uint32_t read_cngs_cngs_delay(AXI_TRIGGER_PIPELINE* tp_axi) {
+    uint32_t offset = CNGS_CNGS_WINDOW_DELAY_OFFSET;
+    return read_trig_pipeline_value(tp_axi, offset);
+}
+
+uint32_t write_cngs_cngs_delay(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t delay) {
+    uint32_t offset = CNGS_CNGS_WINDOW_DELAY_OFFSET;
+    return write_trig_pipeline_value(tp_axi, offset, delay);
+}
+
 
 uint32_t read_inner_multiplicity_gate(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel) {
     if(channel >= NUM_THRESHOLDS) {
@@ -324,6 +362,26 @@ uint32_t write_external_gate(AXI_TRIGGER_PIPELINE* tp_axi,  uint32_t which_exter
     return write_trig_pipeline_value(tp_axi, offset, delay);
 }
 
+uint32_t read_cngs_beam_gate(AXI_TRIGGER_PIPELINE* tp_axi) {
+    uint32_t offset = CNGS_BEAM_WINDOW_GATE_OFFSET;
+    return read_trig_pipeline_value(tp_axi, offset);
+}
+
+uint32_t write_cngs_beam_gate(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t delay) {
+    uint32_t offset = CNGS_BEAM_WINDOW_GATE_OFFSET;
+    return write_trig_pipeline_value(tp_axi, offset, delay);
+}
+
+uint32_t read_cngs_cngs_gate(AXI_TRIGGER_PIPELINE* tp_axi) {
+    uint32_t offset = CNGS_CNGS_WINDOW_GATE_OFFSET;
+    return read_trig_pipeline_value(tp_axi, offset);
+}
+
+uint32_t write_cngs_cngs_gate(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t delay) {
+    uint32_t offset = CNGS_CNGS_WINDOW_GATE_OFFSET;
+    return write_trig_pipeline_value(tp_axi, offset, delay);
+}
+
 uint32_t read_trigger_mask(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel) {
     if(channel >= NUM_TRIGGERS) {
         return -1;
@@ -367,12 +425,15 @@ uint32_t read_trigger_length(AXI_TRIGGER_PIPELINE* tp_axi, uint32_t channel) {
 uint32_t read_led_trigger_length(AXI_TRIGGER_PIPELINE *tp_axi) {
     return read_trig_pipeline_value(tp_axi, LED_TRIGGER_LENGTH_OFFSET);
 }
+
 uint32_t write_led_trigger_length(AXI_TRIGGER_PIPELINE *tp_axi, uint32_t val) {
     return write_trig_pipeline_value(tp_axi, LED_TRIGGER_LENGTH_OFFSET, val);
 }
+
 uint32_t read_kicker_trigger_length(AXI_TRIGGER_PIPELINE *tp_axi) {
     return read_trig_pipeline_value(tp_axi, KICKER_TRIGGER_LENGTH_OFFSET);
 }
+
 uint32_t write_kicker_trigger_length(AXI_TRIGGER_PIPELINE *tp_axi, uint32_t val) {
     return write_trig_pipeline_value(tp_axi, KICKER_TRIGGER_LENGTH_OFFSET, val);
 }

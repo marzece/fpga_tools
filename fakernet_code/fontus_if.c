@@ -316,6 +316,16 @@ static uint32_t read_veto_esum_threshold_command(uint32_t* args) {
     return read_veto_esum_threshold(get_fontus_handle()->pipeline, channel);
 }
 
+static uint32_t write_cngs_beam_trigger_threshold_command(uint32_t* args) {
+    uint32_t threshold = args[0];
+    return write_cngs_trigger_threshold(get_fontus_handle()->pipeline, threshold);
+}
+
+static uint32_t read_cngs_beam_trigger_threshold_command(uint32_t* args) {
+    UNUSED(args);
+    return read_cngs_trigger_threshold(get_fontus_handle()->pipeline);
+}
+
 static uint32_t write_inner_multiplicity_delay_command(uint32_t* args) {
     uint32_t channel = args[0];
     uint32_t value = args[1];
@@ -372,6 +382,26 @@ static uint32_t read_frontpanel_trigger_delay_command(uint32_t* args) {
     uint32_t which_input = args[0];
     uint32_t channel = args[1];
     return read_external_delay(get_fontus_handle()->pipeline, which_input, channel);
+}
+
+static uint32_t write_cngs_beam_trigger_delay_command(uint32_t* args) {
+    uint32_t delay = args[0];
+    return write_cngs_beam_delay(get_fontus_handle()->pipeline, delay);
+}
+
+static uint32_t read_cngs_beam_trigger_delay_command(uint32_t* args) {
+    UNUSED(args);
+    return read_cngs_beam_delay(get_fontus_handle()->pipeline);
+}
+
+static uint32_t write_cngs_cngs_trigger_delay_command(uint32_t* args) {
+    uint32_t delay = args[0];
+    return write_cngs_cngs_delay(get_fontus_handle()->pipeline, delay);
+}
+
+static uint32_t read_cngs_cngs_trigger_delay_command(uint32_t* args) {
+    UNUSED(args);
+    return read_cngs_cngs_delay(get_fontus_handle()->pipeline);
 }
 
 static uint32_t write_inner_multiplicity_gate_command(uint32_t* args) {
@@ -431,6 +461,27 @@ static uint32_t read_frontpanel_trigger_gate_command(uint32_t* args) {
     return read_external_gate(get_fontus_handle()->pipeline, which_input, channel);
 }
 
+static uint32_t write_cngs_beam_trigger_gate_command(uint32_t* args) {
+    uint32_t gate = args[0];
+    return write_cngs_beam_gate(get_fontus_handle()->pipeline, gate);
+}
+
+static uint32_t read_cngs_beam_trigger_gate_command(uint32_t* args) {
+    UNUSED(args);
+    return read_cngs_beam_gate(get_fontus_handle()->pipeline);
+}
+
+static uint32_t write_cngs_cngs_trigger_gate_command(uint32_t* args) {
+    uint32_t gate = args[0];
+    return write_cngs_cngs_gate(get_fontus_handle()->pipeline, gate);
+
+}
+
+static uint32_t read_cngs_cngs_trigger_gate_command(uint32_t* args) {
+    UNUSED(args);
+    return read_cngs_cngs_gate(get_fontus_handle()->pipeline);
+}
+
 static uint32_t read_led_trigger_length_command(uint32_t *args) {
     UNUSED(args);
     return read_led_trigger_length(get_fontus_handle()->pipeline);
@@ -485,6 +536,7 @@ static uint32_t write_self_trigger_length_command(uint32_t* args) {
 }
 
 static uint32_t read_threshold_enable_mask_command(uint32_t* args) {
+    UNUSED(args);
     return read_threshold_enable_mask(get_fontus_handle()->pipeline);
 }
 
@@ -758,6 +810,8 @@ ServerCommand fontus_commands[] = {
 {"read_inner_esum_threshold",NULL,                 read_inner_esum_threshold_command,                      2,  1, 0, 0},
 {"write_veto_esum_threshold",NULL,                 write_veto_esum_threshold_command,                      3,  0, 0, 0},
 {"read_veto_esum_threshold",NULL,                  read_veto_esum_threshold_command,                       2,  1, 0, 0},
+{"write_cngs_beam_trigger_threshold",NULL,         write_cngs_beam_trigger_threshold_command,              2,  0, 0, 0},
+{"read_cngs_beam_trigger_threshold",NULL,          read_cngs_beam_trigger_threshold_command,               1,  1, 0, 0},
 
 {"write_inner_multiplicity_delay",NULL,            write_inner_multiplicity_delay_command,                 3,  0, 0, 0},
 {"read_inner_multiplicity_delay",NULL,             read_inner_multiplicity_delay_command,                  2,  1, 0, 0},
@@ -769,6 +823,10 @@ ServerCommand fontus_commands[] = {
 {"read_veto_esum_delay",NULL,                      read_veto_esum_delay_command,                           2,  1, 0, 0},
 {"write_frontpanel_trigger_delay",NULL,            write_frontpanel_trigger_delay_command,                 4,  0, 0, 0},
 {"read_frontpanel_trigger_delay",NULL,             read_frontpanel_trigger_delay_command,                  3,  1, 0, 0},
+{"write_cngs_beam_trigger_delay",NULL,             write_cngs_beam_trigger_delay_command,                  2,  0, 0, 0},
+{"read_cngs_beam_trigger_delay",NULL,              read_cngs_beam_trigger_delay_command,                   1,  1, 0, 0},
+{"write_cngs_cngs_trigger_delay",NULL,             write_cngs_cngs_trigger_delay_command,                  2,  0, 0, 0},
+{"read_cngs_cngs_trigger_delay",NULL,              read_cngs_cngs_trigger_delay_command,                   1,  1, 0, 0},
 
 {"write_inner_multiplicity_gate",NULL,             write_inner_multiplicity_gate_command,                  3,  0, 0, 0},
 {"read_inner_multiplicity_gate",NULL,              read_inner_multiplicity_gate_command,                   2,  1, 0, 0},
@@ -780,6 +838,10 @@ ServerCommand fontus_commands[] = {
 {"read_veto_esum_gate",NULL,                       read_veto_esum_gate_command,                            2,  1, 0, 0},
 {"write_frontpanel_trigger_gate",NULL,             write_frontpanel_trigger_gate_command,                  4,  0, 0, 0},
 {"read_frontpanel_trigger_gate",NULL,              read_frontpanel_trigger_gate_command,                   3,  1, 0, 0},
+{"write_cngs_beam_trigger_gate",NULL,              write_cngs_beam_trigger_gate_command,                   2,  0, 0, 0},
+{"read_cngs_beam_trigger_gate",NULL,               read_cngs_beam_trigger_gate_command,                    1,  1, 0, 0},
+{"write_cngs_cngs_trigger_gate",NULL,              write_cngs_cngs_trigger_gate_command,                   2,  0, 0, 0},
+{"read_cngs_cngs_trigger_gate",NULL,               read_cngs_cngs_trigger_gate_command,                    1,  1, 0, 0},
 
 {"read_led_trigger_length",NULL,                   read_led_trigger_length_command,                        1,  1, 0, 0},
 {"write_led_trigger_length",NULL,                  write_led_trigger_length_command,                       2,  0, 0, 0},
