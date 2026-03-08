@@ -556,6 +556,11 @@ int main(int argc, char** argv) {
         the_config.in_pipe = pipes[builder_id].p2c_pipe[READ_PIPE_IDX];
         the_config.out_pipe = pipes[builder_id].c2p_pipe[WRITE_PIPE_IDX];
 
+#ifdef __unix__
+        // Rename the process for easier debugging & inspection
+        snprintf(16, buffer, "zk_db_%i", builder_id);
+        prctl(PR_SET_NAME, buffer);
+#endif
         data_builder_main(the_config);
 
         free(ip_addr_buffer);

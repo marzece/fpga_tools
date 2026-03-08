@@ -61,6 +61,10 @@ Author: Eric Marzec <marzece@gmail.com>
 #define DO_QUICKACK 0
 #define PRINT_UPDATE_COOLDOWN 1000000 // Heartbeat time (in micro-seconds)
 
+#ifdef __APPLE__
+#define SO_TIMESTAMPNS SO_TIMESTAMP
+#endif
+
 // Largest possible size for single message (in bytes)
 #define LOG_MESSAGE_MAX 1024
 
