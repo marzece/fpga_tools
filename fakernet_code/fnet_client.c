@@ -834,7 +834,7 @@ struct fnet_ctrl_client *fnet_ctrl_connect(const char *server,
      * should not report success.
      */
 
-    if (fnet_ctrl_send_recv_regacc(client, 0))
+    if (fnet_ctrl_send_recv_regacc(client, 0) == 1)
       return client;
 
     FNET_CTRL_ERROR("No reponse on idempotent UDP access channel.");
