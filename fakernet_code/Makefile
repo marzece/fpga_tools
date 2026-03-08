@@ -23,10 +23,10 @@ zipper: zipper.c hiredis/libhiredis.a util.o daq_logger.o
 tail_daq_log: tail_daq_log.o hiredis/libhiredis.a
 	$(CC) -o $@ $(CFLAGS) $^
 
-fontus_server: kintex_client_server.o gpio.o lmk_if.o ads_if.o iic.o fnet_client.o dac_if.o axi_qspi.o jesd.o jesd_phy.o channel_trigger.o data_pipeline.o ceres_if.o reset_gen_if.o server.o ae.o blocked.o sds.o adlist.o connection.o anet.o networking.o util.o trigger_pipeline.o fontus_if.o clock_wiz.o daq_logger.o hiredis/libhiredis.a
+fontus_server: kintex_client_server.o gpio.o lmk_if.o ads_if.o iic.o fnet_client.o dac_if.o axi_qspi.o jesd.o jesd_phy.o  data_pipeline.o ceres_if.o reset_gen_if.o server.o ae.o blocked.o sds.o adlist.o connection.o anet.o networking.o util.o trigger_pipeline.o fontus_if.o clock_wiz.o daq_logger.o hiredis/libhiredis.a
 	$(CC) -o $@ $(CFLAGS) $^
 
-ceres_server: ceres_server.o gpio.o lmk_if.o ads_if.o iic.o fnet_client.o dac_if.o axi_qspi.o jesd.o jesd_phy.o channel_trigger.o data_pipeline.o ceres_if.o reset_gen_if.o server.o ae.o blocked.o sds.o adlist.o connection.o anet.o networking.o util.o trigger_pipeline.o clock_wiz.o daq_logger.o hiredis/libhiredis.a
+ceres_server: ceres_server.o gpio.o lmk_if.o ads_if.o iic.o fnet_client.o dac_if.o axi_qspi.o jesd.o jesd_phy.o data_pipeline.o ceres_if.o reset_gen_if.o server.o ae.o blocked.o sds.o adlist.o connection.o anet.o networking.o util.o trigger_pipeline.o clock_wiz.o daq_logger.o hiredis/libhiredis.a
 	$(CC) -o $@ $(CFLAGS) $^
 
 zookeeper: zookeeper.c data_builder.o crc32.o crc8.o fnet_client.o daq_logger.o server.o networking.o util.o connection.o sds.o ae.o blocked.o adlist.o anet.o hiredis/libhiredis.a
@@ -81,9 +81,6 @@ jesd.o: jesd.c
 	$(CC) -o $@ -c $(CFLAGS) $^
 
 reset_gen_if.o: reset_gen_if.c
-	$(CC) -o $@ -c $(CFLAGS) $^
-
-channel_trigger.o: channel_trigger.c
 	$(CC) -o $@ -c $(CFLAGS) $^
 
 data_pipeline.o: data_pipeline.c

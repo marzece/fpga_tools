@@ -163,11 +163,6 @@ static uint32_t set_enable_trigger_command(uint32_t* args) {
     return write_pulse_generator_enable(get_fontus_handle()->pipeline, enable);
 }
 
-static uint32_t read_delay_value(uint32_t* args) {
-
-    return 0;
-}
-
 static uint32_t read_dac_if_command(uint32_t* args) {
     uint32_t offset = args[0];
     return read_dac_if(get_fontus_handle()->dac, offset);
@@ -269,6 +264,7 @@ uint32_t write_auto_trig_enable_command(uint32_t* args) {
 }
 
 uint32_t read_auto_trig_enable_command(uint32_t* args) {
+    UNUSED(args);
     return read_auto_trig_enable(get_fontus_handle()->pipeline);
 }
 
